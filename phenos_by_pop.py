@@ -6,12 +6,12 @@ temp_bucket = 'gs://ukbb-diverse-temp-30day'
 
 
 def main():
-    data_types =  ('categorical', 'continuous', 'icd')
+    data_types = ('categorical', 'continuous', 'icd')
     hl.init(default_reference='GRCh37', log='/pheno_agg.log')
 
     for data_type in data_types:
         mt = hl.read_matrix_table(get_ukb_pheno_mt_path(data_type))
-        meta_ht = hl.import_table('gs://ukb-diverse-pops/globalref_ukbb_pca_pops_rf_50.txt.bgz', impute=True, key='s')
+        meta_ht = hl.import_table(get_ukb_meta_pop_tsv_path(), impute=True, key='s')
         mt = mt.annotate_rows(**meta_ht[mt.row_key])
 
         if data_type == 'continuous':
