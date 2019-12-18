@@ -15,8 +15,8 @@ def main(args):
     data_types = ('categorical', 'continuous') #, 'biomarkers')
 
     if args.load_data:
-        load_icd_data(pre_phesant_tsv_path, icd_codings_path, f'{temp_bucket}/pheno').write(get_ukb_pheno_mt_path('icd'), args.overwrite)
-        load_icd_data(pre_phesant_tsv_path, icd9_codings_path, f'{temp_bucket}/pheno_icd9', icd9=True).write(get_ukb_pheno_mt_path('icd9'), args.overwrite)
+        load_icd_data(pre_phesant_tsv_path, icd_codings_ht_path, f'{temp_bucket}/pheno').write(get_ukb_pheno_mt_path('icd'), args.overwrite)
+        load_icd_data(pre_phesant_tsv_path, icd9_codings_ht_path, f'{temp_bucket}/pheno_icd9', icd9=True).write(get_ukb_pheno_mt_path('icd9'), args.overwrite)
         icd10 = hl.read_matrix_table(get_ukb_pheno_mt_path('icd')).annotate_cols(icd_version='icd10')
         icd9 = hl.read_matrix_table(get_ukb_pheno_mt_path('icd9')).annotate_cols(icd_version='icd9')
         icd9 = icd9.select_entries('primary_codes', 'secondary_codes', external_codes=hl.null(hl.tbool), cause_of_death_codes=hl.null(hl.tbool), any_codes=icd9.any_codes)
@@ -24,11 +24,11 @@ def main(args):
         # read_covariate_data(get_pre_phesant_data_path()).write(get_ukb_covariates_ht_path(), args.overwrite)
 
         # for sex in sexes:
-        # ht = hl.import_table(phesant_all_phenos_tsv_paths.format(1), impute=True, min_partitions=100, missing='', key='userId', quote='"', force_bgz=True)
-        # for i in range(2, 4):
-        #     pheno_ht = hl.import_table(phesant_all_phenos_tsv_paths.format(i), impute=True, min_partitions=100, missing='', key='userId', quote='"', force_bgz=True)
-        #     ht = ht.annotate(**pheno_ht[ht.key])
-        # ht.write(get_ukb_pheno_ht_path(), overwrite=args.overwrite)
+        ht = hl.import_table(phesant_all_phenos_tsv_paths.format(1), impute=True, min_partitions=100, missing='', key='userId', quote='"', force_bgz=True)
+        for i in range(2, 4):
+            pheno_ht = hl.import_table(phesant_all_phenos_tsv_paths.format(i), impute=True, min_partitions=100, missing='', key='userId', quote='"', force_bgz=True)
+            ht = ht.annotate(**pheno_ht[ht.key])
+        ht.write(get_ukb_pheno_ht_path(), overwrite=args.overwrite)
 
         pheno_ht = hl.read_table(get_ukb_pheno_ht_path())
         for data_type in data_types:
