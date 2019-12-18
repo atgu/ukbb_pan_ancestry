@@ -3,7 +3,7 @@
 __author__ = 'konradk'
 
 from gnomad_hail import *
-from ukb_phenotypes import *
+from ukb_common import *
 from ukbb_pan_ancestry.resources import *
 
 temp_bucket = 'gs://ukbb-diverse-temp-30day'

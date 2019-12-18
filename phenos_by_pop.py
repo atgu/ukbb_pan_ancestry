@@ -1,6 +1,6 @@
 from gnomad_hail import *
 from ukbb_pan_ancestry import *
-from ukb_phenotypes import *
+from ukb_common import *
 
 temp_bucket = 'gs://ukbb-diverse-temp-30day'
 
