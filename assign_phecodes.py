@@ -56,16 +56,17 @@ exclude_mt = checkpoint_tmp(exclude_mt)
 
 # Annotate exclusion
 mt = mt.key_cols_by('exclude_phecodes')
-mt = mt.annotate_entries(exclude_sex=hl.switch(mt.phecode_sex).when("Male",
-                                                                    mt.isFemale).when("Female",
-                                                                                      ~mt.isFemale).default(False),
+mt = mt.annotate_entries(exclude_sex=(hl.switch(mt.phecode_sex)
+                                        .when("Male", mt.isFemale)
+                                        .when("Female", ~mt.isFemale)
+                                        .default(False)),
                          exclude_from_controls=exclude_mt[mt.userId, mt.exclude_phecodes].exclude_from_controls)
 
 # Compute final case/control status
 # `case_control` becomes missing (NA) if a sample 1) is excluded because of sex, 2) is not cases and excluded from controls.
 mt = mt.annotate_entries(
-    case_control=hl.if_else(mt.exclude_sex |
-                            (~mt.include_to_cases & mt.exclude_from_controls), hl.null(hl.tbool), mt.include_to_cases))
+    case_control=hl.if_else(mt.exclude_sex | (~mt.include_to_cases & mt.exclude_from_controls),
+                            hl.null(hl.tbool), mt.include_to_cases))
 
 mt = mt.key_cols_by('phecode')
 mt.describe()
