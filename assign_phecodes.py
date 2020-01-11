@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
+import argparse
 import pandas as pd
 import uuid
 import hail as hl
 from hail.utils import hadoop_open
-from ukbb_pan_ancestry import *
-from ukb_common import *
-hl.init()
+# from ukbb_pan_ancestry import *
+# from ukb_common import *
 
 
 def checkpoint_tmp(hail_obj, tmppath='gs://ukbb-diverse-temp-30day/', tmpname=None, overwrite=True):
@@ -15,60 +15,72 @@ def checkpoint_tmp(hail_obj, tmppath='gs://ukbb-diverse-temp-30day/', tmpname=No
     return hail_obj.checkpoint(tmppath + tmpname, overwrite=overwrite)
 
 
-# Read in the Phecode (v1.2b1) <-> ICD 9/10 codes mapping
-with hadoop_open('gs://ukb-diverse-pops/phecode/UKB_Phecode_v1.2b1_ICD_Mapping.txt', 'r') as f:
-    df = pd.read_csv(f, delimiter='\t', dtype=str)
-list_of_icd_codes_to_include = [row.icd_codes.split(',') for _, row in df.iterrows()]
-list_of_phecodes_to_exclude = [row.exclude_phecodes.split(',') for _, row in df.iterrows()]
-df['icd_codes'] = list_of_icd_codes_to_include
-df['exclude_phecodes'] = list_of_phecodes_to_exclude
+def main(args):
+    hl.init(log='/assign_phecodes.log')
 
-# Convert it to HailTable
-phecode_ht = hl.Table.from_pandas(df)
-phecode_ht = phecode_ht.key_by('icd_codes')
-phecode_ht = phecode_ht.checkpoint('gs://ukb-diverse-pops/phecode/UKB_Phecode_v1.2b1_ICD_Mapping.ht', overwrite=True)
+    # Read in the Phecode (v1.2b1) <-> ICD 9/10 codes mapping
+    with hadoop_open('gs://ukb-diverse-pops/phecode/UKB_Phecode_v1.2b1_ICD_Mapping.txt', 'r') as f:
+        df = pd.read_csv(f, delimiter='\t', dtype=str)
+    list_of_icd_codes_to_include = [row.icd_codes.split(',') for _, row in df.iterrows()]
+    list_of_phecodes_to_exclude = [row.exclude_phecodes.split(',') for _, row in df.iterrows()]
+    df['icd_codes'] = list_of_icd_codes_to_include
+    df['exclude_phecodes'] = list_of_phecodes_to_exclude
 
-# Retreive UKB ICD MatrixTable and combine codes based on Phecode definitions
-icd_all = hl.read_matrix_table(get_ukb_pheno_mt_path('icd_all'))
-mt = combine_phenotypes(icd_all,
-                        icd_all.icd_code,
-                        icd_all.any_codes,
-                        list_of_icd_codes_to_include,
-                        new_col_name='icd_codes',
-                        new_entry_name='include_to_cases')
-mt = mt.annotate_cols(phecode=phecode_ht[mt.icd_codes].phecode,
-                      phecode_sex=phecode_ht[mt.icd_codes].sex,
-                      exclude_phecodes=phecode_ht[mt.icd_codes].exclude_phecodes)
+    # Convert it to HailTable
+    phecode_ht = hl.Table.from_pandas(df)
+    phecode_ht = phecode_ht.key_by('icd_codes')
+    phecode_ht = phecode_ht.checkpoint('gs://ukb-diverse-pops/phecode/UKB_Phecode_v1.2b1_ICD_Mapping.ht',
+                                       overwrite=args.overwrite)
 
-# Annotate sex for sex-specific phenotypes
-ukb_pheno_ht = hl.read_table(get_ukb_pheno_ht_path())
-mt = mt.annotate_rows(isFemale=ukb_pheno_ht[mt.userId].sex == 0)
-mt = checkpoint_tmp(mt)
+    # Retreive UKB ICD MatrixTable and combine codes based on Phecode definitions
+    icd_all = hl.read_matrix_table(get_ukb_pheno_mt_path('icd_all'))
+    mt = combine_phenotypes(icd_all,
+                            icd_all.icd_code,
+                            icd_all.any_codes,
+                            list_of_icd_codes_to_include,
+                            new_col_name='icd_codes',
+                            new_entry_name='include_to_cases')
+    mt = mt.annotate_cols(phecode=phecode_ht[mt.icd_codes].phecode,
+                          phecode_sex=phecode_ht[mt.icd_codes].sex,
+                          exclude_phecodes=phecode_ht[mt.icd_codes].exclude_phecodes)
 
-# Compute phecode excluded from controls
-mt = mt.key_cols_by()
-exclude_mt = combine_phenotypes(mt,
-                                mt.phecode,
-                                mt.include_to_cases,
-                                list_of_phecodes_to_exclude,
-                                new_entry_name='exclude_from_controls')
-exclude_mt = checkpoint_tmp(exclude_mt)
+    # Annotate sex for sex-specific phenotypes
+    ukb_pheno_ht = hl.read_table(get_ukb_pheno_ht_path())
+    mt = mt.annotate_rows(isFemale=ukb_pheno_ht[mt.userId].sex == 0)
+    mt = checkpoint_tmp(mt)
 
-# Annotate exclusion
-mt = mt.key_cols_by('exclude_phecodes')
-mt = mt.annotate_entries(exclude_sex=(hl.switch(mt.phecode_sex)
-                                        .when("Male", mt.isFemale)
-                                        .when("Female", ~mt.isFemale)
-                                        .default(False)),
-                         exclude_from_controls=exclude_mt[mt.userId, mt.exclude_phecodes].exclude_from_controls)
+    # Compute phecode excluded from controls
+    mt = mt.key_cols_by()
+    exclude_mt = combine_phenotypes(mt,
+                                    mt.phecode,
+                                    mt.include_to_cases,
+                                    list_of_phecodes_to_exclude,
+                                    new_entry_name='exclude_from_controls')
+    exclude_mt = checkpoint_tmp(exclude_mt)
 
-# Compute final case/control status
-# `case_control` becomes missing (NA) if a sample 1) is excluded because of sex, 2) is not cases and excluded from controls.
-mt = mt.annotate_entries(
-    case_control=hl.if_else(mt.exclude_sex | (~mt.include_to_cases & mt.exclude_from_controls),
-                            hl.null(hl.tbool), mt.include_to_cases))
+    # Annotate exclusion
+    mt = mt.key_cols_by('exclude_phecodes')
+    mt = mt.annotate_entries(exclude_sex=(hl.switch(mt.phecode_sex)
+                                            .when("Male", mt.isFemale)
+                                            .when("Female", ~mt.isFemale)
+                                            .default(False)),
+                             exclude_from_controls=exclude_mt[mt.userId, mt.exclude_phecodes].exclude_from_controls)
 
-mt = mt.key_cols_by('phecode')
-mt.describe()
+    # Compute final case/control status
+    # `case_control` becomes missing (NA) if a sample 1) is excluded because of sex, 2) is not cases and excluded from controls.
+    mt = mt.annotate_entries(
+        case_control=hl.if_else(mt.exclude_sex | (~mt.include_to_cases & mt.exclude_from_controls),
+                                hl.null(hl.tbool), mt.include_to_cases))
 
-mt.write(get_ukb_pheno_mt_path('phecode'), overwrite=True)
+    mt = mt.key_cols_by('phecode')
+    mt.describe()
+
+    mt.write(get_ukb_pheno_mt_path('phecode'), overwrite=args.overwrite)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--overwrite', help='Overwrite data', action='store_true')
+    args = parser.parse_args()
+
+    main(args)
