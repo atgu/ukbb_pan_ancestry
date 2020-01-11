@@ -5,12 +5,12 @@ library(data.table)
 
 # Inputs are from the interim outputs of https://github.com/umich-cphds/createUKBphenome.
 icd9key =
-  fread("UKB_PHENOME_ICD9_PHECODE_MAP_20200109.txt", colClasses = "character", data.table = F) %>%
+  fread("./data/UKB_PHENOME_ICD9_PHECODE_MAP_20200109.txt", colClasses = "character", data.table = F) %>%
   rename(icd_code = ICD9) %>%
   mutate(icd_version = "icd9")
 
 icd10key =
-  fread("UKB_PHENOME_ICD10_PHECODE_MAP_20200109.txt", colClasses = "character", data.table = F) %>%
+  fread("./data/UKB_PHENOME_ICD10_PHECODE_MAP_20200109.txt", colClasses = "character", data.table = F) %>%
   rename(icd_code = ICD10) %>%
   mutate(icd_version = "icd10")
 
@@ -24,7 +24,7 @@ if (length(unique(icd_all$phecode)) != nrow(icd_all)) {
   stop("Inconsistent sex def.")
 }
 
-pheinfo = fread("PHECODE_v1.2b1_INFO_20200109.txt", colClasses = "character", data.table = F)
+pheinfo = fread("./data/PHECODE_v1.2b1_INFO_20200109.txt", colClasses = "character", data.table = F)
 pheinfo2 = subset(pheinfo, phecode %in% icd_all$phecode)
 
 # source: https://github.com/umich-cphds/createUKBphenome/blob/master/scripts/function.expandPhecodes.r
@@ -74,5 +74,5 @@ icd_all$exclude_phecodes =
   return(str_c(sort(exclude_phecodes), collapse=","))
 })
 
-write.table(icd_all, "UKB_Phecode_v1.2b1_ICD_Mapping.txt", quote = F, row.names = F, sep = "\t")
+write.table(icd_all, "./data/UKB_Phecode_v1.2b1_ICD_Mapping.txt", quote = F, row.names = F, sep = "\t")
 
