@@ -15,9 +15,13 @@ icd10key =
   mutate(icd_version = "icd10")
 
 icd_all = bind_rows(icd10key, icd9key) %>%
-  group_by(phecode, sex) %>%
+  group_by(phecode, sex, description, group) %>%
   summarize(
     icd_codes = str_c(str_remove(icd_code, "\\."), collapse = ',')
+  ) %>%
+  ungroup %>%
+  mutate(
+    sex = recode(sex, Both = "both_sexes", Male = "males", Female = "females")
   )
 
 if (length(unique(icd_all$phecode)) != nrow(icd_all)) {

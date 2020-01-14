@@ -5,8 +5,8 @@ import pandas as pd
 import uuid
 import hail as hl
 from hail.utils import hadoop_open
-# from ukbb_pan_ancestry import *
-# from ukb_common import *
+from ukbb_pan_ancestry import *
+from ukb_common import *
 
 
 def checkpoint_tmp(hail_obj, tmppath='gs://ukbb-diverse-temp-30day/', tmpname=None, overwrite=True):
@@ -42,6 +42,8 @@ def main(args):
                             new_entry_name='include_to_cases')
     mt = mt.annotate_cols(phecode=phecode_ht[mt.icd_codes].phecode,
                           phecode_sex=phecode_ht[mt.icd_codes].sex,
+                          phecode_description=phecode_ht[mt.icd_codes].description,
+                          phecode_group=phecode_ht[mt.icd_codes].group,
                           exclude_phecodes=phecode_ht[mt.icd_codes].exclude_phecodes)
 
     # Annotate sex for sex-specific phenotypes
@@ -61,10 +63,10 @@ def main(args):
     # Annotate exclusion
     mt = mt.key_cols_by('exclude_phecodes')
     mt = mt.annotate_entries(exclude_sex=(hl.switch(mt.phecode_sex)
-                                            .when("Male", mt.isFemale)
-                                            .when("Female", ~mt.isFemale)
+                                            .when("males", mt.isFemale)
+                                            .when("females", ~mt.isFemale)
                                             .default(False)),
-                             exclude_from_controls=exclude_mt[mt.userId, mt.exclude_phecodes].exclude_from_controls)
+                             exclude_from_controls=hl.coalesce(exclude_mt[mt.userId, mt.exclude_phecodes].exclude_from_controls, False))
 
     # Compute final case/control status
     # `case_control` becomes missing (NA) if a sample 1) is excluded because of sex, 2) is not cases and excluded from controls.
