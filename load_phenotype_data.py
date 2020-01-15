@@ -56,7 +56,7 @@ def load_hesin_data(overwrite: bool = False):
 
 def main(args):
     hl.init(log='/load_pheno.log')
-    sexes = ('both_sexes', 'females', 'males')
+    sexes = ('both_sexes_no_sex_specific', 'females', 'males')
     data_types = ('categorical', 'continuous') #, 'biomarkers')
 
     if args.load_data:
@@ -71,13 +71,10 @@ def main(args):
         # read_covariate_data(get_pre_phesant_data_path()).write(get_ukb_covariates_ht_path(), args.overwrite)
 
         for sex in sexes:
-            ht = hl.import_table(get_phesant_all_phenos_tsv_paths(sex).format(1), impute=True, min_partitions=100, missing='', key='userId', quote='"', force_bgz=True)
-            for i in range(2, 5):
-                pheno_ht = hl.import_table(get_phesant_all_phenos_tsv_paths(sex).format(i), impute=True, min_partitions=100, missing='', key='userId', quote='"', force_bgz=True)
-                ht = ht.annotate(**pheno_ht[ht.key])
-            pheno_ht = ht.checkpoint(get_ukb_pheno_ht_path(sex=sex), overwrite=args.overwrite)
+            ht = hl.import_table(get_phesant_all_phenos_tsv_path(sex), impute=True, min_partitions=100, missing='', key='userId', quote='"', force_bgz=True)
+            pheno_ht = ht.checkpoint(get_ukb_pheno_ht_path(sex), overwrite=args.overwrite)
             for data_type in data_types:
-                pheno_ht_to_mt(pheno_ht, data_type).write(get_ukb_pheno_mt_path(data_type, sex=sex), args.overwrite)
+                pheno_ht_to_mt(pheno_ht, data_type).write(get_ukb_pheno_mt_path(data_type, sex), args.overwrite)
 
         ht = hl.import_table(phesant_biomarker_phenotypes_tsv_path, impute=True, min_partitions=100, missing='', key='userId', force_bgz=True, quote='"')
         ht = ht.checkpoint(get_biomarker_ht_path(), overwrite=args.overwrite)
@@ -90,12 +87,16 @@ def main(args):
                                   pheno_description_path, coding_ht_path, data_type)
             mt.write(get_ukb_pheno_mt_path(data_type, 'full'), args.overwrite)
 
-        data_types = ('categorical', 'continuous', 'biomarkers', 'icd_all', 'prescriptions', 'phecode')  # Note: taking one with age and sex as row fields first
-        pheno_file_dict = {data_type: hl.read_matrix_table(get_ukb_pheno_mt_path(data_type)) for data_type in data_types}
-        combine_pheno_files(pheno_file_dict).write(get_ukb_pheno_mt_path('full'), args.overwrite)
-        hl.read_matrix_table(get_ukb_pheno_mt_path('full')).cols().export(f'{pheno_folder}/all_pheno_summary.txt.bgz')
+        data_types = ('categorical', 'continuous', 'biomarkers', 'icd_all', 'prescriptions', 'phecode')
+        location = {'categorical': 'full', 'continuous': 'full'}
+        pheno_file_dict = {data_type: hl.read_matrix_table(get_ukb_pheno_mt_path(data_type, location.get(data_type, 'both_sexes_no_sex_specific')))
+                           for data_type in data_types}
+        cov_ht = hl.import_table(get_ukb_meta_pop_tsv_path(), key='s', impute=True)
+        cov_ht = cov_ht.annotate(sex=pheno_file_dict['biomarkers'].rows()[cov_ht.key].sex)
+        combine_pheno_files_multi_sex(pheno_file_dict, cov_ht).write(get_ukb_pheno_mt_path(), args.overwrite)
+        hl.read_matrix_table(get_ukb_pheno_mt_path()).cols().export(f'{pheno_folder}/all_pheno_summary.txt.bgz')
 
-        mt = hl.read_matrix_table(get_ukb_pheno_mt_path('full'))
+        mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
         make_correlation_ht(mt).write(pairwise_correlation_ht_path, args.overwrite)
         hl.read_table(pairwise_correlation_ht_path).flatten().export(pairwise_correlation_ht_path.replace('.ht', '.txt.bgz'))
 

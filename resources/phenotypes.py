@@ -3,11 +3,17 @@ bucket = 'gs://ukb-diverse-pops'
 pheno_folder = f'{bucket}/Phenotypes/Everyone'
 
 
-def get_phesant_all_phenos_tsv_paths(sex: str):
-    if sex == 'both_sexes':
-        return f'{pheno_folder}/uk_round2_allSamples_phenos_phesant_QC.{{}}.tsv.gz'
-    else:
-        return f'{pheno_folder}/SexSpecific/uk_round2_allSamples_phenos_phesant_QC_Sex{int(sex == "males")}.{{}}.tsv.gz'
+def get_phesant_all_phenos_tsv_path(sex: str):
+    return f'{pheno_folder}/PHESANT_final_output/January_2020/phesant_output_multi_ancestry_combined_{sex}.tsv.gz'
+    # if sex == 'both_sexes':
+    #     return f'{pheno_folder}/uk_round2_allSamples_phenos_phesant_QC.{{}}.tsv.gz'
+    # else:
+    #     return f'{pheno_folder}/SexSpecific/uk_round2_allSamples_phenos_phesant_QC_Sex{int(sex == "males")}.{{}}.tsv.gz'
+
+
+def get_ukb_phesant_summary_tsv_path(sex: str = 'both_sexes_no_sex_specific'):
+    return f'{pheno_folder}/PHESANT_final_output/January_2020/phesant_output_multi_ancestry_combined_{sex}_summary.tsv'
+
 
 phesant_biomarker_phenotypes_tsv_path = f'{pheno_folder}/uk_round2_allSamples_biomarkers_phesant_QC.tsv.gz'
 
@@ -15,12 +21,14 @@ pre_phesant_tsv_path = f'{pheno_folder}/neale_lab_parsed_QC_Oct2019.tsv'
 pre_phesant_biomarkers_tsv_path = f'{pheno_folder}/neale_lab_parsed_biomarkers.tsv'
 
 
-def get_ukb_pheno_ht_path(pop: str = 'all_pops', sex: str = 'both_sexes'):
-    return f'{pheno_folder}/ht/{pop}_{sex}.ht'
+def get_ukb_pheno_ht_path(sex: str = 'both_sexes'):
+    return f'{pheno_folder}/ht/all_pops_{sex}.ht'
 
 
-def get_ukb_pheno_mt_path(data_type: str, pop: str = 'all_pops', sex: str = 'both_sexes'):
-    return f'{pheno_folder}/{sex}/{pop}_{data_type}.mt'
+def get_ukb_pheno_mt_path(data_type: str = None, sex: str = 'both_sexes_no_sex_specific'):
+    if data_type is None:
+        data_type, sex = 'full', 'full'
+    return f'{pheno_folder}/mt/{sex}/all_pops_{data_type}.mt'
 
 
 def get_biomarker_ht_path(pop: str = 'all_pops', sex: str = 'both_sexes'):
@@ -52,9 +60,3 @@ def get_gp_data_tsv_path(data_type: str = None):
 
 def get_phenotype_summary_tsv_path(data_type: str):
     return f'{pheno_folder}/summary/phenos_{data_type}.tsv'
-
-
-# TODO: add this file
-def get_ukb_phesant_summary_tsv_path(pop: str = 'all_pops', sex: str = 'both_sexes'):
-    return f'gs://phenotype_pharma/misc_files/phesant_output_combined_{sex}_summary.modified.tsv'
-
