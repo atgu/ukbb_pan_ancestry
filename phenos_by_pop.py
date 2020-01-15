@@ -25,16 +25,15 @@ def main():
         load_all_mfi_data().write(ukb_imputed_info_ht_path, args.overwrite)
 
     if args.genotype_summary:
-        # variants = hl.read_table(ukb_imputed_info_ht_path)
-        # print(variants.count())
-        # variants = variants.filter(variants.info > 0.8)
-        # print(variants.count())
-        # meta_ht = hl.import_table(get_ukb_meta_pop_tsv_path(), impute=True, types={'s': hl.tstr}, key='s')
-        # mt = get_ukb_imputed_data('all', variant_list=variants)
-        # mt = mt.annotate_cols(**meta_ht[mt.col_key])
-        # ht = mt.annotate_rows(af=hl.agg.group_by(mt.pop, hl.agg.mean(mt.dosage)),
-        #                       an=hl.agg.group_by(mt.pop, hl.agg.count_where(hl.is_defined(mt.dosage)))).rows()
-        ht = hl.utils.range_table(1)
+        variants = hl.read_table(ukb_imputed_info_ht_path)
+        print(variants.count())
+        variants = variants.filter(variants.info > 0.8)
+        print(variants.count())
+        meta_ht = hl.import_table(get_ukb_meta_pop_tsv_path(), impute=True, types={'s': hl.tstr}, key='s')
+        mt = get_ukb_imputed_data('all', variant_list=variants)
+        mt = mt.annotate_cols(**meta_ht[mt.col_key])
+        ht = mt.annotate_rows(af=hl.agg.group_by(mt.pop, hl.agg.mean(mt.dosage)),
+                              an=hl.agg.group_by(mt.pop, hl.agg.count_where(hl.is_defined(mt.dosage)))).rows()
         ht = ht.checkpoint(ukb_af_ht_path, args.overwrite, _read_if_exists=not args.overwrite)
         print(ht.aggregate(hl.struct(
             # hist=hl.agg.hist(hl.sum(ht.an.values()), 0, total_samples, 10),  # No missing data

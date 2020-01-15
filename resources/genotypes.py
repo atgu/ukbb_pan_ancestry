@@ -1,12 +1,5 @@
 import hail as hl
-
-bucket = 'gs://ukb-diverse-pops'
-REFERENCE_GENOME = 'GRCh37'
-CHROMOSOMES = list(map(str, range(1, 23))) + ['X', 'XY']
-
-
-def get_ukb_meta_pop_tsv_path():
-    return f'{bucket}/globalref_ukbb_pca_pops_rf_50.txt.bgz'
+from .generic import *
 
 ukb_imputed_bgen_path = 'gs://fc-7d5088b4-7673-45b5-95c2-17ae00a04183/imputed/ukb_imp_chr{}_v3.bgen'
 ukb_imputed_info_path = 'gs://fc-7d5088b4-7673-45b5-95c2-17ae00a04183/imputed/ukb_mfi_chr{}_v3.txt'
@@ -29,3 +22,19 @@ def get_ukb_imputed_data(chromosome: str = '1', variant_list: hl.Table = None, e
                           sample_file=get_sample_file(chromosome), **add_args)
 
 ukb_af_ht_path = f'{bucket}/imputed/ukb_frequencies.ht'
+
+
+def get_ukb_grm_mt_path(pop: str):
+    return f'{bucket}/results/misc/ukb.{pop}.for_grm.mt'
+
+
+def get_ukb_grm_pruned_ht_path(pop: str):
+    return f'{bucket}/results/misc/ukb.{pop}.for_grm.pruned.ht'
+
+
+def get_ukb_grm_plink_path(pop: str):
+    return f'{bucket}/results/misc/ukb.{pop}.for_grm.pruned.plink'
+
+
+def get_ukb_samples_file_path(pop: str):
+    return f'{bucket}/results/misc/ukb.{pop}.exomes.samples'
