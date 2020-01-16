@@ -3,6 +3,7 @@ import hail as hl
 bucket = 'gs://ukb-diverse-pops'
 REFERENCE_GENOME = 'GRCh37'
 CHROMOSOMES = list(map(str, range(1, 23))) + ['X', 'XY']
+POPS = ['AFR', 'EAS', 'CSA', 'MID', 'EUR', 'AMR']
 
 
 def get_ukb_meta_pop_tsv_path():
@@ -13,21 +14,11 @@ def get_ukb_meta():
     return hl.import_table(get_ukb_meta_pop_tsv_path(), key='s', impute=True)
 
 
-def filter_pop(mt, pop):
-    if pop != 'all': mt = mt.filter_cols(mt.pop == pop)
-    return mt
-
-
-def get_filtered_mt(pop: str = 'all'):
-    mt = hl.read_matrix_table('gs://ukb31063/ukb31063.genotype.mt')
-    meta_ht = get_ukb_meta()
-    mt = mt.annotate_cols(**meta_ht.key_by(s=hl.str(meta_ht.s))[mt.s])
-    return filter_pop(mt, pop)
-
-
 def get_ukb_pheno_mt(pop: str = 'all'):
     from .phenotypes import get_ukb_pheno_mt_path
-    path = get_ukb_pheno_mt_path()
-    mt = hl.read_matrix_table(path)
-    return filter_pop(mt, pop)
+    mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
+    mt = mt.annotate_rows(**get_ukb_meta()[mt.row_key])
+    if pop != 'all':
+        mt = mt.filter_rows(mt.pop == pop)
+    return mt
 
