@@ -22,14 +22,15 @@ icd_all = bind_rows(icd10key, icd9key) %>%
   ungroup %>%
   mutate(
     sex = recode(sex, Both = "both_sexes", Male = "males", Female = "females")
-  )
+  ) %>%
+  arrange(phecode)
 
 if (length(unique(icd_all$phecode)) != nrow(icd_all)) {
   stop("Inconsistent sex def.")
 }
 
 pheinfo = fread("./data/PHECODE_v1.2b1_INFO_20200109.txt", colClasses = "character", data.table = F)
-pheinfo2 = subset(pheinfo, phecode %in% icd_all$phecode)
+pheinfo2 = subset(pheinfo, phecode %in% icd_all$phecode) %>% arrange(phecode)
 
 # source: https://github.com/umich-cphds/createUKBphenome/blob/master/scripts/function.expandPhecodes.r
 expandPhecodes <- function(x,addIntegers=T){
@@ -63,8 +64,7 @@ expandPhecodes <- function(x,addIntegers=T){
     }
 }
 
-icd_all$exclude_phecodes =
-  map_chr(1:nrow(pheinfo2), function(p) {
+icd_all$exclude_phecodes = map_chr(1:nrow(pheinfo2), function(p) {
   phecode_remove <- ""
   phecode <- pheinfo2$phecode[p]
 
