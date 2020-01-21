@@ -9,10 +9,12 @@ ukb_imputed_info_ht_path = f'{bucket}/imputed/ukb_mfi_v3.ht'
 def get_sample_file(chromosome: str = '1'):
     if chromosome not in ('X', 'XY'):
         chromosome = 'autosomes'
+    elif not chromosome.startswith('chr'):
+        chromosome = f'chr{chromosome}'
     return f'gs://ukb31063/ukb31063.{chromosome}.sample'
 
 
-def get_ukb_imputed_data(chromosome: str = '1', variant_list: hl.Table = None, entry_fields = ('dosage', )):
+def get_ukb_imputed_data(chromosome: str = '1', variant_list: hl.Table = None, entry_fields = ('GP', )):
     if chromosome == 'all':
         chromosome = '{' + ','.join(map(str, range(1, 23))) + '}'
     add_args = {}
@@ -22,30 +24,29 @@ def get_ukb_imputed_data(chromosome: str = '1', variant_list: hl.Table = None, e
                           sample_file=get_sample_file(chromosome), **add_args)
 
 
-def get_filtered_mt(pop: str = 'all', imputed: bool = True, chrom: str = 'all', min_mac: int = 20):
+def get_filtered_mt(chrom: str = 'all', pop: str = 'all', imputed: bool = True, min_mac: int = 20, entry_fields = ('GP', )):
     if imputed:
         ht = hl.read_table(ukb_af_ht_path)
         if pop == 'all':
             ht = ht.filter(hl.any(lambda x: ht.af[x] * ht.an[x] >= min_mac, hl.literal(POPS)))
         else:
             ht = ht.filter(ht.af[pop] * ht.an[pop] >= min_mac)
-        mt = get_ukb_imputed_data(chrom, variant_list=ht)
+        mt = get_ukb_imputed_data(chrom, variant_list=ht, entry_fields=entry_fields)
     else:
         mt = hl.read_matrix_table('gs://ukb31063/ukb31063.genotype.mt')
-    meta_ht = get_ukb_meta()
-    mt = mt.annotate_cols(**meta_ht.key_by(s=hl.str(meta_ht.s))[mt.s])
 
+    covariates_ht = get_covariates()
+    hq_samples_ht = get_hq_samples()
+    meta_ht = get_ukb_meta()
+    mt = mt.annotate_cols(**meta_ht[mt.s])
+    # TODO: confirm that this is correct set
+    mt = mt.filter_cols(hl.is_defined(covariates_ht[mt.s]) & hl.is_defined(hq_samples_ht[mt.s]))
 
     if pop != 'all': mt = mt.filter_cols(mt.pop == pop)
     return mt
 
 
 ukb_af_ht_path = f'{bucket}/imputed/ukb_frequencies.ht'
-
-
-def get_hq_samples():
-    ht = hl.import_table('gs://ukb-diverse-pops/misc/ukb31063_samples_qc_FULL.txt', no_header=True)
-    return ht.key_by(s=ht.f0).drop('f0')
 
 
 def get_ukb_vep_path():
@@ -65,4 +66,4 @@ def get_ukb_grm_plink_path(pop: str):
 
 
 def get_ukb_samples_file_path(pop: str):
-    return f'{bucket}/results/misc/ukb.{pop}.exomes.samples'
+    return f'{bucket}/results/misc/ukb.{pop}.samples'

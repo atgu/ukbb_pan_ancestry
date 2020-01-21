@@ -54,6 +54,20 @@ def load_hesin_data(overwrite: bool = False):
     delivery_ht.write(get_hesin_delivery_ht_path(), overwrite)
 
 
+def add_white_noise_pheno(mt):
+    new_mt = mt.add_col_index()
+    new_mt = (new_mt.filter_cols(new_mt.col_idx == 0).drop('col_idx')
+              .key_cols_by(pheno='random', coding='random')
+              .annotate_cols(data_type='continuous', meaning='hl.rand_norm(seed=42)', path=''))
+    new_mt = new_mt.annotate_entries(both_sexes=hl.rand_norm(seed=42),
+                                     females=hl.or_missing(new_mt.sex == 0, hl.rand_norm(seed=43)),
+                                     males=hl.or_missing(new_mt.sex == 1, hl.rand_norm(mean=1, seed=44)))
+    new_mt = new_mt.annotate_cols(n_cases_both_sexes=hl.agg.count(),
+                                  n_cases_females=hl.agg.count_where(new_mt.sex == 0),
+                                  n_cases_males=hl.agg.count_where(new_mt.sex == 1))
+    return mt.union_cols(new_mt)
+
+
 def main(args):
     hl.init(log='/load_pheno.log')
     sexes = ('both_sexes_no_sex_specific', 'females', 'males')

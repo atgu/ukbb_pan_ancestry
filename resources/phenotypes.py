@@ -58,5 +58,5 @@ def get_gp_data_tsv_path(data_type: str = None):
     return f'gs://ukb31063/ukb31063.gp_{data_type}.20191008.txt'
 
 
-def get_phenotype_summary_tsv_path(data_type: str):
-    return f'{pheno_folder}/summary/phenos_{data_type}.tsv'
+def get_phenotype_summary_path(data_type: str, extension = 'ht'):
+    return f'{pheno_folder}/summary/phenos_{data_type}.{extension}'
