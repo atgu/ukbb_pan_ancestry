@@ -1,13 +1,44 @@
+#!/usr/bin/env python3
+
+__author__ = 'konradk'
+
 from gnomad_hail import *
 from ukb_common import *
 from ukbb_pan_ancestry import *
 
-temp_bucket = 'gs://ukbb-diverse-temp-30day'
-total_samples = 487409
 
+def main(args):
+    hl.init(default_reference='GRCh37')
+    pops = POPS
+    pops.remove('EUR')
 
-def main():
-    hl.init(default_reference='GRCh37', log='/pheno_agg.log')
+    if args.create_plink_file:
+        for pop in pops:
+            call_stats_ht = hl.read_table(get_ukb_af_ht_path(with_x = False))
+            mt = get_filtered_mt(pop=pop, imputed=False)
+            n_samples = mt.count_cols()
+            mt = filter_to_autosomes(mt)
+            callstats = call_stats_ht[mt.row_key]
+            mt = mt.filter_rows((callstats.an[pop] > 0.95 * n_samples) & (callstats.af[pop] > 0.01))
+
+            mt = mt.checkpoint(get_ukb_grm_mt_path(pop), _read_if_exists=not args.overwrite, overwrite=args.overwrite)
+            mt = mt.unfilter_entries()
+            ht = hl.ld_prune(mt.GT, r2=0.1)
+            ht = ht.checkpoint(get_ukb_grm_pruned_ht_path(pop), _read_if_exists=not args.overwrite, overwrite=args.overwrite)
+            mt = mt.filter_rows(hl.is_defined(ht[mt.row_key]))
+
+            if args.overwrite or not hl.hadoop_exists(f'{get_ukb_grm_plink_path(pop)}.bed'):
+                hl.export_plink(mt, get_ukb_grm_plink_path(pop))
+            print(pop)
+            mt = get_filtered_mt(chrom='22', pop=pop)
+            if args.overwrite or not hl.hadoop_exists(get_ukb_samples_file_path(pop)):
+                with hl.hadoop_open(get_ukb_samples_file_path(pop), 'w') as f:
+                    f.write('\n'.join(mt.s.collect()) + '\n')
+
+    if args.vep:
+        call_stats_ht = hl.read_table(get_ukb_af_ht_path())
+        ht = vep_or_lookup_vep(call_stats_ht)
+        ht.write(get_ukb_vep_path(), args.overwrite)
 
     if args.prepare_genotype_data:
         load_all_mfi_data().write(ukb_imputed_info_ht_path, args.overwrite)
@@ -51,11 +82,15 @@ if __name__ == '__main__':
     parser.add_argument('--pheno_summary', action='store_true')
     parser.add_argument('--prepare_genotype_data', action='store_true')
     parser.add_argument('--genotype_summary', action='store_true')
-    parser.add_argument('--overwrite', action='store_true')
+    parser.add_argument('--overwrite', help='Overwrite everything', action='store_true')
+    parser.add_argument('--create_plink_file', help='Overwrite everything', action='store_true')
+    parser.add_argument('--vep', help='Overwrite everything', action='store_true')
     parser.add_argument('--slack_channel', help='Send message to Slack channel/user', default='@konradjk')
     args = parser.parse_args()
 
     if args.slack_channel:
-        try_slack(args.slack_channel, main)
+        try_slack(args.slack_channel, main, args)
     else:
-        main()
+        main(args)
+
+
