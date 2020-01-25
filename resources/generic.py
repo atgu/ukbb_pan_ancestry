@@ -11,12 +11,17 @@ def get_hq_samples():
     return ht.key_by(s=ht.f0).drop('f0')
 
 
-def get_covariates_tsv_path():
-    return f'{bucket}/pca/non_eur_within_pop_pc_covs.txt.bgz'
+def get_age_sex_tsv_path():
+    return f'{bucket}/Phenotypes/uk_round2_allSamples_phenos_phesant.6148_5.tsv.gz'
 
 
-def get_covariates(key_type = hl.tstr):
-    return hl.import_table(get_covariates_tsv_path(), key='s', impute=True, types={'s': key_type})
+def get_covariates_ht_path():
+    return f'{bucket}/pca/non_eur_within_pop_pc_covs.ht'
+
+
+def get_covariates(key_type = hl.str):
+    ht = hl.read_table(get_covariates_ht_path())
+    return ht.key_by(s=key_type(ht.s))
 
 
 def get_ukb_meta_pop_tsv_path():

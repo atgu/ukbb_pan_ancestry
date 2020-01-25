@@ -26,7 +26,7 @@ def get_ukb_imputed_data(chromosome: str = '1', variant_list: hl.Table = None, e
 
 def get_filtered_mt(chrom: str = 'all', pop: str = 'all', imputed: bool = True, min_mac: int = 20, entry_fields = ('GP', )):
     if imputed:
-        ht = hl.read_table(ukb_af_ht_path)
+        ht = hl.read_table(get_ukb_af_ht_path())
         if pop == 'all':
             ht = ht.filter(hl.any(lambda x: ht.af[x] * ht.an[x] >= min_mac, hl.literal(POPS)))
         else:
@@ -37,16 +37,17 @@ def get_filtered_mt(chrom: str = 'all', pop: str = 'all', imputed: bool = True, 
 
     covariates_ht = get_covariates()
     hq_samples_ht = get_hq_samples()
-    meta_ht = get_ukb_meta()
-    mt = mt.annotate_cols(**meta_ht[mt.s])
     # TODO: confirm that this is correct set
     mt = mt.filter_cols(hl.is_defined(covariates_ht[mt.s]) & hl.is_defined(hq_samples_ht[mt.s]))
+    meta_ht = get_ukb_meta()
+    mt = mt.annotate_cols(**meta_ht[mt.s])
 
     if pop != 'all': mt = mt.filter_cols(mt.pop == pop)
     return mt
 
 
-ukb_af_ht_path = f'{bucket}/imputed/ukb_frequencies.ht'
+def get_ukb_af_ht_path(with_x = True):
+    return f'{bucket}/imputed/ukb_frequencies{"_with_x" if with_x else ""}.ht'
 
 
 def get_ukb_vep_path():
