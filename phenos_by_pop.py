@@ -23,9 +23,14 @@ def main():
         mt = mt.annotate_cols(**meta_ht[mt.col_key])
         ht = mt.annotate_rows(af=hl.agg.group_by(mt.pop, hl.agg.mean(mt.dosage)),
                               an=hl.agg.group_by(mt.pop, hl.agg.count_where(hl.is_defined(mt.dosage)))).rows()
-        ht = ht.checkpoint(ukb_af_ht_path, args.overwrite, _read_if_exists=not args.overwrite)
+        ht = ht.checkpoint(get_ukb_af_ht_path(False), args.overwrite, _read_if_exists=not args.overwrite)
 
-        ht = hl.read_table(ukb_af_ht_path)
+        mt = get_ukb_imputed_data('X', variant_list=variants, entry_fields=('dosage', ))
+        mt = mt.annotate_cols(**meta_ht[mt.col_key])
+        ht_x = mt.annotate_rows(af=hl.agg.group_by(mt.pop, hl.agg.mean(mt.dosage)),
+                              an=hl.agg.group_by(mt.pop, hl.agg.count_where(hl.is_defined(mt.dosage)))).rows()
+        ht = ht.union(ht_x)
+        ht = ht.checkpoint(get_ukb_af_ht_path(), args.overwrite, _read_if_exists=not args.overwrite)
 
         print(ht.aggregate(hl.struct(
             # hist=hl.agg.hist(hl.sum(ht.an.values()), 0, total_samples, 10),  # No missing data
