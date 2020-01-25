@@ -228,7 +228,75 @@ bind_pops <- afr %>%
 
 write.table(bind_pops, 'non_eur_within_pop_pc_covs.txt', quote=F, row.names=F, sep='\t')
 
+plot_pca_density <- function(dataset, first_pc, second_pc) {
+  pc_biplot <- ggplot(dataset, aes_string(x=first_pc, y=second_pc)) +
+    geom_hex(bins=50) +
+    scale_fill_gradientn(trans = "log", breaks=c(1,20,400,8000,163000), name='Count',
+                         colours = rev(brewer.pal(5,'Spectral'))) +
+    theme_classic()
+  return(pc_biplot)
+}
+
+pop_ellipse <- function(df, num_ellipses) {
+  # get mean and SD of each PC among each pop
+  pc_nams <- paste("PC",1:10,sep="")
+  mean_pcs <- colMeans(df[,pc_nams])
+  sd_pcs <- apply(df[,pc_nams],2,sd)
+  # compute centroid distance for each individual
+  centroid_dist <- rep(0,nrow(df))
+  for(i in 1:num_ellipses) {
+    centroid_dist <- centroid_dist + (df[,pc_nams[i]]-mean_pcs[i])^2/(sd_pcs[i]^2)
+  }
+  pop_dist <- df %>%
+    mutate(centroid_dist=centroid_dist)
+  return(pop_dist)
+}
+
+pop_centroid <- function(ind_dist, cutpoint0, cutpoint1) {
+  pop_cut <- subset(ind_dist, centroid_dist < cutpoint0)
+  p_centroid <- ggplot(pop_cut, aes(x=centroid_dist)) + 
+    geom_histogram(bins=50) + 
+    labs(title=paste0('Sample size: ', nrow(subset(ind_dist, centroid_dist < cutpoint0)), ' -> ', nrow(subset(ind_dist, centroid_dist < cutpoint1)))) + 
+    geom_vline(xintercept=cutpoint1) +
+    theme_bw()
+  return(list(p=p_centroid, pop_cut=pop_cut))
+}
+
+save_filt_plots <- function(pop_name, pop_dist, cutpoint0, cutpoint1) {
+  p_centroid0 = pop_centroid(pop_dist, cutpoint0, cutpoint1)
+  ggsave(paste0(pop_name, '_within_pop_centroid_nofilt.pdf'), p_centroid0$p, height=7, width=7)
+  p2 <- plot_pca_density(subset(pop_dist, centroid_dist < cutpoint0), 'PC1', 'PC2')
+  ggsave(paste0(pop_name, '_within_pop_nofilt_pc1_2.png'), p2)
+  p3 <- plot_pca_density(subset(pop_dist, centroid_dist < cutpoint0), 'PC3', 'PC4')
+  ggsave(paste0(pop_name, '_within_pop_nofilt_pc3_4.png'), p3)
+  p4 <- plot_pca_density(subset(pop_dist, centroid_dist < cutpoint0), 'PC5', 'PC6')
+  ggsave(paste0(pop_name, '_within_pop_nofilt_pc5_6.png'), p4)
+  p_centroid1 = pop_centroid(pop_dist, cutpoint1, cutpoint1)
+  ggsave(paste0(pop_name, '_within_pop_centroid_filt.pdf'), p_centroid1$p, height=7, width=7)
+  p6 <- plot_pca_density(subset(pop_dist, centroid_dist < cutpoint1), 'PC1', 'PC2')
+  ggsave(paste0(pop_name, '_within_pop_filt_pc1_2.png'), p6)
+  p7 <- plot_pca_density(subset(pop_dist, centroid_dist < cutpoint1), 'PC3', 'PC4')
+  ggsave(paste0(pop_name, '_within_pop_filt_pc3_4.png'), p7)
+  p8 <- plot_pca_density(subset(pop_dist, centroid_dist < cutpoint1), 'PC5', 'PC6')
+  ggsave(paste0(pop_name, '_within_pop_filt_pc5_6.png'), p8)
+  my_plot=plot_grid(p_centroid0$p, p2, p3, p4, p_centroid1$p, p6, p7, p8, nrow=2)
+  save_plot(paste0(pop_name, '_within_pop.pdf'), my_plot, base_height=10, base_width = 18)
+  return(p_centroid)
+}
+
+save_filt_plots('csa', csa_dist <- pop_ellipse(csa, 3), 1000, 3) #3, 3
+save_filt_plots('afr', afr_dist <- pop_ellipse(afr, 3), 1000, 2)
+save_filt_plots('eas', eas_dist <- pop_ellipse(eas, 3), 1000, 7.5)
+save_filt_plots('amr', amr_dist <- pop_ellipse(amr, 3), 1000, 4.8)
+save_filt_plots('mid', mid_dist <- pop_ellipse(mid, 5), 1000, 15)
+
+ggplot(subset(ind_dist, centroid_dist < cutpoint), aes(x=centroid_dist)) + geom_histogram(bins=50) + labs(title=nrow(subset(ind_dist, centroid_dist < cutpoint)))
+
+pc1_2_dens + geom_smooth(method='lm')
+
+dim(subset(csa, PC2 < .36*PC1+.002))
+
 ggplot(csa, aes(x=PC1, y=PC2, color=rel)) +
-  geom_point()
+  geom_smooth(method='lm')
 
 

@@ -71,7 +71,6 @@ def get_relatedness_path(pop, unrelated: bool = False, extension: str = 'mt'):
     return f'gs://ukb-diverse-pops/pca/relatedness/{pop}_{"un" if unrelated else ""}rel{extension}'
 
 
-
 def project_individuals(pca_loadings, project_mt, project_prefix):
     """
     Project samples into predefined PCA space
@@ -80,14 +79,10 @@ def project_individuals(pca_loadings, project_mt, project_prefix):
     :param project_prefix: directory and filename prefix for where to put PCA projection output
     :return:
     """
-    # pca_scores = hl.read_table(ref_pcs + 'scores.ht')
-
     print(f'Projecting population PCs')
     mt_projections = pc_project(project_mt, pca_loadings)
     mt_projections = mt_projections.transmute(**{f'PC{i}': mt_projections.scores[i - 1] for i in range(1, 21)})
     mt_projections.export(project_prefix + '_scores.txt.bgz')
-    # hl.read_table('gs://armartin/pigmentation/pca/ukbb_ref_scores.ht').export(
-    #     'gs://armartin/pigmentation/pca/ukbb_ref_scores.txt.bgz')
 
 
 def main(args):
@@ -129,32 +124,42 @@ def main(args):
         Compute PCA in each UKBB population (unrelateds), project reference individuals and relateds into PCA space
         1. Filter UKBB to individuals in continental population
         2. Run PC-relate on these individuals
+        # New
+        2.5 Filter to pruned set of individuals
+        #
         3. Filter UKBB population to unrelated individuals
         4. Run PCA on UKBB unrelateds within population
         5. Project relateds
         """
 
-        for pop in ['EUR']:  # POPS
-            mt = hl.read_matrix_table(get_ukb_grm_mt_path(pop))
-            pruned_ht = hl.read_table(get_ukb_grm_pruned_ht_path(pop))
-            mt = mt.filter_rows(hl.is_defined(pruned_ht[mt.row_key]))
-
-            # run PC-relate
-            relatedness_ht = hl.pc_relate(mt.GT, min_individual_maf=0.05, k=10, min_kinship=0.05, statistics='kin2',
-                                          block_size=4096 if pop == 'EUR' else 512)
-            relatedness_ht.write(get_relatedness_path(pop, extension='ht'), args.overwrite)
-            relatedness_ht = hl.read_table(get_relatedness_path(pop, extension='ht'))
-
-            # identify individuals in pairs to remove
-            related_samples_to_remove = hl.maximal_independent_set(relatedness_ht.i, relatedness_ht.j, False)
-            mt_unrel = mt.filter_cols(hl.is_defined(related_samples_to_remove[mt.col_key]), keep=False)
-            mt_rel = mt.filter_cols(hl.is_defined(related_samples_to_remove[mt.col_key]), keep=True)
-
-            mt_unrel.write(get_relatedness_path(pop, True, 'mt'), args.overwrite)
-            mt_rel.write(get_relatedness_path(pop, extension='mt'), args.overwrite)
+        for pop in ['AFR', 'AMR', 'CSA', 'EAS', 'MID']:  # POPS
+            # mt = hl.read_matrix_table(get_ukb_grm_mt_path(pop))
+            # pruned_ht = hl.read_table(get_ukb_grm_pruned_ht_path(pop))
+            # mt = mt.filter_rows(hl.is_defined(pruned_ht[mt.row_key]))
+            #
+            # # run PC-relate
+            # relatedness_ht = hl.pc_relate(mt.GT, min_individual_maf=0.05, k=10, min_kinship=0.05, statistics='kin2',
+            #                               block_size=4096 if pop == 'EUR' else 512)
+            # relatedness_ht.write(get_relatedness_path(pop, extension='ht'), args.overwrite)
+            # relatedness_ht = hl.read_table(get_relatedness_path(pop, extension='ht'))
+            #
+            # # identify individuals in pairs to remove
+            # related_samples_to_remove = hl.maximal_independent_set(relatedness_ht.i, relatedness_ht.j, False)
+            #
+            #
+            # mt_unrel = mt.filter_cols(hl.is_defined(related_samples_to_remove[mt.col_key]), keep=False)
+            # mt_rel = mt.filter_cols(hl.is_defined(related_samples_to_remove[mt.col_key]), keep=True)
+            #
+            # mt_unrel.write(get_relatedness_path(pop, True, 'mt'), args.overwrite)
+            # mt_rel.write(get_relatedness_path(pop, extension='mt'), args.overwrite)
 
             mt_unrel = hl.read_matrix_table(get_relatedness_path(pop, True, 'mt'))
             mt_rel = hl.read_matrix_table(get_relatedness_path(pop, extension='mt'))
+
+            pruned_inds = hl.import_table(args.dirname + '/ukb_diverse_pops_pruned.tsv.bgz', key='s',
+                                          types={'s': hl.tstr})  # TODO edit path
+            mt_rel = mt_rel.filter_cols(hl.is_defined(pruned_inds[mt_rel.col_key]))
+            mt_unrel = mt_unrel.filter_cols(hl.is_defined(pruned_inds[mt_unrel.col_key]))
 
             run_pca(mt_unrel, args.out_prefix + pop + '_')
             pca_loadings = hl.read_table(f'{args.out_prefix}{pop}_loadings.ht')

@@ -53,9 +53,7 @@ plot_pca_density <- function(dataset, first_pc, second_pc) {
     geom_hex(bins=50) +
     scale_fill_gradientn(trans = "log", breaks=c(1,20,400,8000,163000), name='Count',
                          colours = rev(brewer.pal(5,'Spectral'))) +
-    #guides(color=guide_legend(override.aes = list(alpha=1))) +
     theme_classic()
-    #scale_color_manual(values=brewer_vec, name='Population')
   return(pc_biplot)
 }
 
