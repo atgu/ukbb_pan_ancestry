@@ -4,7 +4,8 @@ pheno_folder = f'{bucket}/Phenotypes/Everyone'
 
 
 def get_phesant_all_phenos_tsv_path(sex: str):
-    return f'{pheno_folder}/PHESANT_final_output/January_2020/phesant_output_multi_ancestry_combined_{sex}.tsv.gz'
+    extension = '.gz' if sex != 'both_sexes_no_sex_specific' else ''
+    return f'{pheno_folder}/PHESANT_final_output/January_2020_plus_pharma_and_updated_codings/phesant_output_multi_ancestry_combined_{sex}.tsv{extension}'
     # if sex == 'both_sexes':
     #     return f'{pheno_folder}/uk_round2_allSamples_phenos_phesant_QC.{{}}.tsv.gz'
     # else:
@@ -12,7 +13,7 @@ def get_phesant_all_phenos_tsv_path(sex: str):
 
 
 def get_ukb_phesant_summary_tsv_path(sex: str = 'both_sexes_no_sex_specific'):
-    return f'{pheno_folder}/PHESANT_final_output/January_2020/phesant_output_multi_ancestry_combined_{sex}_summary.tsv'
+    return f'{pheno_folder}/PHESANT_final_output/January_2020_plus_pharma_and_updated_codings/phesant_output_multi_ancestry_combined_{sex}_summary.tsv'
 
 
 phesant_biomarker_phenotypes_tsv_path = f'{pheno_folder}/uk_round2_allSamples_biomarkers_phesant_QC.tsv.gz'
