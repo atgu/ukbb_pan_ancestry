@@ -65,6 +65,49 @@ def add_white_noise_pheno(mt):
     new_mt = new_mt.annotate_cols(n_cases_both_sexes=hl.agg.count(),
                                   n_cases_females=hl.agg.count_where(new_mt.sex == 0),
                                   n_cases_males=hl.agg.count_where(new_mt.sex == 1))
+
+    new_mt2 = mt.add_col_index()
+    pop_dict = new_mt2.aggregate_rows(
+        hl.dict(hl.zip_with_index(hl.array(hl.agg.collect_as_set(new_mt2.pop)), index_first=False)),
+        _localize=False)
+    new_mt2 = (new_mt2.filter_cols(new_mt2.col_idx == 0).drop('col_idx')
+              .key_cols_by(pheno='random', coding='random_strat')
+              .annotate_cols(data_type='continuous', meaning='hl.rand_norm(seed=42)', path=''))
+    new_mt2 = new_mt2.annotate_entries(both_sexes=hl.rand_norm(mean=pop_dict[new_mt2.pop], seed=42),
+                                     females=hl.or_missing(new_mt2.sex == 0, hl.rand_norm(mean=pop_dict[new_mt2.pop], seed=43)),
+                                     males=hl.or_missing(new_mt2.sex == 1, hl.rand_norm(mean=pop_dict[new_mt2.pop] + 1, seed=44)))
+    new_mt2 = new_mt2.annotate_cols(n_cases_both_sexes=hl.agg.count(),
+                                  n_cases_females=hl.agg.count_where(new_mt2.sex == 0),
+                                  n_cases_males=hl.agg.count_where(new_mt2.sex == 1))
+
+    return mt.union_cols(new_mt).union_cols(new_mt2)
+
+
+def irnt(he: hl.expr.Expression, output_loc: str = 'irnt'):
+    ht = he._indices.source
+    n_rows = ht.count()
+    ht = ht.order_by(he).add_index()
+    return ht.annotate(**{output_loc: hl.qnorm((ht.idx + 0.5) / n_rows)})
+
+
+def add_whr(mt):
+    new_mt = mt.filter_cols(hl.set({'48', '49'}).contains(mt.pheno) & (mt.coding == 'raw'))
+    new_ht = new_mt.annotate_rows(whr=hl.agg.sum(new_mt.both_sexes * hl.int(new_mt.pheno == '48')) /
+                                      hl.agg.sum(new_mt.both_sexes * hl.int(new_mt.pheno == '49'))
+                                  ).rows()
+    new_ht = irnt(new_ht.whr).key_by('userId')
+    new_mt = new_mt.annotate_rows(irnt=new_ht[new_mt.row_key].irnt)
+    new_mt = new_mt.filter_cols(new_mt.pheno == '48')
+    new_mt = new_mt.annotate_entries(both_sexes=new_mt.irnt,
+                                     females=hl.or_missing(new_mt.sex == 0, new_mt.irnt),
+                                     males=hl.or_missing(new_mt.sex == 1, new_mt.irnt))
+    new_mt = (new_mt
+              .key_cols_by(pheno='whr', coding='whr')
+              .annotate_cols(data_type='continuous', meaning='pheno 48 / pheno 49', path=''))
+    new_mt = new_mt.annotate_cols(n_cases_both_sexes=hl.agg.count_where(hl.is_defined(new_mt.both_sexes)),
+                                  n_cases_females=hl.agg.count_where(hl.is_defined(new_mt.females)),
+                                  n_cases_males=hl.agg.count_where(hl.is_defined(new_mt.males)))
+
     return mt.union_cols(new_mt)
 
 
@@ -82,7 +125,6 @@ def main(args):
         icd9 = hl.read_matrix_table(get_ukb_pheno_mt_path('icd9')).annotate_cols(icd_version='icd9')
         icd9 = icd9.select_entries('primary_codes', 'secondary_codes', external_codes=hl.null(hl.tbool), cause_of_death_codes=hl.null(hl.tbool), any_codes=icd9.any_codes)
         icd10.union_cols(icd9).write(get_ukb_pheno_mt_path('icd_all'), args.overwrite)
-        # read_covariate_data(get_pre_phesant_data_path()).write(get_ukb_covariates_ht_path(), args.overwrite)
 
         for sex in sexes:
             ht = hl.import_table(get_phesant_all_phenos_tsv_path(sex), impute=True, min_partitions=100, missing='', key='userId', quote='"', force_bgz=True)
@@ -105,11 +147,32 @@ def main(args):
         location = {'categorical': 'full', 'continuous': 'full'}
         pheno_file_dict = {data_type: hl.read_matrix_table(get_ukb_pheno_mt_path(data_type, location.get(data_type, 'both_sexes_no_sex_specific')))
                            for data_type in data_types}
-        cov_ht = hl.import_table(get_ukb_meta_pop_tsv_path(), key='s', impute=True)
-        cov_ht = cov_ht.annotate(sex=pheno_file_dict['biomarkers'].rows()[cov_ht.key].sex)
-        combine_pheno_files_multi_sex(pheno_file_dict, cov_ht).write(get_ukb_pheno_mt_path(), args.overwrite)
+        cov_ht = get_covariates(hl.int32).persist()  # TODO: regenerate covariates to get pop in there
+        mt = combine_pheno_files_multi_sex(pheno_file_dict, cov_ht)
+        mt = add_white_noise_pheno(mt)
+        mt = add_whr(mt)
+        mt.write(get_ukb_pheno_mt_path(), args.overwrite)
         hl.read_matrix_table(get_ukb_pheno_mt_path()).cols().export(f'{pheno_folder}/all_pheno_summary.txt.bgz')
 
+        mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
+        # meta_ht = hl.import_table(get_ukb_meta_pop_tsv_path(), impute=True, key='s')  # TODO: remove once EUR is ready
+        # mt = mt.annotate_rows(**meta_ht[mt.row_key])
+
+        ht = mt.group_rows_by('pop').aggregate(
+            stats=hl.agg.stats(mt.both_sexes),
+            n_cases_by_pop=hl.cond(mt.data_type == 'continuous',
+                                   hl.agg.count_where(hl.is_defined(mt.both_sexes)),
+                                   hl.int64(hl.agg.sum(mt.both_sexes)))
+        ).entries()
+        ht = ht.checkpoint(get_phenotype_summary_path('full'), overwrite=args.overwrite, _read_if_exists=not args.overwrite)
+        ht.flatten().export(get_phenotype_summary_path('full', 'tsv'))
+
+        MIN_CASES = 200
+        ht = hl.read_table(get_phenotype_summary_path('full'))
+        ht = ht.filter(ht.n_cases_by_pop >= MIN_CASES)
+        ht.group_by('pop').aggregate(n_phenos=hl.agg.count()).show()
+
+    if args.pairwise_correlations:
         mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
         make_correlation_ht(mt).write(pairwise_correlation_ht_path, args.overwrite)
         hl.read_table(pairwise_correlation_ht_path).flatten().export(pairwise_correlation_ht_path.replace('.ht', '.txt.bgz'))
@@ -121,6 +184,7 @@ if __name__ == '__main__':
     parser.add_argument('--overwrite', help='Overwrite everything', action='store_true')
     parser.add_argument('--load_data', help='Load data', action='store_true')
     parser.add_argument('--combine_data', help='Load data', action='store_true')
+    parser.add_argument('--pairwise_correlations', help='Load data', action='store_true')
     parser.add_argument('--slack_channel', help='Send message to Slack channel/user', default='@konradjk')
     args = parser.parse_args()
 
