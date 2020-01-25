@@ -158,6 +158,8 @@ def main(args):
             mt_unrel.write(get_relatedness_path(pop, True, 'mt'), args.overwrite)
             mt_rel.write(get_relatedness_path(pop, extension='mt'), args.overwrite)
 
+    if args.ukb_prune_pca_project:
+        for pop in POPS:
             mt_unrel = hl.read_matrix_table(get_relatedness_path(pop, True, 'mt'))
             mt_rel = hl.read_matrix_table(get_relatedness_path(pop, extension='mt'))
 
@@ -208,6 +210,7 @@ if __name__ == '__main__':
     parser.add_argument('--load_ukbb', action='store_true')
     parser.add_argument('--intersect_ref', action='store_true')
     parser.add_argument('--pca_project', action='store_true')
+    parser.add_argument('--ukb_prune_pca_project', action='store_true')
 
     parser.add_argument('--continental_pca', action='store_true')
     parser.add_argument('--ukbb_pop_pca', action='store_true')
