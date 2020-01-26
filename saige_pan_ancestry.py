@@ -52,6 +52,7 @@ def main(args):
     chromosomes = list(map(str, range(1, 23))) + ['X']
     reference = 'GRCh37'
     chrom_lengths = hl.get_reference(reference).lengths
+    iteration = 1
 
     # if args.local_test:
     #     backend = pipeline.LocalBackend(gsa_key_file='/Users/konradk/.hail/ukb-diverse-pops.json')
@@ -60,7 +61,8 @@ def main(args):
     p = pipeline.Pipeline(name='saige_pan_ancestry', backend=backend, default_image=SAIGE_DOCKER_IMAGE,
                           default_storage='500Mi', default_cpu=n_threads)
 
-    for pop in pops:
+    for pop in POPS:
+        logger.info(f'Setting up {pop}...')
         chunk_size = int(1e6) if pop == 'EUR' else int(5e6)
         phenos_to_run = get_phenos_to_run(pop, 1 if args.local_test else None, not args.run_all_phenos)
         logger.info(f'Got {len(phenos_to_run)} phenotypes...')
@@ -107,7 +109,7 @@ def main(args):
             else:
                 if args.skip_any_null_models: continue
                 fit_null_task = fit_null_glmm(p, null_glmm_root, pheno_exports[pheno_coding_trait], trait_type, covariates,
-                                              get_ukb_grm_plink_path(pop), SAIGE_DOCKER_IMAGE, n_threads=n_threads)
+                                              get_ukb_grm_plink_path(pop, iteration), SAIGE_DOCKER_IMAGE, n_threads=n_threads)
                 fit_null_task.attributes.update({'pop': pop, 'pheno': pheno})
                 model_file = fit_null_task.null_glmm.rda
                 variance_ratio_file = fit_null_task.null_glmm[f'{analysis_type}.varianceRatio.txt']
@@ -180,7 +182,7 @@ def main(args):
                     vcf_file = vcfs[interval]
                     results_path = f'{pheno_results_dir}/result_{pheno}_{chromosome}_{str(start_pos).zfill(9)}'
                     if overwrite_results or f'{results_path}.single_variant.txt' not in results_already_created:
-                        samples_file = p.read_input(get_ukb_samples_file_path(pop))
+                        samples_file = p.read_input(get_ukb_samples_file_path(pop, iteration))
                         saige_task = run_saige(p, results_path, model_file, variance_ratio_file, vcf_file, samples_file,
                                                SAIGE_DOCKER_IMAGE, trait_type=trait_type, use_bgen=use_bgen,
                                                chrom=chromosome)
