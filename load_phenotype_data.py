@@ -147,16 +147,12 @@ def main(args):
         location = {'categorical': 'full', 'continuous': 'full'}
         pheno_file_dict = {data_type: hl.read_matrix_table(get_ukb_pheno_mt_path(data_type, location.get(data_type, 'both_sexes_no_sex_specific')))
                            for data_type in data_types}
-        cov_ht = get_covariates(hl.int32).persist()  # TODO: regenerate covariates to get pop in there
+        cov_ht = get_covariates(hl.int32).persist()
         mt = combine_pheno_files_multi_sex(pheno_file_dict, cov_ht)
         mt = add_white_noise_pheno(mt)
         mt = add_whr(mt)
-        mt.write(get_ukb_pheno_mt_path(), args.overwrite)
-        hl.read_matrix_table(get_ukb_pheno_mt_path()).cols().export(f'{pheno_folder}/all_pheno_summary.txt.bgz')
-
-        mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
-        # meta_ht = hl.import_table(get_ukb_meta_pop_tsv_path(), impute=True, key='s')  # TODO: remove once EUR is ready
-        # mt = mt.annotate_rows(**meta_ht[mt.row_key])
+        mt = mt.checkpoint(get_ukb_pheno_mt_path(), args.overwrite, _read_if_exists=not args.overwrite)
+        mt.cols().export(f'{pheno_folder}/all_pheno_summary.txt.bgz')
 
         ht = mt.group_rows_by('pop').aggregate(
             stats=hl.agg.stats(mt.both_sexes),
@@ -168,7 +164,6 @@ def main(args):
         ht.flatten().export(get_phenotype_summary_path('full', 'tsv'))
 
         MIN_CASES = 200
-        ht = hl.read_table(get_phenotype_summary_path('full'))
         ht = ht.filter(ht.n_cases_by_pop >= MIN_CASES)
         ht.group_by('pop').aggregate(n_phenos=hl.agg.count()).show()
 
