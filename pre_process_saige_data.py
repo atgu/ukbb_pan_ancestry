@@ -9,36 +9,6 @@ from ukbb_pan_ancestry import *
 
 def main(args):
     hl.init(default_reference='GRCh37')
-    pops = POPS
-    pops.remove('EUR')
-
-    if args.create_plink_file:
-        for pop in pops:
-            call_stats_ht = hl.read_table(get_ukb_af_ht_path(with_x = False))
-            mt = get_filtered_mt(pop=pop, imputed=False)
-            n_samples = mt.count_cols()
-            mt = filter_to_autosomes(mt)
-            callstats = call_stats_ht[mt.row_key]
-            mt = mt.filter_rows((callstats.an[pop] > 0.95 * n_samples) & (callstats.af[pop] > 0.01))
-
-            mt = mt.checkpoint(get_ukb_grm_mt_path(pop), _read_if_exists=not args.overwrite, overwrite=args.overwrite)
-            mt = mt.unfilter_entries()
-            ht = hl.ld_prune(mt.GT, r2=0.1)
-            ht = ht.checkpoint(get_ukb_grm_pruned_ht_path(pop), _read_if_exists=not args.overwrite, overwrite=args.overwrite)
-            mt = mt.filter_rows(hl.is_defined(ht[mt.row_key]))
-
-            if args.overwrite or not hl.hadoop_exists(f'{get_ukb_grm_plink_path(pop)}.bed'):
-                hl.export_plink(mt, get_ukb_grm_plink_path(pop))
-            print(pop)
-            mt = get_filtered_mt(chrom='22', pop=pop)
-            if args.overwrite or not hl.hadoop_exists(get_ukb_samples_file_path(pop)):
-                with hl.hadoop_open(get_ukb_samples_file_path(pop), 'w') as f:
-                    f.write('\n'.join(mt.s.collect()) + '\n')
-
-    if args.vep:
-        call_stats_ht = hl.read_table(get_ukb_af_ht_path())
-        ht = vep_or_lookup_vep(call_stats_ht)
-        ht.write(get_ukb_vep_path(), args.overwrite)
 
     if args.prepare_genotype_data:
         load_all_mfi_data().write(ukb_imputed_info_ht_path, args.overwrite)
@@ -75,6 +45,38 @@ def main(args):
             number_run_sites_above_mac_20=hl.agg.sum(hl.sum(hl.map(lambda x: hl.int(ht.af[x] * ht.an[x] >= 20), hl.literal(POPS))))
         )))
 
+    if args.vep:
+        call_stats_ht = hl.read_table(get_ukb_af_ht_path())
+        ht = vep_or_lookup_vep(call_stats_ht)
+        ht.write(get_ukb_vep_path(), args.overwrite)
+
+    if args.create_plink_file:
+        iteration = 1
+        for pop in POPS:
+            call_stats_ht = hl.read_table(get_ukb_af_ht_path(with_x = False))
+            mt = get_filtered_mt(pop=pop, imputed=False)
+            n_samples = mt.count_cols()
+            print(f'Got {n_samples} samples for {pop}...')
+            mt = filter_to_autosomes(mt)
+            callstats = call_stats_ht[mt.row_key]
+            mt = mt.filter_rows(callstats.af[pop] > 0.01)
+
+            mt = mt.checkpoint(get_ukb_grm_mt_path(pop, iteration), _read_if_exists=not args.overwrite, overwrite=args.overwrite)
+            mt = mt.unfilter_entries()
+            if not args.omit_ld_prune:
+                ht = hl.ld_prune(mt.GT, r2=0.1)
+                ht.write(get_ukb_grm_pruned_ht_path(pop), overwrite=args.overwrite)
+            ht = hl.read_table(get_ukb_grm_pruned_ht_path(pop))
+            mt = mt.filter_rows(hl.is_defined(ht[mt.row_key]))
+
+            if args.overwrite or not hl.hadoop_exists(f'{get_ukb_grm_plink_path(pop, iteration)}.bed'):
+                hl.export_plink(mt, get_ukb_grm_plink_path(pop, iteration))
+
+            mt = get_filtered_mt(chrom='22', pop=pop)
+            if args.overwrite or not hl.hadoop_exists(get_ukb_samples_file_path(pop, iteration)):
+                with hl.hadoop_open(get_ukb_samples_file_path(pop, iteration), 'w') as f:
+                    f.write('\n'.join(mt.s.collect()) + '\n')
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -83,6 +85,7 @@ if __name__ == '__main__':
     parser.add_argument('--prepare_genotype_data', action='store_true')
     parser.add_argument('--genotype_summary', action='store_true')
     parser.add_argument('--overwrite', help='Overwrite everything', action='store_true')
+    parser.add_argument('--omit_ld_prune', help='Overwrite everything', action='store_true')
     parser.add_argument('--create_plink_file', help='Overwrite everything', action='store_true')
     parser.add_argument('--vep', help='Overwrite everything', action='store_true')
     parser.add_argument('--slack_channel', help='Send message to Slack channel/user', default='@konradjk')

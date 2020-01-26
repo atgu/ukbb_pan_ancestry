@@ -54,17 +54,20 @@ def get_ukb_vep_path():
     return f'{bucket}/results/misc/ukb.vep.ht'
 
 
-def get_ukb_grm_mt_path(pop: str):
-    return f'{bucket}/results/misc/ukb.{pop}.for_grm.mt'
+def get_ukb_grm_mt_path(pop: str, data_iteration: int = 0):
+    suffix = f'.{data_iteration}' if data_iteration else ""
+    return f'{bucket}/results/misc/ukb.{pop}.for_grm{suffix}.mt'
 
 
 def get_ukb_grm_pruned_ht_path(pop: str):
     return f'{bucket}/results/misc/ukb.{pop}.for_grm.pruned.ht'
 
 
-def get_ukb_grm_plink_path(pop: str):
-    return f'{bucket}/results/misc/ukb.{pop}.for_grm.pruned.plink'
+def get_ukb_grm_plink_path(pop: str, data_iteration: int = 0):
+    suffix = f'.{data_iteration}' if data_iteration else ""
+    return f'{bucket}/results/misc/ukb.{pop}.for_grm{suffix}.pruned.plink'
 
 
-def get_ukb_samples_file_path(pop: str):
-    return f'{bucket}/results/misc/ukb.{pop}.samples'
+def get_ukb_samples_file_path(pop: str, data_iteration: int = 0):
+    suffix = f'.{data_iteration}' if data_iteration else ""
+    return f'{bucket}/results/misc/ukb.{pop}{suffix}.samples'
