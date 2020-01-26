@@ -167,11 +167,10 @@ def main(args):
             mt_rel = mt_rel.filter_cols(hl.is_defined(pruned_inds[mt_rel.col_key]))
             mt_unrel = mt_unrel.filter_cols(hl.is_defined(pruned_inds[mt_unrel.col_key]))
 
-            run_pca(mt_unrel, get_relatedness_path(pop, extension='') + '.', args.overwrite)
-            pca_loadings = hl.read_table(f'{args.out_prefix}{pop}_loadings.ht')
+            run_pca(mt_unrel, get_relatedness_path(pop, unrelated=True, extension='') + '.', args.overwrite)
+            pca_loadings = hl.read_table(get_relatedness_path(pop, unrelated=True, extension='loadings.ht'))
             ht = project_individuals(pca_loadings, mt_rel)
             ht.write(get_relatedness_path(pop, extension='scores_projected.ht'), args.overwrite)
-
 
     if args.generate_covariates:
         hts = []
