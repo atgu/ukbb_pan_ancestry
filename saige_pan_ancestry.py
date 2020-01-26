@@ -2,6 +2,9 @@
 
 __author__ = 'konradk'
 
+import logging
+logging.basicConfig(format="%(levelname)s (%(name)s %(lineno)s): %(message)s", level='INFO', filename='saige_pipeline.log')
+
 from ukb_common import *
 import time
 
@@ -9,19 +12,16 @@ from gnomad_hail import *
 from ukbb_pan_ancestry import *
 from ukb_common.utils.saige_pipeline import *
 
-logging.basicConfig(level='INFO')
+logger = logging.getLogger("saige_pan_ancestry")
+logger.addHandler(logging.StreamHandler(sys.stderr))
 bucket = 'gs://ukb-diverse-pops'
 root = f'{bucket}/results'
 
 MIN_CASES = 200
 
-HAIL_DOCKER_IMAGE = 'gcr.io/ukbb-diversepops-neale/hail_utils:2.6'
+HAIL_DOCKER_IMAGE = 'gcr.io/ukbb-diversepops-neale/hail_utils:2.8'
 SAIGE_DOCKER_IMAGE = 'wzhou88/saige:0.36.3'
 QQ_DOCKER_IMAGE = 'konradjk/saige_qq:0.2'
-
-# pops = ('AFR', 'CSA')
-pops = POPS
-pops.remove('EUR')
 
 
 def get_phenos_to_run(pop: str, limit: int = None, pilot: bool = False):
