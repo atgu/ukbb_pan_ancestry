@@ -163,8 +163,7 @@ def main(args):
             mt_unrel = hl.read_matrix_table(get_relatedness_path(pop, True, 'mt'))
             mt_rel = hl.read_matrix_table(get_relatedness_path(pop, extension='mt'))
 
-            pruned_inds = hl.import_table(args.dirname + '/ukb_diverse_pops_pruned.tsv.bgz', key='s',
-                                          types={'s': hl.tstr})  # TODO edit path
+            pruned_inds = hl.import_table(get_pruned_tsv_path(), key='s')
             mt_rel = mt_rel.filter_cols(hl.is_defined(pruned_inds[mt_rel.col_key]))
             mt_unrel = mt_unrel.filter_cols(hl.is_defined(pruned_inds[mt_unrel.col_key]))
 

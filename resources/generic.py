@@ -11,12 +11,16 @@ def get_hq_samples():
     return ht.key_by(s=ht.f0).drop('f0')
 
 
+def get_pruned_tsv_path():
+    return f'{bucket}/pca/ukb_diverse_pops_pruned.tsv.bgz'
+
+
 def get_age_sex_tsv_path():
     return f'{bucket}/Phenotypes/uk_round2_allSamples_phenos_phesant.6148_5.tsv.gz'
 
 
 def get_covariates_ht_path():
-    return f'{bucket}/pca/non_eur_within_pop_pc_covs.ht'
+    return f'{bucket}/pca/all_pops_non_eur_pruned_within_pop_pc_covs.ht'
 
 
 def get_covariates(key_type = hl.str):
