@@ -38,9 +38,8 @@ def get_filtered_mt(chrom: str = 'all', pop: str = 'all', imputed: bool = True, 
     covariates_ht = get_covariates()
     hq_samples_ht = get_hq_samples()
     # TODO: confirm that this is correct set
-    mt = mt.filter_cols(hl.is_defined(covariates_ht[mt.s]) & hl.is_defined(hq_samples_ht[mt.s]))
-    meta_ht = get_ukb_meta()
-    mt = mt.annotate_cols(**meta_ht[mt.s])
+    mt = mt.annotate_cols(**covariates_ht[mt.s])
+    mt = mt.filter_cols(hl.is_defined(mt.pop) & hl.is_defined(hq_samples_ht[mt.s]))
 
     if pop != 'all': mt = mt.filter_cols(mt.pop == pop)
     return mt

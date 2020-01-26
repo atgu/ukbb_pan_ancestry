@@ -29,17 +29,20 @@ def get_covariates(key_type = hl.str):
 
 
 def get_ukb_meta_pop_tsv_path():
+    # WARNING: deprecated (original file for first iteration), remains for historical record
     return f'{bucket}/pca/globalref_ukbb_pca_pops_rf_50.txt.bgz'
 
 
 def get_ukb_meta(key_type = hl.tstr):
+    # WARNING: deprecated (original file for first iteration), remains for historical record
     return hl.import_table(get_ukb_meta_pop_tsv_path(), key='s', impute=True, types={'s': key_type})
 
 
 def get_ukb_pheno_mt(pop: str = 'all'):
     from .phenotypes import get_ukb_pheno_mt_path
     mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
-    mt = mt.annotate_rows(**get_ukb_meta(key_type=hl.tint32)[mt.row_key])
+    # mt = mt.annotate_rows(**get_ukb_meta(key_type=hl.tint32)[mt.row_key])
+    mt = mt.annotate_rows(**get_covariates(key_type=hl.tint32)[mt.row_key])
     if pop != 'all':
         mt = mt.filter_rows(mt.pop == pop)
     return mt
