@@ -160,6 +160,7 @@ def main(args):
                                    hl.agg.count_where(hl.is_defined(mt.both_sexes)),
                                    hl.int64(hl.agg.sum(mt.both_sexes)))
         ).entries()
+        ht = ht.key_by('pop', 'pheno', 'coding', trait_type=ht.data_type)
         ht = ht.checkpoint(get_phenotype_summary_path('full'), overwrite=args.overwrite, _read_if_exists=not args.overwrite)
         ht.flatten().export(get_phenotype_summary_path('full', 'tsv'))
 
