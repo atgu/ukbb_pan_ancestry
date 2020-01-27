@@ -146,7 +146,7 @@ def main(args):
             # For EUR, required highmem machines with SSDs (Needed ~6T of hdfs space, so 20 workers + 100 pre-emptibles ran in ~7 hours)
             relatedness_ht = hl.pc_relate(mt.GT, min_individual_maf=0.05, scores_expr=mt.scores,
                                           min_kinship=0.05, statistics='kin',
-                                          block_size=4096 if pop == 'EUR' else 512, _unkeyed=True)
+                                          block_size=4096 if pop == 'EUR' else 512).key_by()
             relatedness_ht.write(get_relatedness_path(pop, extension='ht'), args.overwrite)
             relatedness_ht = hl.read_table(get_relatedness_path(pop, extension='ht'))
 
@@ -171,6 +171,8 @@ def main(args):
             pca_loadings = hl.read_table(get_relatedness_path(pop, unrelated=True, extension='loadings.ht'))
             ht = project_individuals(pca_loadings, mt_rel)
             ht.write(get_relatedness_path(pop, extension='scores_projected.ht'), args.overwrite)
+            hl.read_table(get_relatedness_path(pop, extension='scores_projected.ht')).export(
+                get_relatedness_path(pop, extension='scores_projected.txt.bgz'))
 
     if args.generate_covariates:
         hts = []
