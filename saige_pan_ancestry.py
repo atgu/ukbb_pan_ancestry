@@ -47,7 +47,7 @@ def main(args):
     start_time = time.time()
     basic_covars = ['sex', 'age', 'age2', 'age_sex', 'age2_sex']
     covariates = ','.join(basic_covars + [f'PC{x}' for x in range(1, num_pcs + 1)])
-    n_threads = 8
+    n_threads = 16
     analysis_type = "variant"
     chromosomes = list(map(str, range(1, 23))) + ['X']
     reference = 'GRCh37'
@@ -144,7 +144,8 @@ def main(args):
                 else:
                     vcf_task = extract_vcf_from_mt(p, vcf_root, HAIL_DOCKER_IMAGE, 'ukbb_pan_ancestry', adj=False,
                                                    additional_args=f'{chromosome},{pop}', input_dosage=True,
-                                                   reference=reference, interval=interval, export_bgen=use_bgen)
+                                                   reference=reference, interval=interval, export_bgen=use_bgen,
+                                                   n_threads=n_threads)
                     vcf_task.attributes['pop'] = pop
                     vcf_file = vcf_task.out
                 vcfs[interval] = vcf_file
@@ -195,13 +196,18 @@ def main(args):
                     break
 
             res_tasks = []
-            if overwrite_results or \
+            if overwrite_results or args.overwrite_hail_results or \
                     f'{pheno_results_dir}/variant_results.mt' not in results_already_created or \
                     not hl.hadoop_exists(f'{pheno_results_dir}/variant_results.mt/_SUCCESS'):
-                res_tasks.append(load_results_into_hail(p, pheno_results_dir, pheno, coding, trait_type,
-                                                        saige_tasks, get_ukb_vep_path(), HAIL_DOCKER_IMAGE,
-                                                        reference=reference, analysis_type=analysis_type))
-                qq_plot_results(p, pheno_results_dir, res_tasks, HAIL_DOCKER_IMAGE, QQ_DOCKER_IMAGE)
+                load_task = load_results_into_hail(p, pheno_results_dir, pheno, coding, trait_type,
+                                                   saige_tasks, get_ukb_vep_path(), HAIL_DOCKER_IMAGE,
+                                                   reference=reference, analysis_type=analysis_type,
+                                                   n_threads=n_threads)
+                load_task.attributes['pop'] = pop
+                res_tasks.append(load_task)
+                qq_export, qq_plot = qq_plot_results(p, pheno_results_dir, res_tasks, HAIL_DOCKER_IMAGE, QQ_DOCKER_IMAGE, n_threads=n_threads)
+                qq_export.attributes.update({'pheno': pheno, 'coding': coding, 'trait_type': trait_type, 'pop': pop})
+                qq_plot.attributes.update({'pheno': pheno, 'coding': coding, 'trait_type': trait_type, 'pop': pop})
             if args.limit and n_jobs >= args.limit:
                 break
 
@@ -221,6 +227,7 @@ if __name__ == '__main__':
     parser.add_argument('--create_null_models', help='Run single variant SAIGE', action='store_true')
     parser.add_argument('--create_vcfs', help='Run single variant SAIGE', action='store_true')
     parser.add_argument('--overwrite_results', help='Run single variant SAIGE', action='store_true')
+    parser.add_argument('--overwrite_hail_results', help='Run single variant SAIGE', action='store_true')
     parser.add_argument('--local_test', help='Run single variant SAIGE', action='store_true')
     parser.add_argument('--use_bgen', help='Run single variant SAIGE', action='store_true')
     parser.add_argument('--limit', help='Run single variant SAIGE', type=int)
