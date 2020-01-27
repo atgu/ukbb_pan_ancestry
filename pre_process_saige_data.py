@@ -10,6 +10,8 @@ from ukbb_pan_ancestry import *
 def main(args):
     hl.init(default_reference='GRCh37')
 
+    pops = args.pops.split(',') if args.pops else POPS
+
     if args.prepare_genotype_data:
         load_all_mfi_data().write(ukb_imputed_info_ht_path, args.overwrite)
 
@@ -51,8 +53,9 @@ def main(args):
         ht.write(get_ukb_vep_path(), args.overwrite)
 
     if args.create_plink_file:
+        window = args.window
         iteration = 1
-        for pop in POPS:
+        for pop in pops:
             call_stats_ht = hl.read_table(get_ukb_af_ht_path(with_x = False))
             mt = get_filtered_mt(pop=pop, imputed=False)
             n_samples = mt.count_cols()
@@ -64,13 +67,13 @@ def main(args):
             mt = mt.checkpoint(get_ukb_grm_mt_path(pop, iteration), _read_if_exists=not args.overwrite, overwrite=args.overwrite)
             mt = mt.unfilter_entries()
             if not args.omit_ld_prune:
-                ht = hl.ld_prune(mt.GT, r2=0.1)
-                ht.write(get_ukb_grm_pruned_ht_path(pop), overwrite=args.overwrite)
-            ht = hl.read_table(get_ukb_grm_pruned_ht_path(pop))
+                ht = hl.ld_prune(mt.GT, r2=0.1, bp_window_size=int(float(window)))
+                ht.write(get_ukb_grm_pruned_ht_path(pop, window), overwrite=args.overwrite)
+            ht = hl.read_table(get_ukb_grm_pruned_ht_path(pop, window))
             mt = mt.filter_rows(hl.is_defined(ht[mt.row_key]))
 
-            if args.overwrite or not hl.hadoop_exists(f'{get_ukb_grm_plink_path(pop, iteration)}.bed'):
-                hl.export_plink(mt, get_ukb_grm_plink_path(pop, iteration))
+            if args.overwrite or not hl.hadoop_exists(f'{get_ukb_grm_plink_path(pop, iteration, window)}.bed'):
+                hl.export_plink(mt, get_ukb_grm_plink_path(pop, iteration, window))
 
             mt = get_filtered_mt(chrom='22', pop=pop)
             if args.overwrite or not hl.hadoop_exists(get_ukb_samples_file_path(pop, iteration)):
@@ -86,6 +89,8 @@ if __name__ == '__main__':
     parser.add_argument('--genotype_summary', action='store_true')
     parser.add_argument('--overwrite', help='Overwrite everything', action='store_true')
     parser.add_argument('--omit_ld_prune', help='Overwrite everything', action='store_true')
+    parser.add_argument('--window', help='Overwrite everything', default='1e6')
+    parser.add_argument('--pops', help='Comma-separated list of pops to run')
     parser.add_argument('--create_plink_file', help='Overwrite everything', action='store_true')
     parser.add_argument('--vep', help='Overwrite everything', action='store_true')
     parser.add_argument('--slack_channel', help='Send message to Slack channel/user', default='@konradjk')

@@ -58,13 +58,15 @@ def get_ukb_grm_mt_path(pop: str, data_iteration: int = 0):
     return f'{bucket}/results/misc/ukb.{pop}.for_grm{suffix}.mt'
 
 
-def get_ukb_grm_pruned_ht_path(pop: str):
-    return f'{bucket}/results/misc/ukb.{pop}.for_grm.pruned.ht'
+def get_ukb_grm_pruned_ht_path(pop: str, window_size: str = '1e6'):
+    cut = '' if window_size == '1e6' else f'.{window_size}'
+    return f'{bucket}/results/misc/ukb.{pop}.for_grm.pruned{cut}.ht'
 
 
-def get_ukb_grm_plink_path(pop: str, data_iteration: int = 0):
+def get_ukb_grm_plink_path(pop: str, data_iteration: int = 0, window_size: str = '1e6'):
     suffix = f'.{data_iteration}' if data_iteration else ""
-    return f'{bucket}/results/misc/ukb.{pop}.for_grm{suffix}.pruned.plink'
+    cut = '' if window_size == '1e6' else f'.{window_size}'
+    return f'{bucket}/results/misc/ukb.{pop}.for_grm{suffix}.pruned{cut}.plink'
 
 
 def get_ukb_samples_file_path(pop: str, data_iteration: int = 0):
