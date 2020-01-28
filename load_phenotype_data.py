@@ -156,7 +156,7 @@ def main(args):
 
         ht = mt.group_rows_by('pop').aggregate(
             stats=hl.agg.stats(mt.both_sexes),
-            n_cases_by_pop=hl.cond(mt.data_type == 'continuous',
+            n_cases_by_pop=hl.cond(hl.set({'continuous', 'biomarkers'}).contains(mt.data_type),
                                    hl.agg.count_where(hl.is_defined(mt.both_sexes)),
                                    hl.int64(hl.agg.sum(mt.both_sexes)))
         ).entries()
