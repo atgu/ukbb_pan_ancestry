@@ -163,10 +163,19 @@ def main(args):
             mt_unrel = hl.read_matrix_table(get_relatedness_path(pop, True, 'mt'))
             mt_rel = hl.read_matrix_table(get_relatedness_path(pop, extension='mt'))
 
+            # Removing individuals
             pruned_inds = hl.import_table(get_pruned_tsv_path(), key='s')
             mt_rel = mt_rel.filter_cols(hl.is_defined(pruned_inds[mt_rel.col_key]))
             mt_unrel = mt_unrel.filter_cols(hl.is_defined(pruned_inds[mt_unrel.col_key]))
 
+            # Removing sites
+            window = '1e6' if pop != 'EUR' else '5e6'
+            pruned_ht = hl.read_table(get_ukb_grm_pruned_ht_path(pop, window))
+            mt_unrel = mt_unrel.filter_rows(hl.is_defined(pruned_ht[mt_unrel.row_key]))
+
+            mt_unrel = mt_unrel.repartition(100).checkpoint(hl.utils.new_temp_file())
+
+            pop = pop if window == '1e6' else f'{pop}_{window}'
             run_pca(mt_unrel, get_relatedness_path(pop, unrelated=True, extension='') + '.', args.overwrite)
             pca_loadings = hl.read_table(get_relatedness_path(pop, unrelated=True, extension='loadings.ht'))
             ht = project_individuals(pca_loadings, mt_rel)
