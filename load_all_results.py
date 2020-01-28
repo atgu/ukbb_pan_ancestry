@@ -54,8 +54,10 @@ def main(args):
         mt.repartition(5000, shuffle=False).write(get_variant_results_path(pop, 'mt'), overwrite=args.overwrite)
 
         mt = hl.read_matrix_table(get_variant_results_path(pop, 'mt'))
-        mt = mt.annotate_cols(lambda_gc=hl.methods.statgen._lambda_gc_agg(mt.Pvalue))
-        ht = mt.cols().annotate(pop=pop)
+        mt = mt.annotate_cols(lambda_gc=hl.methods.statgen._lambda_gc_agg(mt.Pvalue),
+                              n_vars=hl.agg.count_where(hl.is_defined(mt.Pvalue)))
+        ht = mt.cols()
+        ht = ht.key_by(pop=pop, pheno=ht.pheno, coding=ht.coding, trait_type=ht.trait_type).persist()
         hts.append(ht)
         ht.export(get_variant_results_path(pop, 'lambdas.txt.bgz'))
 
@@ -65,7 +67,9 @@ def main(args):
         mts.append(mt)
 
     full_ht = hts[0].union(*hts[1:])
-    full_ht.write(f'{bucket}/combined_results/all_lambdas.ht')
+    pheno_ht = hl.read_table(get_phenotype_summary_path('full')).select('n_cases_by_pop', 'stats')
+    full_ht = full_ht.annotate(**pheno_ht[full_ht.key])
+    full_ht = full_ht.checkpoint(f'{bucket}/combined_results/all_lambdas.ht', overwrite=args.overwrite, _read_if_exists=not args.overwrite)
     full_ht.group_by('pop').aggregate(lambda_gc=hl.agg.stats(full_ht.lambda_gc).drop('sum')).show(width=200)
     full_ht.group_by('pheno', 'meaning').aggregate(lambda_gc=hl.agg.stats(full_ht.lambda_gc).drop('sum')).show(20, width=200)
 
