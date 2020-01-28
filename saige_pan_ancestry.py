@@ -17,9 +17,10 @@ logger.addHandler(logging.StreamHandler(sys.stderr))
 bucket = 'gs://ukb-diverse-pops'
 root = f'{bucket}/results'
 
-MIN_CASES = 200
+MIN_CASES = 50
+MIN_CASES_ALL = 100
 
-HAIL_DOCKER_IMAGE = 'gcr.io/ukbb-diversepops-neale/hail_utils:2.8'
+HAIL_DOCKER_IMAGE = 'gcr.io/ukbb-diversepops-neale/hail_utils:2.9'
 SAIGE_DOCKER_IMAGE = 'wzhou88/saige:0.36.3'
 QQ_DOCKER_IMAGE = 'konradjk/saige_qq:0.2'
 
@@ -28,7 +29,7 @@ def get_phenos_to_run(pop: str, limit: int = None, pilot: bool = False):
     ht = hl.read_table(get_phenotype_summary_path('full'))
     ht = ht.filter(ht.pop == pop)
     if not pilot:
-        ht = ht.filter((ht.n_cases_by_pop >= MIN_CASES))
+        ht = ht.filter((ht.n_cases_by_pop >= MIN_CASES) & (ht.n_cases_both_sexes >= MIN_CASES_ALL))
 
     fields = ('pheno', 'coding', 'data_type')
     # output = set([tuple(x[field] for field in fields) for x in ht.key_by().collect()])

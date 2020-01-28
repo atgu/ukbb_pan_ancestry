@@ -164,7 +164,7 @@ def main(args):
         ht = ht.checkpoint(get_phenotype_summary_path('full'), overwrite=args.overwrite, _read_if_exists=not args.overwrite)
         ht.flatten().export(get_phenotype_summary_path('full', 'tsv'))
 
-        MIN_CASES = 200
+        MIN_CASES = 50
         ht = ht.filter(ht.n_cases_by_pop >= MIN_CASES)
         ht.group_by('pop').aggregate(n_phenos=hl.agg.count()).show()
 
