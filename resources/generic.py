@@ -8,7 +8,9 @@ POPS = ['AFR', 'AMR', 'CSA', 'EAS', 'EUR', 'MID']
 
 def get_hq_samples():
     ht = hl.import_table(f'{bucket}/misc/ukb31063_samples_qc_FULL.txt', no_header=True)
-    return ht.key_by(s=ht.f0).drop('f0')
+    drop_samples = hl.import_table(f'{bucket}/misc/ukb31063.withdrawn_samples_20190321.txt', no_header=True)
+    ht = ht.key_by(s=ht.f0).drop('f0')
+    return ht.filter(hl.is_missing(ht[drop_samples.f0]))
 
 
 def get_pruned_tsv_path():
