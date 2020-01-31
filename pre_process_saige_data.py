@@ -54,6 +54,8 @@ def main(args):
 
     if args.create_plink_file:
         window = args.window
+        # Note: 1e7 LD pruning for EUR was run with r2=0.05, and chr8 inversion and HLA were removed
+        r2 = 0.1 if args.window != '1e7' else 0.05
         iteration = 1
         for pop in pops:
             call_stats_ht = hl.read_table(get_ukb_af_ht_path(with_x = False))
@@ -65,12 +67,19 @@ def main(args):
             mt = mt.filter_rows(callstats.af[pop] > 0.01)
 
             mt = mt.checkpoint(get_ukb_grm_mt_path(pop, iteration), _read_if_exists=not args.overwrite, overwrite=args.overwrite)
+            if pop == 'EUR':
+                # Common inversion taken from Table S4 of https://www.ncbi.nlm.nih.gov/pubmed/27472961
+                # Also removing HLA, from https://www.ncbi.nlm.nih.gov/grc/human/regions/MHC?asm=GRCh37
+                mt = mt.filter_rows(~hl.parse_locus_interval('8:8055789-11980649').contains(mt.locus) &
+                                    ~hl.parse_locus_interval('6:28477797-33448354').contains(mt.locus))
             mt = mt.unfilter_entries()
             if not args.omit_ld_prune:
-                ht = hl.ld_prune(mt.GT, r2=0.1, bp_window_size=int(float(window)))
+                ht = hl.ld_prune(mt.GT, r2=float(r2), bp_window_size=int(float(window)))
                 ht.write(get_ukb_grm_pruned_ht_path(pop, window), overwrite=args.overwrite)
             ht = hl.read_table(get_ukb_grm_pruned_ht_path(pop, window))
             mt = mt.filter_rows(hl.is_defined(ht[mt.row_key]))
+            if pop == 'EUR':
+                mt = mt.filter_rows(hl.rand_bool(0.55))
 
             if args.overwrite or not hl.hadoop_exists(f'{get_ukb_grm_plink_path(pop, iteration, window)}.bed'):
                 hl.export_plink(mt, get_ukb_grm_plink_path(pop, iteration, window))
