@@ -12,7 +12,6 @@ temp_bucket = 'gs://ukbb-diverse-temp-30day'
 def main(args):
     hl.init(default_reference='GRCh38')
 
-    POPS.remove('EUR')
     hts = []
     mts = []
     for pop in POPS:
@@ -33,10 +32,12 @@ def main(args):
         pheno_ht = hl.read_matrix_table(get_ukb_pheno_mt_path()).cols()
         pheno_dict = hl.dict(pheno_ht.aggregate(hl.agg.collect(
             (hl.struct(pheno=pheno_ht.pheno, coding=pheno_ht.coding, trait_type=pheno_ht.data_type), pheno_ht.row_value)), _localize=False))
-        all_hts = list(map(lambda x: hl.read_table(x), all_variant_outputs))
-        ht = all_hts[0].union(*all_hts[1:], unify=True)
-        ht = ht.annotate(**pheno_dict[hl.struct(pheno=ht.pheno, coding=ht.coding, trait_type=ht.trait_type)])
-        ht.write(get_variant_results_path(pop), overwrite=args.overwrite)
+
+        if args.load_ht:
+            all_hts = list(map(lambda x: hl.read_table(x), all_variant_outputs))
+            ht = all_hts[0].union(*all_hts[1:], unify=True)
+            ht = ht.annotate(**pheno_dict[hl.struct(pheno=ht.pheno, coding=ht.coding, trait_type=ht.trait_type)])
+            ht.write(get_variant_results_path(pop), overwrite=args.overwrite)
 
         raw_mts = list(map(lambda x: hl.read_matrix_table(x), all_variant_mt_outputs))
         all_mts = []
@@ -77,7 +78,7 @@ def main(args):
     for mt in mts[1:]:
         full_mt = full_mt.union_cols(mt, row_join_type='outer')
     full_mt = full_mt.collect_cols_by_key().annotate_globals(pops=POPS)
-    full_mt.write(f'{bucket}/combined_results/all_sumstats.mt')
+    full_mt.write(get_variant_results_path('full', 'mt'), args.overwrite)
 
 
 if __name__ == '__main__':
@@ -85,6 +86,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--overwrite', help='Overwrite everything', action='store_true')
     parser.add_argument('--dry_run', help='Overwrite everything', action='store_true')
+    parser.add_argument('--load_ht', help='Overwrite everything', action='store_true')
     parser.add_argument('--slack_channel', help='Send message to Slack channel/user', default='@konradjk')
     args = parser.parse_args()
 
