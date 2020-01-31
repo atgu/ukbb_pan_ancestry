@@ -17,10 +17,7 @@ logger.addHandler(logging.StreamHandler(sys.stderr))
 bucket = 'gs://ukb-diverse-pops'
 root = f'{bucket}/results'
 
-MIN_CASES = 50
-MIN_CASES_ALL = 100
-
-HAIL_DOCKER_IMAGE = 'gcr.io/ukbb-diversepops-neale/hail_utils:2.9'
+HAIL_DOCKER_IMAGE = 'gcr.io/ukbb-diversepops-neale/hail_utils:3.0'
 SAIGE_DOCKER_IMAGE = 'wzhou88/saige:0.36.3'
 QQ_DOCKER_IMAGE = 'konradjk/saige_qq:0.2'
 
@@ -29,7 +26,11 @@ def get_phenos_to_run(pop: str, limit: int = None, pilot: bool = False):
     ht = hl.read_table(get_phenotype_summary_path('full'))
     ht = ht.filter(ht.pop == pop)
     if not pilot:
-        ht = ht.filter((ht.n_cases_by_pop >= MIN_CASES) & (ht.n_cases_both_sexes >= MIN_CASES_ALL))
+        min_cases = MIN_CASES_EUR if pop == 'EUR' else MIN_CASES
+        ht = ht.filter(~hl.set({'raw', 'icd9'}).contains(ht.coding) &
+                       ~hl.set({'22601', '22617', '20024', '41230', '41210'}).contains(ht.pheno) &
+                       (ht.n_cases_by_pop >= min_cases) &
+                       (ht.n_cases_both_sexes >= MIN_CASES_ALL))
 
     fields = ('pheno', 'coding', 'data_type')
     # output = set([tuple(x[field] for field in fields) for x in ht.key_by().collect()])
@@ -44,7 +45,8 @@ def get_phenos_to_run(pop: str, limit: int = None, pilot: bool = False):
 def main(args):
     hl.init(log='/tmp/saige_temp_hail.log')
 
-    num_pcs = 20
+    # num_pcs = 20
+    num_pcs = 10
     start_time = time.time()
     basic_covars = ['sex', 'age', 'age2', 'age_sex', 'age2_sex']
     covariates = ','.join(basic_covars + [f'PC{x}' for x in range(1, num_pcs + 1)])
@@ -58,13 +60,14 @@ def main(args):
     # if args.local_test:
     #     backend = pipeline.LocalBackend(gsa_key_file='/Users/konradk/.hail/ukb-diverse-pops.json')
     # else:
-    backend = pipeline.BatchBackend(billing_project='ukb_diverse_pops')
-    p = pipeline.Pipeline(name='saige_pan_ancestry', backend=backend, default_image=SAIGE_DOCKER_IMAGE,
-                          default_storage='500Mi', default_cpu=n_threads)
 
+    backend = pipeline.BatchBackend(billing_project='ukb_diverse_pops')
     for pop in POPS:
+        p = pipeline.Pipeline(name=f'saige_pan_ancestry_{pop}', backend=backend, default_image=SAIGE_DOCKER_IMAGE,
+                              default_storage='500Mi', default_cpu=n_threads)
+        window = '1e7' if pop == 'EUR' else '1e6'
         logger.info(f'Setting up {pop}...')
-        chunk_size = int(1e6) if pop == 'EUR' else int(5e6)
+        chunk_size = int(5e6)  # if pop != 'EUR' else int(1e6)
         phenos_to_run = get_phenos_to_run(pop, 1 if args.local_test else None, not args.run_all_phenos)
         logger.info(f'Got {len(phenos_to_run)} phenotypes...')
         if len(phenos_to_run) <= 20:
@@ -110,7 +113,7 @@ def main(args):
             else:
                 if args.skip_any_null_models: continue
                 fit_null_task = fit_null_glmm(p, null_glmm_root, pheno_exports[pheno_coding_trait], trait_type, covariates,
-                                              get_ukb_grm_plink_path(pop, iteration), SAIGE_DOCKER_IMAGE, n_threads=n_threads)
+                                              get_ukb_grm_plink_path(pop, iteration, window), SAIGE_DOCKER_IMAGE, n_threads=n_threads)
                 fit_null_task.attributes.update({'pop': pop, 'pheno': pheno})
                 model_file = fit_null_task.null_glmm.rda
                 variance_ratio_file = fit_null_task.null_glmm[f'{analysis_type}.varianceRatio.txt']
@@ -212,11 +215,11 @@ def main(args):
             if args.limit and n_jobs >= args.limit:
                 break
 
-    logger.info(f'Setup took: {time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time))}')
-    logger.info(f'Submitting: {get_tasks_from_pipeline(p)}')
-    logger.info(f"Total size: {sum([len(x._pretty()) for x in p.select_tasks('')])}")
-    p.run(dry_run=args.dry_run)
-    logger.info(f'Finished: {get_tasks_from_pipeline(p)}')
+        logger.info(f'Setup took: {time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time))}')
+        logger.info(f'Submitting: {get_tasks_from_pipeline(p)}')
+        logger.info(f"Total size: {sum([len(x._pretty()) for x in p.select_tasks('')])}")
+        p.run(dry_run=args.dry_run, wait=False, delete_scratch_on_exit=False)
+        logger.info(f'Finished: {get_tasks_from_pipeline(p)}')
 
 
 if __name__ == '__main__':

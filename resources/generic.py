@@ -5,12 +5,16 @@ REFERENCE_GENOME = 'GRCh37'
 CHROMOSOMES = list(map(str, range(1, 23))) + ['X', 'XY']
 POPS = ['AFR', 'AMR', 'CSA', 'EAS', 'EUR', 'MID']
 
+MIN_CASES = 50
+MIN_CASES_ALL = 100
+MIN_CASES_EUR = 100
+
 
 def get_hq_samples():
     ht = hl.import_table(f'{bucket}/misc/ukb31063_samples_qc_FULL.txt', no_header=True)
-    drop_samples = hl.import_table(f'{bucket}/misc/ukb31063.withdrawn_samples_20190321.txt', no_header=True)
+    drop_samples = hl.import_table(f'{bucket}/misc/ukb31063.withdrawn_samples_20190321.txt', no_header=True, key='f0')
     ht = ht.key_by(s=ht.f0).drop('f0')
-    return ht.filter(hl.is_missing(ht[drop_samples.f0]))
+    return ht.filter(hl.is_missing(drop_samples[ht.s]))
 
 
 def get_pruned_tsv_path():
