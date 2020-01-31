@@ -169,11 +169,11 @@ def main(args):
             mt_unrel = mt_unrel.filter_cols(hl.is_defined(pruned_inds[mt_unrel.col_key]))
 
             # Removing sites
-            window = '1e6' if pop != 'EUR' else '5e6'
+            window = '1e6' if pop != 'EUR' else '1e7'
             pruned_ht = hl.read_table(get_ukb_grm_pruned_ht_path(pop, window))
             mt_unrel = mt_unrel.filter_rows(hl.is_defined(pruned_ht[mt_unrel.row_key]))
 
-            mt_unrel = mt_unrel.repartition(100).checkpoint(hl.utils.new_temp_file())
+            mt_unrel = mt_unrel.repartition(500).checkpoint(hl.utils.new_temp_file())
 
             pop = pop if window == '1e6' else f'{pop}_{window}'
             run_pca(mt_unrel, get_relatedness_path(pop, unrelated=True, extension='') + '.', args.overwrite)
@@ -186,9 +186,10 @@ def main(args):
     if args.generate_covariates:
         hts = []
         for pop in POPS:
-            ht = hl.read_table(get_relatedness_path(pop, extension='scores_projected.ht'))
+            pop_path = pop if pop != 'EUR' else f'EUR_1e7'
+            ht = hl.read_table(get_relatedness_path(pop_path, extension='scores_projected.ht'))
             hts.append(ht.annotate(pop=pop, related=True))
-            ht = hl.read_table(get_relatedness_path(pop, True, extension='scores.ht'))
+            ht = hl.read_table(get_relatedness_path(pop_path, True, extension='scores.ht'))
             ht = ht.transmute(**{f'PC{i}': ht.scores[i - 1] for i in range(1, 21)})
             hts.append(ht.annotate(pop=pop, related=False))
 
