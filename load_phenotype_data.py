@@ -146,8 +146,11 @@ def main(args):
                                   pheno_description_path, coding_ht_path, data_type)
             mt.write(get_ukb_pheno_mt_path(data_type, 'full'), args.overwrite)
 
-        data_types = ('categorical', 'continuous', 'biomarkers', 'icd_all', 'prescriptions', 'phecode')
-        location = {'categorical': 'full', 'continuous': 'full'}
+        mt = combine_datasets({sex: get_ukb_pheno_mt_path('additional', sex) for sex in sexes})
+        mt.write(get_ukb_pheno_mt_path('additional', 'full'), args.overwrite)
+
+        data_types = ('categorical', 'continuous', 'biomarkers', 'icd_all', 'prescriptions', 'phecode', 'additional')
+        location = {'categorical': 'full', 'continuous': 'full', 'additional': 'full'}
         pheno_file_dict = {data_type: hl.read_matrix_table(get_ukb_pheno_mt_path(data_type, location.get(data_type, 'both_sexes_no_sex_specific')))
                            for data_type in data_types}
         cov_ht = get_covariates(hl.int32).persist()
@@ -167,9 +170,15 @@ def main(args):
         ht = ht.checkpoint(get_phenotype_summary_path('full'), overwrite=args.overwrite, _read_if_exists=not args.overwrite)
         ht.flatten().export(get_phenotype_summary_path('full', 'tsv'))
 
-        MIN_CASES = 50
-        ht = ht.filter(ht.n_cases_by_pop >= MIN_CASES)
-        ht.group_by('pop').aggregate(n_phenos=hl.agg.count()).show()
+        ht = ht.filter(
+            ~hl.set({'raw', 'icd9'}).contains(ht.coding) &
+            ~hl.set({'22601', '22617', '20024', '41230', '41210'}).contains(ht.pheno) &
+            (ht.n_cases_both_sexes >= MIN_CASES_ALL) &
+            (ht.n_cases_by_pop >= hl.cond(ht.pop == 'EUR', MIN_CASES_EUR, MIN_CASES))
+        )
+        ht = ht.group_by('pop').aggregate(n_phenos=hl.agg.count())
+        ht.show()
+        print(f'Total of {ht.aggregate(hl.agg.sum(ht.n_phenos))} phenos')
 
     if args.pairwise_correlations:
         mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
