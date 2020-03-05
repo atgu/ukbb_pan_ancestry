@@ -24,7 +24,7 @@ SAIGE_DOCKER_IMAGE = 'wzhou88/saige:0.36.3'
 QQ_DOCKER_IMAGE = 'konradjk/saige_qq:0.2'
 
 
-def get_phenos_to_run(pop: str, limit: int = None, pilot: bool = False):
+def get_phenos_to_run(pop: str, limit: int = None, pilot: bool = False, single_sex_only: bool = False):
     ht = hl.read_table(get_phenotype_summary_path('full'))
     ht = ht.filter(ht.pop == pop)
     if not pilot:
@@ -33,6 +33,11 @@ def get_phenos_to_run(pop: str, limit: int = None, pilot: bool = False):
                        ~hl.set({'22601', '22617', '20024', '41230', '41210'}).contains(ht.pheno) &
                        (ht.n_cases_by_pop >= min_cases) &
                        (ht.n_cases_both_sexes >= MIN_CASES_ALL))
+
+    if single_sex_only:
+        prop_female = ht.n_cases_females / (ht.n_cases_males + ht.n_cases_females)
+        ht = ht.filter((prop_female <= 0.1) | (prop_female >= 0.9))
+        print(f'Got {ht.count()} single-sex phenotypes...')
 
     fields = ('pheno', 'coding', 'data_type')
     # output = set([tuple(x[field] for field in fields) for x in ht.key_by().collect()])
@@ -69,8 +74,9 @@ def main(args):
                               default_storage='500Mi', default_cpu=n_threads)
         window = '1e7' if pop == 'EUR' else '1e6'
         logger.info(f'Setting up {pop}...')
-        chunk_size = int(5e6)  # if pop != 'EUR' else int(1e6)
-        phenos_to_run = get_phenos_to_run(pop, 1 if args.local_test else None, not args.run_all_phenos)
+        chunk_size = int(5e6) if pop != 'EUR' else int(1e6)
+        phenos_to_run = get_phenos_to_run(pop, 1 if args.local_test else args.limit, not args.run_all_phenos,
+                                          args.single_sex_only)
         logger.info(f'Got {len(phenos_to_run)} phenotypes...')
         if len(phenos_to_run) <= 20:
             logger.info(phenos_to_run)
@@ -229,6 +235,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--overwrite_pheno_data', help='Run single variant SAIGE', action='store_true')
+    parser.add_argument('--single_sex_only', help='Run single variant SAIGE', action='store_true')
     parser.add_argument('--skip_any_null_models', help='Run single variant SAIGE', action='store_true')
     parser.add_argument('--skip_saige', help='Run single variant SAIGE', action='store_true')
     parser.add_argument('--create_null_models', help='Run single variant SAIGE', action='store_true')
