@@ -176,7 +176,8 @@ def main(args):
             (ht.n_cases_both_sexes >= MIN_CASES_ALL) &
             (ht.n_cases_by_pop >= hl.cond(ht.pop == 'EUR', MIN_CASES_EUR, MIN_CASES))
         )
-        ht = ht.group_by('pop').aggregate(n_phenos=hl.agg.count())
+        ht = ht.group_by('pop').aggregate(n_phenos=hl.agg.count(),
+                                          n_samples=hl.agg.max(ht.n_cases_by_pop))
         ht.show()
         print(f'Total of {ht.aggregate(hl.agg.sum(ht.n_phenos))} phenos')
 

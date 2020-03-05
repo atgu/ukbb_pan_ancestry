@@ -37,7 +37,6 @@ def get_filtered_mt(chrom: str = 'all', pop: str = 'all', imputed: bool = True, 
 
     covariates_ht = get_covariates()
     hq_samples_ht = get_hq_samples()
-    # TODO: confirm that this is correct set
     mt = mt.annotate_cols(**covariates_ht[mt.s])
     mt = mt.filter_cols(hl.is_defined(mt.pop) & hl.is_defined(hq_samples_ht[mt.s]))
 
@@ -45,8 +44,8 @@ def get_filtered_mt(chrom: str = 'all', pop: str = 'all', imputed: bool = True, 
     return mt
 
 
-def get_ukb_af_ht_path(with_x = True):
-    return f'{bucket}/imputed/ukb_frequencies{"_with_x" if with_x else ""}.ht'
+def get_ukb_af_ht_path(with_x = True, repart=False):
+    return f'{bucket}/imputed/ukb_frequencies{"_with_x" if with_x else ""}{".repart" if repart else ""}.ht'
 
 
 def get_ukb_vep_path():

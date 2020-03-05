@@ -34,6 +34,7 @@ def main(args):
                               an=hl.agg.group_by(mt.pop, hl.agg.count_where(hl.is_defined(mt.dosage)))).rows()
         ht = ht.union(ht_x)
         ht = ht.checkpoint(get_ukb_af_ht_path(), args.overwrite, _read_if_exists=not args.overwrite)
+        ht = ht.naive_coalesce(1000).checkpoint(get_ukb_af_ht_path(repart=True), args.overwrite, _read_if_exists=not args.overwrite)
 
         print(ht.aggregate(hl.struct(
             # hist=hl.agg.hist(hl.sum(ht.an.values()), 0, total_samples, 10),  # No missing data
