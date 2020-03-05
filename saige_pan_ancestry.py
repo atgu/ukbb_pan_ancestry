@@ -2,6 +2,8 @@
 
 __author__ = 'konradk'
 
+import sys
+import argparse
 import logging
 logging.basicConfig(format="%(levelname)s (%(name)s %(lineno)s): %(message)s", level='INFO', filename='saige_pipeline.log')
 
@@ -17,7 +19,7 @@ logger.addHandler(logging.StreamHandler(sys.stderr))
 bucket = 'gs://ukb-diverse-pops'
 root = f'{bucket}/results'
 
-HAIL_DOCKER_IMAGE = 'gcr.io/ukbb-diversepops-neale/hail_utils:3.0'
+HAIL_DOCKER_IMAGE = 'gcr.io/ukbb-diversepops-neale/hail_utils:3.2'
 SAIGE_DOCKER_IMAGE = 'wzhou88/saige:0.36.3'
 QQ_DOCKER_IMAGE = 'konradjk/saige_qq:0.2'
 
@@ -113,7 +115,8 @@ def main(args):
             else:
                 if args.skip_any_null_models: continue
                 fit_null_task = fit_null_glmm(p, null_glmm_root, pheno_exports[pheno_coding_trait], trait_type, covariates,
-                                              get_ukb_grm_plink_path(pop, iteration, window), SAIGE_DOCKER_IMAGE, n_threads=n_threads)
+                                              get_ukb_grm_plink_path(pop, iteration, window), SAIGE_DOCKER_IMAGE,
+                                              inv_normalize=True, n_threads=n_threads, min_covariate_count=1)
                 fit_null_task.attributes.update({'pop': pop, 'pheno': pheno})
                 model_file = fit_null_task.null_glmm.rda
                 variance_ratio_file = fit_null_task.null_glmm[f'{analysis_type}.varianceRatio.txt']

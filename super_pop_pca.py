@@ -201,6 +201,8 @@ def main(args):
         ht = ht.annotate(**cov_ht.key_by(userId=hl.str(cov_ht.userId))[ht.key])
         ht.write(get_covariates_ht_path(), args.overwrite)
 
+    get_filtered_mt(imputed=False).cols().export(get_final_sample_set())
+
     #
     # if args.ukbb_pop_noref:
     #     """
