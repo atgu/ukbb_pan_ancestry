@@ -28,7 +28,6 @@ def main(args):
     hl.init(log='/run_meta_analysis.log')
 
     # Read in all sumstats
-    # mt = hl.read_matrix_table('gs://ukb-diverse-pops/combined_results/all_sumstats_26covars.mt')
     mt = hl.read_matrix_table('gs://ukb-diverse-pops/combined_results/results_full.mt')
 
     # Run meta-analysis (all + leave-one-out)
@@ -59,7 +58,7 @@ def main(args):
                              META_AF_Cases=all_and_leave_one_out(mt.ac_cases, mt.pheno_data.pop) / mt.META_N,
                              META_AF_Controls=all_and_leave_one_out(mt.ac_controls, mt.pheno_data.pop) / mt.META_N)
 
-    mt = mt.drop('unnorm_beta', 'inv_se2', 'variant_exists', 'ac_cases', 'ac_controls')
+    mt = mt.drop('unnorm_beta', 'inv_se2', 'variant_exists', 'ac_cases', 'ac_controls', 'summary_stats')
 
     # Format everything into array<struct>
     def is_finite_or_missing(x):
@@ -72,7 +71,7 @@ def main(args):
         lambda i: hl.struct(**{field: is_finite_or_missing(mt[f'META_{field}'][i]) for field in meta_fields}),
         hl.range(hl.len(mt.META_BETA))))
 
-    col_fields = ['n_cases', 'n_controls', 'n_cases_both_sexes', 'n_cases_males']
+    col_fields = ['n_cases', 'n_controls', 'n_cases_both_sexes', 'n_cases_females', 'n_cases_males']
     mt = mt.annotate_cols(
         **{field: all_and_leave_one_out(mt.pheno_data[field], mt.pheno_data.pop) for field in col_fields})
     col_fields += ['pop']
