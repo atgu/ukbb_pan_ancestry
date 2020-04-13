@@ -66,3 +66,8 @@ def get_gp_data_tsv_path(data_type: str = None):
 
 def get_phenotype_summary_path(data_type: str, extension = 'ht'):
     return f'{pheno_folder}/summary/phenos_{data_type}.{extension}'
+
+
+def get_custom_pheno_path(traittype_source: str, extension = 'ht'):
+    return f'{pheno_folder}/custom/{traittype_source}.{extension}'
+

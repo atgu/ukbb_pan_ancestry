@@ -1,6 +1,9 @@
 import hail as hl
 
 bucket = 'gs://ukb-diverse-pops'
+temp_bucket = 'gs://ukbb-diverse-temp-30day'
+public_bucket = 'gs://ukb-diverse-pops-public'
+
 REFERENCE_GENOME = 'GRCh37'
 CHROMOSOMES = list(map(str, range(1, 23))) + ['X', 'XY']
 POPS = ['AFR', 'AMR', 'CSA', 'EAS', 'EUR', 'MID']

@@ -2,7 +2,6 @@
 
 __author__ = 'konradk'
 
-from gnomad_hail import *
 from ukb_common import *
 from ukbb_pan_ancestry import *
 

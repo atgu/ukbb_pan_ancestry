@@ -9,8 +9,8 @@ logging.basicConfig(format="%(levelname)s (%(name)s %(lineno)s): %(message)s", l
 
 from ukb_common import *
 import time
+import re
 
-from gnomad_hail import *
 from ukbb_pan_ancestry import *
 from ukb_common.utils.saige_pipeline import *
 
@@ -19,20 +19,23 @@ logger.addHandler(logging.StreamHandler(sys.stderr))
 bucket = 'gs://ukb-diverse-pops'
 root = f'{bucket}/results'
 
-HAIL_DOCKER_IMAGE = 'gcr.io/ukbb-diversepops-neale/hail_utils:3.2'
+HAIL_DOCKER_IMAGE = 'gcr.io/ukbb-diversepops-neale/hail_utils:3.7'
 SAIGE_DOCKER_IMAGE = 'wzhou88/saige:0.36.3'
 QQ_DOCKER_IMAGE = 'konradjk/saige_qq:0.2'
 
 
-def get_phenos_to_run(pop: str, limit: int = None, pilot: bool = False, single_sex_only: bool = False):
+def get_phenos_to_run(pop: str, limit: int = None, pilot: bool = False, single_sex_only: bool = False,
+                      specific_phenos: str = '', skip_case_count_filter: bool = False):
     ht = hl.read_table(get_phenotype_summary_path('full'))
     ht = ht.filter(ht.pop == pop)
     if not pilot:
         min_cases = MIN_CASES_EUR if pop == 'EUR' else MIN_CASES
-        ht = ht.filter(~hl.set({'raw', 'icd9'}).contains(ht.coding) &
-                       ~hl.set({'22601', '22617', '20024', '41230', '41210'}).contains(ht.pheno) &
-                       (ht.n_cases_by_pop >= min_cases) &
-                       (ht.n_cases_both_sexes >= MIN_CASES_ALL))
+        criteria = (~hl.set({'raw', 'icd9'}).contains(ht.coding) &
+                    ~hl.set({'22601', '22617', '20024', '41230', '41210'}).contains(ht.pheno) &
+                    (ht.n_cases_by_pop >= min_cases))
+        if not skip_case_count_filter:
+            criteria &= (ht.n_cases_both_sexes >= MIN_CASES_ALL)
+        ht = ht.filter(criteria)
 
     if single_sex_only:
         prop_female = ht.n_cases_females / (ht.n_cases_males + ht.n_cases_females)
@@ -46,7 +49,18 @@ def get_phenos_to_run(pop: str, limit: int = None, pilot: bool = False, single_s
         output = output.intersection(PILOT_PHENOTYPES)
     if limit:
         output = set(sorted(output)[:limit])
+    if specific_phenos:
+        if '*' in specific_phenos:
+            logger.info(f'Got regex: {specific_phenos}')
+            specific_phenos = specific_phenos.split(',')
+            output = [x for x in output if any([re.match(pcd, '-'.join(x)) for pcd in specific_phenos])]
+        else:
+            output = output.intersection({tuple(pcd.split('-')) for pcd in specific_phenos.split(',')})
     return output
+
+
+def format_pheno_dir(pheno):
+    return pheno.replace("/", "_")
 
 
 def main(args):
@@ -75,8 +89,8 @@ def main(args):
         window = '1e7' if pop == 'EUR' else '1e6'
         logger.info(f'Setting up {pop}...')
         chunk_size = int(5e6) if pop != 'EUR' else int(1e6)
-        phenos_to_run = get_phenos_to_run(pop, 1 if args.local_test else args.limit, not args.run_all_phenos,
-                                          args.single_sex_only)
+        phenos_to_run = get_phenos_to_run(pop, int(args.local_test), not args.run_all_phenos,
+                                          args.single_sex_only, args.phenos)
         logger.info(f'Got {len(phenos_to_run)} phenotypes...')
         if len(phenos_to_run) <= 20:
             logger.info(phenos_to_run)
@@ -89,7 +103,7 @@ def main(args):
 
         for pheno_coding_trait in phenos_to_run:
             pheno, coding, trait_type = pheno_coding_trait
-            pheno_export_path = f'{pheno_export_dir}/{trait_type}-{pheno}-{coding}.tsv'
+            pheno_export_path = f'{pheno_export_dir}/{trait_type}-{format_pheno_dir(pheno)}-{coding}.tsv'
             if not args.overwrite_pheno_data and pheno_export_path in phenos_already_exported:
                 pheno_file = p.read_input(pheno_export_path)
             else:
@@ -110,7 +124,7 @@ def main(args):
 
         for pheno_coding_trait in phenos_to_run:
             pheno, coding, trait_type = pheno_coding_trait
-            null_glmm_root = f'{null_model_dir}/{trait_type}-{pheno}-{coding}'
+            null_glmm_root = f'{null_model_dir}/{trait_type}-{format_pheno_dir(pheno)}-{coding}'
             model_file_path = f'{null_glmm_root}.rda'
             variance_ratio_file_path = f'{null_glmm_root}.{analysis_type}.varianceRatio.txt'
 
@@ -122,7 +136,7 @@ def main(args):
                 if args.skip_any_null_models: continue
                 fit_null_task = fit_null_glmm(p, null_glmm_root, pheno_exports[pheno_coding_trait], trait_type, covariates,
                                               get_ukb_grm_plink_path(pop, iteration, window), SAIGE_DOCKER_IMAGE,
-                                              inv_normalize=True, n_threads=n_threads, min_covariate_count=1)
+                                              inv_normalize=False, n_threads=n_threads, min_covariate_count=1)
                 fit_null_task.attributes.update({'pop': pop, 'pheno': pheno})
                 model_file = fit_null_task.null_glmm.rda
                 variance_ratio_file = fit_null_task.null_glmm[f'{analysis_type}.varianceRatio.txt']
@@ -179,7 +193,7 @@ def main(args):
                 n_jobs = dict(Counter(map(lambda x: x.name, p.select_tasks("")))).get("run_saige", 0)
                 logger.info(f'Read {i} phenotypes ({n_jobs} new to run so far)...')
 
-            pheno_results_dir = f'{result_dir}/{trait_type}-{pheno}-{coding}'
+            pheno_results_dir = f'{result_dir}/{trait_type}-{format_pheno_dir(pheno)}-{coding}'
             results_already_created = {}
             # logger.info(f'Checking {pheno_results_dir}...')
             if not overwrite_results and not args.skip_saige and hl.hadoop_exists(pheno_results_dir):
@@ -194,7 +208,7 @@ def main(args):
                     end_pos = chrom_length if start_pos + chunk_size > chrom_length else (start_pos + chunk_size)
                     interval = f'{chromosome}:{start_pos}-{end_pos}'
                     vcf_file = vcfs[interval]
-                    results_path = f'{pheno_results_dir}/result_{pheno}_{chromosome}_{str(start_pos).zfill(9)}'
+                    results_path = f'{pheno_results_dir}/result_{format_pheno_dir(pheno)}_{chromosome}_{str(start_pos).zfill(9)}'
                     if overwrite_results or f'{results_path}.single_variant.txt' not in results_already_created:
                         samples_file = p.read_input(get_ukb_samples_file_path(pop, iteration))
                         saige_task = run_saige(p, results_path, model_file, variance_ratio_file, vcf_file, samples_file,
@@ -215,14 +229,14 @@ def main(args):
                 load_task = load_results_into_hail(p, pheno_results_dir, pheno, coding, trait_type,
                                                    saige_tasks, get_ukb_vep_path(), HAIL_DOCKER_IMAGE,
                                                    reference=reference, analysis_type=analysis_type,
-                                                   n_threads=n_threads)
+                                                   n_threads=n_threads,
+                                                   # null_glmm_log=f'{null_model_dir}/{trait_type}-{format_pheno_dir(pheno)}-{coding}.{analysis_type}.log'
+                                                   )
                 load_task.attributes['pop'] = pop
                 res_tasks.append(load_task)
                 qq_export, qq_plot = qq_plot_results(p, pheno_results_dir, res_tasks, HAIL_DOCKER_IMAGE, QQ_DOCKER_IMAGE, n_threads=n_threads)
                 qq_export.attributes.update({'pheno': pheno, 'coding': coding, 'trait_type': trait_type, 'pop': pop})
                 qq_plot.attributes.update({'pheno': pheno, 'coding': coding, 'trait_type': trait_type, 'pop': pop})
-            if args.limit and n_jobs >= args.limit:
-                break
 
         logger.info(f'Setup took: {time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time))}')
         logger.info(f'Submitting: {get_tasks_from_pipeline(p)}')
@@ -235,19 +249,18 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--overwrite_pheno_data', help='Run single variant SAIGE', action='store_true')
-    parser.add_argument('--single_sex_only', help='Run single variant SAIGE', action='store_true')
-    parser.add_argument('--skip_any_null_models', help='Run single variant SAIGE', action='store_true')
-    parser.add_argument('--skip_saige', help='Run single variant SAIGE', action='store_true')
-    parser.add_argument('--create_null_models', help='Run single variant SAIGE', action='store_true')
-    parser.add_argument('--create_vcfs', help='Run single variant SAIGE', action='store_true')
-    parser.add_argument('--overwrite_results', help='Run single variant SAIGE', action='store_true')
-    parser.add_argument('--overwrite_hail_results', help='Run single variant SAIGE', action='store_true')
-    parser.add_argument('--local_test', help='Run single variant SAIGE', action='store_true')
-    parser.add_argument('--use_bgen', help='Run single variant SAIGE', action='store_true')
-    parser.add_argument('--limit', help='Run single variant SAIGE', type=int)
-    parser.add_argument('--run_all_phenos', help='Dry run only', action='store_true')
+    parser.add_argument('--single_sex_only', help='Run only single sex phenotypes (experimental)', action='store_true')
+    parser.add_argument('--skip_any_null_models', help='Skip running SAIGE null models', action='store_true')
+    parser.add_argument('--skip_saige', help='Skip running SAIGE tests', action='store_true')
+    parser.add_argument('--create_null_models', help='Force creation of null models', action='store_true')
+    parser.add_argument('--create_vcfs', help='Force creation of VCFs', action='store_true')
+    parser.add_argument('--overwrite_results', help='Force run of SAIGE tests', action='store_true')
+    parser.add_argument('--overwrite_hail_results', help='Force run of results loading', action='store_true')
+    parser.add_argument('--local_test', help='Local test of pipeline', action='store_true')
+    parser.add_argument('--phenos', help='Comma-separated list of trait_type-pheno-coding to run'
+                                         '(e.g. 50-irnt-continuous,E10-icd10-icd_all )')
+    parser.add_argument('--run_all_phenos', help='Run all phenotypes through pipeline (default: only pilot)', action='store_true')
     parser.add_argument('--dry_run', help='Dry run only', action='store_true')
-    parser.add_argument('--send_slack', help='Dry run only', action='store_true')
     args = parser.parse_args()
 
     if args.local_test:
