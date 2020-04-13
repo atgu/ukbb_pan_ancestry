@@ -2,11 +2,11 @@
 
 __author__ = 'konradk'
 
-from gnomad_hail import *
+import argparse
+from datetime import date
 from ukb_common import *
 from ukbb_pan_ancestry.resources import *
 
-temp_bucket = 'gs://ukbb-diverse-temp-30day'
 pairwise_correlation_ht_path = f'{pheno_folder}/pheno_combo_explore/pairwise_correlations.ht'
 
 
@@ -111,6 +111,24 @@ def add_whr(mt):
     return mt.union_cols(new_mt)
 
 
+def load_activity_monitor_data():
+    ht = hl.import_table(activity_monitor_data_path, delimiter=',', impute=True)
+
+
+def load_custom_pheno(traittype_source: str, overwrite: bool = False):
+    trait_type, source = traittype_source.split('-')
+    print(f'Loading {get_custom_pheno_path(traittype_source, extension="txt")}')
+    ht = hl.import_table(get_custom_pheno_path(traittype_source, extension='txt'), impute=True)
+    inferred_sample_column = list(ht.row)[0]
+    ht = ht.key_by(userId=ht[inferred_sample_column]).drop(inferred_sample_column)
+    if trait_type == 'categorical':
+        ht = ht.annotate(**{x: hl.bool(ht[x]) for x in list(ht.row_value)})
+
+    mt = pheno_ht_to_mt(ht, trait_type, rekey=False).annotate_cols(data_type=trait_type)
+    mt = mt.key_cols_by(pheno=mt.phesant_pheno, coding=source).drop('phesant_pheno')
+    return mt.checkpoint(get_custom_pheno_path(traittype_source, extension='ht'), overwrite)
+
+
 def main(args):
     hl.init(log='/load_pheno.log')
     sexes = ('both_sexes_no_sex_specific', 'females', 'males')
@@ -160,15 +178,23 @@ def main(args):
         mt = mt.checkpoint(get_ukb_pheno_mt_path(), args.overwrite, _read_if_exists=not args.overwrite)
         mt.cols().export(f'{pheno_folder}/all_pheno_summary.txt.bgz')
 
-        ht = mt.group_rows_by('pop').aggregate(
-            stats=hl.agg.stats(mt.both_sexes),
-            n_cases_by_pop=hl.cond(hl.set({'continuous', 'biomarkers'}).contains(mt.data_type),
-                                   hl.agg.count_where(hl.is_defined(mt.both_sexes)),
-                                   hl.int64(hl.agg.sum(mt.both_sexes)))
-        ).entries()
-        ht = ht.key_by('pop', 'pheno', 'coding', trait_type=ht.data_type)
-        ht = ht.checkpoint(get_phenotype_summary_path('full'), overwrite=args.overwrite, _read_if_exists=not args.overwrite)
-        ht.flatten().export(get_phenotype_summary_path('full', 'tsv'))
+
+    if args.add_dataset:
+        curdate = date.today().strftime("%y%m%d")
+        mt = load_custom_pheno(args.add_dataset, args.overwrite)
+        cov_ht = get_covariates(hl.int32).persist()
+        mt = combine_pheno_files_multi_sex({'custom': mt}, cov_ht)
+        original_mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
+        original_mt = original_mt.checkpoint(get_ukb_pheno_mt_path(f'full_before_{curdate}', sex='full'), args.overwrite)
+        original_mt.cols().export(f'{pheno_folder}/all_pheno_summary_before_{curdate}.txt.bgz')
+        mt = original_mt.union_cols(mt).write(get_ukb_pheno_mt_path(), args.overwrite)
+        mt.cols().export(f'{pheno_folder}/all_pheno_summary.txt.bgz')
+        summarize_data(args.overwrite)
+
+
+    if args.summarize_data:
+        summarize_data(args.overwrite)
+        ht = hl.read_table(get_phenotype_summary_path('full'))
 
         ht = ht.filter(
             ~hl.set({'raw', 'icd9'}).contains(ht.coding) &
@@ -187,12 +213,26 @@ def main(args):
         hl.read_table(pairwise_correlation_ht_path).flatten().export(pairwise_correlation_ht_path.replace('.ht', '.txt.bgz'))
 
 
+def summarize_data(overwrite):
+    mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
+    ht = mt.group_rows_by('pop').aggregate(
+        stats=hl.agg.stats(mt.both_sexes),
+        n_cases_by_pop=hl.cond(hl.set({'continuous', 'biomarkers'}).contains(mt.data_type),
+                               hl.agg.count_where(hl.is_defined(mt.both_sexes)),
+                               hl.int64(hl.agg.sum(mt.both_sexes)))
+    ).entries()
+    ht = ht.key_by('pop', 'pheno', 'coding', trait_type=ht.data_type)
+    ht = ht.checkpoint(get_phenotype_summary_path('full'), overwrite=overwrite, _read_if_exists=not overwrite)
+    ht.flatten().export(get_phenotype_summary_path('full', 'tsv'))
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--overwrite', help='Overwrite everything', action='store_true')
     parser.add_argument('--load_data', help='Load data', action='store_true')
     parser.add_argument('--combine_data', help='Load data', action='store_true')
+    parser.add_argument('--add_dataset', help='Load data')
     parser.add_argument('--pairwise_correlations', help='Load data', action='store_true')
     parser.add_argument('--slack_channel', help='Send message to Slack channel/user', default='@konradjk')
     args = parser.parse_args()
