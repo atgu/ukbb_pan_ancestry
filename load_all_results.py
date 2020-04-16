@@ -14,7 +14,7 @@ def get_all_valid_variant_results_ht_paths(pop):
     results_dir = f'{bucket}/results/result/{pop}'
     all_phenos_dir = hl.hadoop_ls(results_dir)
     all_variant_outputs = get_files_in_parent_directory(all_phenos_dir)
-    return all_variant_outputs
+    return [x for x in all_variant_outputs if 'prescriptions--' not in x]
 
 
 def get_heritability_dict(pop):

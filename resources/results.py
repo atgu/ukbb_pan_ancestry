@@ -2,6 +2,10 @@ from .generic import *
 from ukb_common.resources.results import *
 
 
+def get_gene_intervals_path(reference: str = 'GRCh37'):
+    return f'{public_bucket}/misc/gene_intervals_{reference}.ht'
+
+
 def get_variant_results_path(pop: str, extension: str = 'mt'):
     return f'{bucket}/combined_results/results_{pop}.{extension}'
 
