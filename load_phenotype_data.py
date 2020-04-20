@@ -129,11 +129,62 @@ def add_whr(mt):
     return mt.union_cols(new_mt)
 
 
-def load_activity_monitor_data():
-    ht = hl.import_table(activity_monitor_data_path, delimiter=',', impute=True)
+def filter_and_annotate_ukb_data(ht, criteria, type_cast_function = hl.float64):
+    fields_to_keep = {x.split('-')[0]: type_cast_function(v) for x, v in ht.row_value.items() if criteria(x, v)}
+    ht = ht.select(**fields_to_keep)
+    description_ht = load_showcase()
+    mt = ht.to_matrix_table_row_major(columns=list(fields_to_keep), entry_field_name='value', col_field_name='pheno')
+    return mt.annotate_cols(**description_ht[mt.pheno])
 
 
-def load_custom_pheno(traittype_source: str, overwrite: bool = False):
+def load_showcase():
+    return hl.import_table(pheno_description_path, impute=True, missing='', key='FieldID', types={'FieldID': hl.tstr})
+
+
+def load_first_occurrence_data(overwrite: bool = False):
+    ht = hl.import_table(first_exposure_and_activity_monitor_data_path, delimiter=',', quote='"', missing='', impute=True, key='eid')  #, min_partitions=500)
+    pseudo_dates = {'1901-01-01', '2037-07-07'}  # Pseudo date information at http://biobank.ctsu.ox.ac.uk/showcase/coding.cgi?id=819
+    dob_ht = load_dob_ht()[ht.key]
+    dob = dob_ht.dob
+    month = dob_ht.month
+
+    def parse_first_occurrence(x):
+        return (hl.case(missing_false=True)
+            .when((x.dtype == hl.tint32) | (x.dtype == hl.tfloat64), hl.float64(x))  # Source of the first code ...
+            .when(hl.literal(pseudo_dates).contains(hl.str(x)), hl.null(hl.float64))  # Setting past and future dates to missing
+            .when(hl.str(x) == '1902-02-02', 0.0)  # Matches DOB
+            .when(hl.str(x) == '1903-03-03',  # Within year of birth (taking midpoint between month of birth and EOY)
+                  (hl.experimental.strptime('1970-12-31 00:00:00', '%Y-%m-%d %H:%M:%S', 'GMT') -
+                   hl.experimental.strptime('1970-' + month + '-15 00:00:00', '%Y-%m-%d %H:%M:%S',
+                                            'GMT')) / 2)
+            .default(hl.experimental.strptime(hl.str(x) + ' 00:00:00', '%Y-%m-%d %H:%M:%S', 'GMT') - dob
+        ))
+
+    mt = filter_and_annotate_ukb_data(ht, lambda k, v: k.startswith('13') and k.endswith('-0.0'), parse_first_occurrence)
+
+    mt = mt.key_cols_by(trait_type='icd_first_occurrence',
+                        pheno=mt.pheno, pheno_sex='both_sexes',
+                        modifier=hl.if_else(mt.Field.startswith('Date'), 'first_occurrence_date', 'first_occurrence_source'),
+                        coding=hl.null(hl.tstr))
+    mt.write(get_ukb_pheno_mt_path('icd_first_occurrence'), overwrite)
+
+
+def load_activity_monitor_data(overwrite: bool = False):
+    ht = hl.import_table(first_exposure_and_activity_monitor_data_path, delimiter=',', quote='"', missing='', impute=True, key='eid')  #, min_partitions=500)
+    mt = filter_and_annotate_ukb_data(ht, lambda x, v: x.startswith('90') and x.endswith('-0.0') and
+                                                       v.dtype in {hl.tint32, hl.tfloat64})
+    mt = mt.key_cols_by(trait_type='activity_monitor', pheno=mt.pheno, pheno_sex='both_sexes', modifier=hl.null(hl.tstr), coding=hl.null(hl.tstr))
+    mt.write(get_ukb_pheno_mt_path('activity_monitor'), overwrite)
+
+
+def load_brain_mri_data(overwrite: bool = False):
+    ht = hl.import_table(brain_mri_data_path, delimiter=',', quote='"', missing='', impute=True, key='eid')  #, min_partitions=500)
+    mt = filter_and_annotate_ukb_data(ht, lambda x, v: v.dtype in {hl.tint32, hl.tfloat64})
+    mt = mt.key_cols_by(trait_type='brain_mri', pheno=mt.pheno, pheno_sex='both_sexes', modifier=hl.null(hl.tstr), coding=hl.null(hl.tstr))
+    mt.write(get_ukb_pheno_mt_path('brain_mri'), overwrite)
+
+
+def load_custom_pheno(traittype_source: str, overwrite: bool = False, sex: str = 'both_sexes'):
     trait_type, source = traittype_source.split('-')
     print(f'Loading {get_custom_pheno_path(traittype_source, extension="txt")}')
     ht = hl.import_table(get_custom_pheno_path(traittype_source, extension='txt'), impute=True)
@@ -143,7 +194,9 @@ def load_custom_pheno(traittype_source: str, overwrite: bool = False):
         ht = ht.annotate(**{x: hl.bool(ht[x]) for x in list(ht.row_value)})
 
     mt = pheno_ht_to_mt(ht, trait_type, rekey=False).annotate_cols(data_type=trait_type)
-    mt = mt.key_cols_by(pheno=mt.phesant_pheno, coding=source).drop('phesant_pheno')
+    mt = mt.key_cols_by(trait_type=trait_type, phenocode=mt.phesant_pheno, pheno_sex=sex, coding=hl.null(hl.tstr),
+                        modifier=hl.null(hl.tstr)).drop('phesant_pheno')
+    mt = mt.annotate_cols(category=source)  # TODO: figure out if source should be in trait_type instead
     return mt.checkpoint(get_custom_pheno_path(traittype_source, extension='ht'), overwrite)
 
 
@@ -154,7 +207,10 @@ def main(args):
     curdate = date.today().strftime("%y%m%d")
 
     if args.load_data:
-        load_hesin_data(args.overwrite)
+        load_hesin_data(args.overwrite)  # TODO: create derivative phenotypes from hesin data
+        load_first_occurrence_data(args.overwrite)
+        load_brain_mri_data(args.overwrite)
+        load_activity_monitor_data(args.overwrite)
         load_prescription_data(prescription_tsv_path, prescription_mapping_path).write(get_ukb_pheno_mt_path('prescriptions'), args.overwrite)
         load_icd_data(pre_phesant_tsv_path, icd_codings_ht_path, f'{temp_bucket}/pheno').write(get_ukb_pheno_mt_path('icd'), args.overwrite)
         load_icd_data(pre_phesant_tsv_path, icd9_codings_ht_path, f'{temp_bucket}/pheno_icd9', icd9=True).write(get_ukb_pheno_mt_path('icd9'), args.overwrite)
