@@ -226,11 +226,15 @@ def main(args):
                 pheno_ht_to_mt(pheno_ht, data_type).write(get_ukb_pheno_mt_path(data_type, sex), args.overwrite)
 
             ht = hl.import_table(get_ukb_additional_phenos_tsv_path(sex), impute=True, min_partitions=100, missing='NA', key='userId')
-            pheno_ht_to_mt(ht, 'continuous', pheno_function_type=hl.str).write(get_ukb_pheno_mt_path('additional', sex), args.overwrite)
+            mt = pheno_ht_to_mt(ht, 'continuous', pheno_function_type=hl.str)
+            description_ht = hl.import_table(get_ukb_additional_phenos_description_path(), impute=True, quote='"', key=['pheno', 'coding'])
+            mt.annotate_cols(**description_ht[mt.col_key]).write(get_ukb_pheno_mt_path('additional', sex), args.overwrite)
 
         ht = hl.import_table(phesant_biomarker_phenotypes_tsv_path, impute=True, min_partitions=100, missing='', key='userId', force_bgz=True, quote='"')
         ht = ht.checkpoint(get_biomarker_ht_path(), overwrite=args.overwrite)
-        pheno_ht_to_mt(ht, 'continuous').write(get_ukb_pheno_mt_path('biomarkers'), args.overwrite)
+        mt = pheno_ht_to_mt(ht, 'continuous')
+        description_ht = load_showcase()
+        mt.annotate_cols(**description_ht[hl.str(mt.pheno)]).write(get_ukb_pheno_mt_path('biomarkers'), args.overwrite)
 
     if args.combine_data:
         for data_type in data_types:
