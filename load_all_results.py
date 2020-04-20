@@ -139,8 +139,8 @@ def main(args):
                                       f'{temp_bucket}/{pop}/variant_{today}', inner_mode)
 
             original_mt = hl.read_matrix_table(get_variant_results_path(pop, 'mt'))
-            original_mt = original_mt.checkpoint(f'{temp_bucket}/{pop}/variant_before_{today}.mt', overwrite=args.overwrite)
-            mt = original_mt.union_cols(mt)
+            original_mt = original_mt.checkpoint(f'{temp_bucket}/{pop}/variant_before_{today}.mt', _read_if_exists=True)
+            mt = original_mt.union_cols(mt, row_join_type='outer')
             mt.write(get_variant_results_path(pop, 'mt'), overwrite=args.overwrite)
 
 
