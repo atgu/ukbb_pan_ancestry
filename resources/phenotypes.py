@@ -21,6 +21,10 @@ def get_ukb_additional_phenos_tsv_path(sex: str = 'both_sexes_no_sex_specific'):
     return f'{phesant_folder}/additional_clinical_traits_{sex}.tsv'
 
 
+def get_ukb_additional_phenos_description_path():
+    return f'{phesant_folder}/NA_phenos.txt'
+
+
 phesant_biomarker_phenotypes_tsv_path = f'{pheno_folder}/uk_round2_allSamples_biomarkers_phesant_QC.tsv.gz'
 
 pre_phesant_tsv_path = f'{pheno_folder}/neale_lab_parsed_QC_Oct2019.tsv'
@@ -48,6 +52,8 @@ def get_hesin_raw_data_path(data_type: str = None):
 
 prescription_tsv_path = 'gs://ukb31063/ukb31063.gp_scripts.20191008.txt'
 prescription_mapping_path = f'{bucket}/Phenotypes/ukb_prescription_mapping.tsv'
+first_exposure_and_activity_monitor_data_path = 'gs://ukb31063/ukb31063.41395.csv'
+brain_mri_data_path = 'gs://ukb31063/ukb31063.2006691.brainmri.csv'
 
 
 def get_hesin_mt_path(data_type: str):
