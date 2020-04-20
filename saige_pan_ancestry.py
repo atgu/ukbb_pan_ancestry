@@ -47,8 +47,7 @@ def get_phenos_to_run(pop: str, limit: int = None, pilot: bool = False, single_s
     ht = ht.filter(criteria)
     print(f'Got {ht.count()} phenotypes from table...')
 
-    fields = ('trait_type', 'phenocode', 'pheno_sex', 'coding', 'modifier')
-    output = set([tuple(x[field] for field in fields) for x in ht.key_by().select(*fields).collect()])
+    output = set([tuple(x[field] for field in PHENO_KEY_FIELDS) for x in ht.key_by().select(*PHENO_KEY_FIELDS).collect()])
     if pilot:
         output = output.intersection(PILOT_PHENOTYPES)
     if specific_phenos:
@@ -57,20 +56,47 @@ def get_phenos_to_run(pop: str, limit: int = None, pilot: bool = False, single_s
         output = [x for x in output if any([re.match(pcd, '-'.join(x)) for pcd in specific_phenos])]
     if limit:
         output = set(sorted(output)[:limit])
-    return output
+
+    pheno_key_dict = [dict(zip(PHENO_KEY_FIELDS, x)) for x in output]
+    if first_round_phenos:
+        pheno_key_dict = recode_legacy_pkd(pheno_key_dict)
+    return pheno_key_dict
 
 
 def format_pheno_dir(pheno):
     return pheno.replace("/", "_")
 
 
-def split_pheno_key(pcd, legacy: bool = True):
-    trait_type, pheno, sex, coding, modifier = pcd
-    if legacy:
-        coding = sex if sex else coding if coding else modifier
-        sex = ''
-        modifier = ''
-    return trait_type, pheno, sex, coding, modifier
+def recode_legacy_pkd(pheno_key_dict):
+    pheno_key_dict['coding'] = pheno_key_dict['sex'] if pheno_key_dict['sex'] else pheno_key_dict['coding'] if pheno_key_dict['coding'] else pheno_key_dict['modifier']
+    pheno_key_dict['sex'] = ''
+    pheno_key_dict['modifier'] = ''
+    return pheno_key_dict
+
+
+def stringify_pheno_key_dict(pheno_key_dict, format_phenocode_field: bool = False):
+    return '-'.join([format_pheno_dir(pheno_key_dict[x])
+                     if x == 'phenocode' and format_phenocode_field
+                     else pheno_key_dict[x] for x in PHENO_KEY_FIELDS])
+
+
+
+def get_results_prefix(pheno_results_dir, pheno_key_dict, chromosome, start_pos):
+    prefix = f'{pheno_results_dir}/result_'
+    if 'modifier' in pheno_key_dict:
+        prefix += stringify_pheno_key_dict(pheno_key_dict, True)
+    else:
+        prefix += format_pheno_dir(pheno_key_dict["pheno"])
+    return f'{prefix}_{chromosome}_{str(start_pos).zfill(9)}'
+
+
+def get_pheno_output_path(pheno_export_dir, pheno_coding_trait):
+    if 'modifier' in pheno_coding_trait:
+        extended_suffix = f'{pheno_coding_trait["sex"]}-{pheno_coding_trait["coding"]}-{pheno_coding_trait["modifier"]}'
+    else:
+        extended_suffix = pheno_coding_trait['coding']
+    return f'{pheno_export_dir}/{pheno_coding_trait["trait_type"]}-{format_pheno_dir(pheno_coding_trait["pheno"])}-{extended_suffix}.tsv'
+
 
 
 def main(args):
@@ -114,17 +140,16 @@ def main(args):
             phenos_already_exported = {x['path'] for x in hl.hadoop_ls(pheno_export_dir)}
         pheno_exports = {}
 
-        for pheno_coding_trait in phenos_to_run:
-            trait_type, pheno, sex, coding, modifier = split_pheno_key(pheno_coding_trait, legacy=args.run_first_round_phenos)
-            pheno_export_path = get_pheno_output_path(pheno_export_dir, trait_type, pheno, sex, coding, modifier, legacy=args.run_first_round_phenos)
+        for pheno_key_dict in phenos_to_run:
+            pheno_export_path = get_pheno_output_path(pheno_export_dir, pheno_key_dict)
             if not args.overwrite_pheno_data and pheno_export_path in phenos_already_exported:
                 pheno_file = p.read_input(pheno_export_path)
             else:
-                pheno_task = export_pheno(p, pheno_export_path, pheno, coding, trait_type, 'ukbb_pan_ancestry',
+                pheno_task = export_pheno(p, pheno_export_path, pheno_key_dict, 'ukbb_pan_ancestry',
                                           HAIL_DOCKER_IMAGE, additional_args=pop, n_threads=n_threads)
-                pheno_task.attributes['pop'] = pop
+                pheno_task.attributes.update({'pop': pop}).update(pheno_key_dict)
                 pheno_file = pheno_task.out
-            pheno_exports[pheno_coding_trait] = pheno_file
+            pheno_exports[stringify_pheno_key_dict(pheno_key_dict)] = pheno_file
         completed = Counter([isinstance(x, InputResourceFile) for x in pheno_exports.values()])
         logger.info(f'Exporting {completed[False]} phenos (already found {completed[True]})...')
 
@@ -135,10 +160,8 @@ def main(args):
             null_models_already_created = {x['path'] for x in hl.hadoop_ls(null_model_dir)}
         null_models = {}
 
-        for pheno_coding_trait in phenos_to_run:
-            trait_type, pheno, sex, coding, modifier = split_pheno_key(pheno_coding_trait, legacy=args.run_first_round_phenos)
-            null_glmm_root = get_pheno_output_path(null_model_dir, trait_type, pheno, sex, coding, modifier,
-                                                      legacy=args.run_first_round_phenos)
+        for pheno_key_dict in phenos_to_run:
+            null_glmm_root = get_pheno_output_path(null_model_dir, pheno_key_dict)
             model_file_path = f'{null_glmm_root}.rda'
             variance_ratio_file_path = f'{null_glmm_root}.{analysis_type}.varianceRatio.txt'
 
@@ -148,13 +171,14 @@ def main(args):
                 variance_ratio_file = p.read_input(variance_ratio_file_path)
             else:
                 if args.skip_any_null_models: continue
-                fit_null_task = fit_null_glmm(p, null_glmm_root, pheno_exports[pheno_coding_trait], trait_type, covariates,
+                fit_null_task = fit_null_glmm(p, null_glmm_root, pheno_exports[stringify_pheno_key_dict(pheno_key_dict)],
+                                              pheno_key_dict['trait_type'], covariates,
                                               get_ukb_grm_plink_path(pop, iteration, window), SAIGE_DOCKER_IMAGE,
                                               inv_normalize=False, n_threads=n_threads, min_covariate_count=1)
-                fit_null_task.attributes.update({'pop': pop, 'pheno': pheno})
+                fit_null_task.attributes.update({'pop': pop}).update(pheno_key_dict)
                 model_file = fit_null_task.null_glmm.rda
                 variance_ratio_file = fit_null_task.null_glmm[f'{analysis_type}.varianceRatio.txt']
-            null_models[pheno_coding_trait] = (model_file, variance_ratio_file)
+            null_models[stringify_pheno_key_dict(pheno_key_dict)] = (model_file, variance_ratio_file)
 
         completed = Counter([isinstance(x[0], InputResourceFile) for x in null_models.values()])
         logger.info(f'Running {completed[False]} null models (already found {completed[True]})...')
@@ -200,21 +224,20 @@ def main(args):
 
         result_dir = f'{root}/result/{pop}'
         overwrite_results = args.overwrite_results
-        for i, pheno_coding_trait in enumerate(phenos_to_run):
-            trait_type, pheno, sex, coding, modifier = split_pheno_key(pheno_coding_trait, legacy=args.run_first_round_phenos)
-            if pheno_coding_trait not in null_models: continue
+        for i, pheno_key_dict in enumerate(phenos_to_run):
+            if stringify_pheno_key_dict(pheno_key_dict) not in null_models: continue
+            model_file, variance_ratio_file = null_models[stringify_pheno_key_dict(pheno_key_dict)]
+
             if not i % 10:
                 n_jobs = dict(Counter(map(lambda x: x.name, p.select_jobs("")))).get("run_saige", 0)
                 logger.info(f'Read {i} phenotypes ({n_jobs} new to run so far)...')
 
-            pheno_results_dir = get_pheno_output_path(result_dir, trait_type, pheno, sex, coding, modifier,
-                                                      legacy=args.run_first_round_phenos)
+            pheno_results_dir = get_pheno_output_path(result_dir, pheno_key_dict)
             results_already_created = {}
-            # logger.info(f'Checking {pheno_results_dir}...')
+
             if not overwrite_results and not args.skip_saige and hl.hadoop_exists(pheno_results_dir):
                 results_already_created = {x['path'] for x in hl.hadoop_ls(pheno_results_dir)}
 
-            model_file, variance_ratio_file = null_models[pheno_coding_trait]
             saige_tasks = []
             for chromosome in chromosomes:
                 if args.skip_saige: break
@@ -223,14 +246,13 @@ def main(args):
                     end_pos = chrom_length if start_pos + chunk_size > chrom_length else (start_pos + chunk_size)
                     interval = f'{chromosome}:{start_pos}-{end_pos}'
                     vcf_file = vcfs[interval]
-                    results_path = f'{pheno_results_dir}/result_{format_pheno_dir(pheno)}_{chromosome}_{str(start_pos).zfill(9)}'
+                    results_path = get_results_prefix(pheno_results_dir, pheno_key_dict, chromosome, start_pos)
                     if overwrite_results or f'{results_path}.single_variant.txt' not in results_already_created:
                         samples_file = p.read_input(get_ukb_samples_file_path(pop, iteration))
                         saige_task = run_saige(p, results_path, model_file, variance_ratio_file, vcf_file, samples_file,
-                                               SAIGE_DOCKER_IMAGE, trait_type=trait_type, use_bgen=use_bgen,
+                                               SAIGE_DOCKER_IMAGE, trait_type=pheno_key_dict['trait_type'], use_bgen=use_bgen,
                                                chrom=chromosome)
-                        saige_task.attributes.update({'interval': interval, 'pheno': pheno, 'coding': coding,
-                                                      'trait_type': trait_type, 'pop': pop})
+                        saige_task.attributes.update({'interval': interval, 'pop': pop}).update(pheno_key_dict)
                         saige_tasks.append(saige_task)
                     if args.local_test:
                         break
@@ -241,7 +263,7 @@ def main(args):
             if overwrite_results or args.overwrite_hail_results or \
                     f'{pheno_results_dir}/variant_results.mt' not in results_already_created or \
                     not hl.hadoop_exists(f'{pheno_results_dir}/variant_results.mt/_SUCCESS'):
-                load_task = load_results_into_hail(p, pheno_results_dir, pheno, coding, trait_type,
+                load_task = load_results_into_hail(p, pheno_results_dir, pheno_key_dict,
                                                    saige_tasks, get_ukb_vep_path(), HAIL_DOCKER_IMAGE,
                                                    reference=reference, analysis_type=analysis_type,
                                                    n_threads=n_threads,
@@ -250,22 +272,14 @@ def main(args):
                 load_task.attributes['pop'] = pop
                 res_tasks.append(load_task)
                 qq_export, qq_plot = qq_plot_results(p, pheno_results_dir, res_tasks, HAIL_DOCKER_IMAGE, QQ_DOCKER_IMAGE, n_threads=n_threads)
-                qq_export.attributes.update({'pheno': pheno, 'coding': coding, 'trait_type': trait_type, 'pop': pop})
-                qq_plot.attributes.update({'pheno': pheno, 'coding': coding, 'trait_type': trait_type, 'pop': pop})
+                qq_export.attributes.update({'pop': pop}).update(pheno_key_dict)
+                qq_plot.attributes.update({'pop': pop}).update(pheno_key_dict)
 
         logger.info(f'Setup took: {time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time))}')
         logger.info(f'Submitting: {get_tasks_from_pipeline(p)}')
         logger.info(f"Total size: {sum([len(x._pretty()) for x in p.select_jobs('')])}")
         p.run(dry_run=args.dry_run, wait=False, delete_scratch_on_exit=False)
         logger.info(f'Finished: {get_tasks_from_pipeline(p)}')
-
-
-def get_pheno_output_path(pheno_export_dir, trait_type, pheno, sex, coding, modifier, legacy: bool = False):
-    if legacy:
-        pheno_export_path = f'{pheno_export_dir}/{trait_type}-{format_pheno_dir(pheno)}-{coding}.tsv'
-    else:
-        pheno_export_path = f'{pheno_export_dir}/{trait_type}-{format_pheno_dir(pheno)}-{sex}-{coding}-{modifier}.tsv'
-    return pheno_export_path
 
 
 if __name__ == '__main__':
