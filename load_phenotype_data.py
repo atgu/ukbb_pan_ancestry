@@ -67,28 +67,30 @@ def load_hesin_data(overwrite: bool = False):
 def add_white_noise_pheno(mt):
     new_mt = mt.add_col_index()
     new_mt = (new_mt.filter_cols(new_mt.col_idx == 0).drop('col_idx')
-              .key_cols_by(pheno='random', coding='random')
-              .annotate_cols(data_type='continuous', meaning='hl.rand_norm(seed=42)', path=''))
-    new_mt = new_mt.annotate_entries(both_sexes=hl.rand_norm(seed=42),
-                                     females=hl.or_missing(new_mt.sex == 0, hl.rand_norm(seed=43)),
-                                     males=hl.or_missing(new_mt.sex == 1, hl.rand_norm(mean=1, seed=44)))
-    new_mt = new_mt.annotate_cols(n_cases_both_sexes=hl.agg.count(),
-                                  n_cases_females=hl.agg.count_where(new_mt.sex == 0),
-                                  n_cases_males=hl.agg.count_where(new_mt.sex == 1))
+              .key_cols_by(trait_type='continuous', phenocode='random', pheno_sex='both_sexes', coding='', modifier='random'))
+    new_mt = new_mt.select_entries(both_sexes=hl.rand_norm(seed=42),
+                                   females=hl.or_missing(new_mt.sex == 0, hl.rand_norm(seed=43)),
+                                   males=hl.or_missing(new_mt.sex == 1, hl.rand_norm(mean=1, seed=44)))
+    new_mt = new_mt.select_cols(n_cases_both_sexes=hl.agg.count(),
+                                n_cases_females=hl.agg.count_where(new_mt.sex == 0),
+                                n_cases_males=hl.agg.count_where(new_mt.sex == 1),
+                                description='hl.rand_norm(seed=42)', description_more=NULL_STR,
+                                coding_description=NULL_STR, category=NULL_STR)
 
     new_mt2 = mt.add_col_index()
     pop_dict = new_mt2.aggregate_rows(
         hl.dict(hl.zip_with_index(hl.array(hl.agg.collect_as_set(new_mt2.pop)), index_first=False)),
         _localize=False)
     new_mt2 = (new_mt2.filter_cols(new_mt2.col_idx == 0).drop('col_idx')
-              .key_cols_by(pheno='random', coding='random_strat')
-              .annotate_cols(data_type='continuous', meaning='hl.rand_norm(seed=42)', path=''))
-    new_mt2 = new_mt2.annotate_entries(both_sexes=hl.rand_norm(mean=pop_dict[new_mt2.pop], seed=42),
+              .key_cols_by(trait_type='continuous', phenocode='random', pheno_sex='both_sexes', coding='', modifier='random_strat'))
+    new_mt2 = new_mt2.select_entries(both_sexes=hl.rand_norm(mean=pop_dict[new_mt2.pop], seed=42),
                                      females=hl.or_missing(new_mt2.sex == 0, hl.rand_norm(mean=pop_dict[new_mt2.pop], seed=43)),
                                      males=hl.or_missing(new_mt2.sex == 1, hl.rand_norm(mean=pop_dict[new_mt2.pop] + 1, seed=44)))
-    new_mt2 = new_mt2.annotate_cols(n_cases_both_sexes=hl.agg.count(),
+    new_mt2 = new_mt2.select_cols(n_cases_both_sexes=hl.agg.count(),
                                   n_cases_females=hl.agg.count_where(new_mt2.sex == 0),
-                                  n_cases_males=hl.agg.count_where(new_mt2.sex == 1))
+                                  n_cases_males=hl.agg.count_where(new_mt2.sex == 1),
+                                  description='hl.rand_norm(mean=pop_dict[mt.pop], seed=42)', description_more=NULL_STR,
+                                  coding_description=NULL_STR, category=NULL_STR)
 
     return mt.union_cols(new_mt).union_cols(new_mt2)
 
@@ -101,22 +103,28 @@ def irnt(he: hl.expr.Expression, output_loc: str = 'irnt'):
 
 
 def add_whr(mt):
-    new_mt = mt.filter_cols(hl.set({'48', '49'}).contains(mt.pheno) & (mt.coding == 'raw'))
-    new_ht = new_mt.annotate_rows(whr=hl.agg.sum(new_mt.both_sexes * hl.int(new_mt.pheno == '48')) /
-                                      hl.agg.sum(new_mt.both_sexes * hl.int(new_mt.pheno == '49'))
+    new_mt = mt.filter_cols(hl.set({'48', '49'}).contains(mt.phenocode) & (mt.coding == 'raw'))
+    new_ht = new_mt.annotate_rows(whr=hl.agg.sum(new_mt.both_sexes * hl.int(new_mt.phenocode == '48')) /
+                                      hl.agg.sum(new_mt.both_sexes * hl.int(new_mt.phenocode == '49'))
                                   ).rows()
-    new_ht = irnt(new_ht.whr).key_by('userId')
-    new_mt = new_mt.annotate_rows(irnt=new_ht[new_mt.row_key].irnt)
-    new_mt = new_mt.filter_cols(new_mt.pheno == '48')
-    new_mt = new_mt.annotate_entries(both_sexes=new_mt.irnt,
-                                     females=hl.or_missing(new_mt.sex == 0, new_mt.irnt),
-                                     males=hl.or_missing(new_mt.sex == 1, new_mt.irnt))
+    new_ht = irnt(new_ht.whr).key_by('userId').select('whr', 'irnt')
+    new_mt = new_mt.annotate_rows(**new_ht[new_mt.row_key])
+    # Hijacking the 48 and 49 phenos to be irnt and raw respectively
+    pheno_value = hl.if_else(new_mt.phenocode == '48', new_mt.irnt, new_mt.whr)
+    new_mt = new_mt.annotate_entries(both_sexes=pheno_value,
+                                     females=hl.or_missing(new_mt.sex == 0, pheno_value),
+                                     males=hl.or_missing(new_mt.sex == 1, pheno_value))
+    pheno_modifier = hl.if_else(new_mt.phenocode == '48', 'irnt', 'whr')
     new_mt = (new_mt
-              .key_cols_by(pheno='whr', coding='whr')
-              .annotate_cols(data_type='continuous', meaning='pheno 48 / pheno 49', path=''))
-    new_mt = new_mt.annotate_cols(n_cases_both_sexes=hl.agg.count_where(hl.is_defined(new_mt.both_sexes)),
-                                  n_cases_females=hl.agg.count_where(hl.is_defined(new_mt.females)),
-                                  n_cases_males=hl.agg.count_where(hl.is_defined(new_mt.males)))
+              .key_cols_by(trait_type='continuous',
+                           phenocode='whr', pheno_sex='both_sexes',
+                           coding=hl.null(hl.tstr),
+                           modifier=pheno_modifier))
+    new_mt = new_mt.select_cols(n_cases_both_sexes=hl.agg.count_where(hl.is_defined(new_mt.both_sexes)),
+                                n_cases_females=hl.agg.count_where(hl.is_defined(new_mt.females)),
+                                n_cases_males=hl.agg.count_where(hl.is_defined(new_mt.males)),
+                                description='pheno 48 / pheno 49', description_more=NULL_STR,
+                                coding_description=NULL_STR, category=NULL_STR)
 
     return mt.union_cols(new_mt)
 
@@ -143,6 +151,7 @@ def main(args):
     hl.init(log='/load_pheno.log')
     sexes = ('both_sexes_no_sex_specific', 'females', 'males')
     data_types = ('categorical', 'continuous') #, 'biomarkers')
+    curdate = date.today().strftime("%y%m%d")
 
     if args.load_data:
         load_hesin_data(args.overwrite)
@@ -190,7 +199,6 @@ def main(args):
 
 
     if args.add_dataset:
-        curdate = date.today().strftime("%y%m%d")
         mt = load_custom_pheno(args.add_dataset, args.overwrite)
         cov_ht = get_covariates(hl.int32).persist()
         mt = combine_pheno_files_multi_sex({'custom': mt}, cov_ht)
@@ -198,7 +206,6 @@ def main(args):
         original_mt = original_mt.checkpoint(get_ukb_pheno_mt_path(f'full_before_{curdate}', sex='full'), args.overwrite)
         original_mt.cols().export(f'{pheno_folder}/all_pheno_summary_before_{curdate}.txt.bgz')
         mt = original_mt.union_cols(mt).write(get_ukb_pheno_mt_path(), args.overwrite)
-        mt.cols().export(f'{pheno_folder}/all_pheno_summary.txt.bgz')
         summarize_data(args.overwrite)
 
 

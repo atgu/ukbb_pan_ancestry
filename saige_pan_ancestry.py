@@ -20,47 +20,57 @@ bucket = 'gs://ukb-diverse-pops'
 root = f'{bucket}/results'
 
 HAIL_DOCKER_IMAGE = 'gcr.io/ukbb-diversepops-neale/hail_utils:3.7'
-SAIGE_DOCKER_IMAGE = 'wzhou88/saige:0.36.3'
+SAIGE_DOCKER_IMAGE = 'wzhou88/saige:0.36.6'
 QQ_DOCKER_IMAGE = 'konradjk/saige_qq:0.2'
 
 
 def get_phenos_to_run(pop: str, limit: int = None, pilot: bool = False, single_sex_only: bool = False,
-                      specific_phenos: str = '', skip_case_count_filter: bool = False):
+                      specific_phenos: str = '', skip_case_count_filter: bool = False, first_round_phenos: bool = False):
     ht = hl.read_table(get_phenotype_summary_path('full'))
     ht = ht.filter(ht.pop == pop)
-    if not pilot:
-        min_cases = MIN_CASES_EUR if pop == 'EUR' else MIN_CASES
-        criteria = (~hl.set({'raw', 'icd9'}).contains(ht.coding) &
+    min_cases = MIN_CASES_EUR if pop == 'EUR' else MIN_CASES
+
+    criteria = True
+    if first_round_phenos:
+        trait_types = hl.literal({'categorical', 'continuous', 'biomarkers', 'icd10', 'prescriptions', 'phecode', 'additional'})
+        criteria = (trait_types.contains(ht.trait_type) &
+                    ~hl.set({'raw', 'icd9'}).contains(ht.coding) &
                     ~hl.set({'22601', '22617', '20024', '41230', '41210'}).contains(ht.pheno) &
                     (ht.n_cases_by_pop >= min_cases))
-        if not skip_case_count_filter:
-            criteria &= (ht.n_cases_both_sexes >= MIN_CASES_ALL)
-        ht = ht.filter(criteria)
+    if not skip_case_count_filter:
+        criteria &= (ht.n_cases_both_sexes >= MIN_CASES_ALL)
 
     if single_sex_only:
         prop_female = ht.n_cases_females / (ht.n_cases_males + ht.n_cases_females)
-        ht = ht.filter((prop_female <= 0.1) | (prop_female >= 0.9))
-        print(f'Got {ht.count()} single-sex phenotypes...')
+        criteria &= ((prop_female <= 0.1) | (prop_female >= 0.9))
 
-    fields = ('pheno', 'coding', 'data_type')
-    # output = set([tuple(x[field] for field in fields) for x in ht.key_by().collect()])
+    ht = ht.filter(criteria)
+    print(f'Got {ht.count()} phenotypes from table...')
+
+    fields = ('trait_type', 'phenocode', 'pheno_sex', 'coding', 'modifier')
     output = set([tuple(x[field] for field in fields) for x in ht.key_by().select(*fields).collect()])
     if pilot:
         output = output.intersection(PILOT_PHENOTYPES)
+    if specific_phenos:
+        specific_phenos = specific_phenos.split(',')
+        logger.info(f'Got regexes: {specific_phenos}')
+        output = [x for x in output if any([re.match(pcd, '-'.join(x)) for pcd in specific_phenos])]
     if limit:
         output = set(sorted(output)[:limit])
-    if specific_phenos:
-        if '*' in specific_phenos:
-            logger.info(f'Got regex: {specific_phenos}')
-            specific_phenos = specific_phenos.split(',')
-            output = [x for x in output if any([re.match(pcd, '-'.join(x)) for pcd in specific_phenos])]
-        else:
-            output = output.intersection({tuple(pcd.split('-')) for pcd in specific_phenos.split(',')})
     return output
 
 
 def format_pheno_dir(pheno):
     return pheno.replace("/", "_")
+
+
+def split_pheno_key(pcd, legacy: bool = True):
+    trait_type, pheno, sex, coding, modifier = pcd
+    if legacy:
+        coding = sex if sex else coding if coding else modifier
+        sex = ''
+        modifier = ''
+    return trait_type, pheno, sex, coding, modifier
 
 
 def main(args):
@@ -89,8 +99,11 @@ def main(args):
         window = '1e7' if pop == 'EUR' else '1e6'
         logger.info(f'Setting up {pop}...')
         chunk_size = int(5e6) if pop != 'EUR' else int(1e6)
-        phenos_to_run = get_phenos_to_run(pop, int(args.local_test), not args.run_all_phenos,
-                                          args.single_sex_only, args.phenos)
+        phenos_to_run = get_phenos_to_run(pop, limit=int(args.local_test),
+                                          pilot=not args.run_first_round_phenos,
+                                          single_sex_only=args.single_sex_only, specific_phenos=args.phenos,
+                                          skip_case_count_filter=args.skip_case_count_filter,
+                                          first_round_phenos=args.run_first_round_phenos)
         logger.info(f'Got {len(phenos_to_run)} phenotypes...')
         if len(phenos_to_run) <= 20:
             logger.info(phenos_to_run)
@@ -102,8 +115,8 @@ def main(args):
         pheno_exports = {}
 
         for pheno_coding_trait in phenos_to_run:
-            pheno, coding, trait_type = pheno_coding_trait
-            pheno_export_path = f'{pheno_export_dir}/{trait_type}-{format_pheno_dir(pheno)}-{coding}.tsv'
+            trait_type, pheno, sex, coding, modifier = split_pheno_key(pheno_coding_trait, legacy=args.run_first_round_phenos)
+            pheno_export_path = get_pheno_output_path(pheno_export_dir, trait_type, pheno, sex, coding, modifier, legacy=args.run_first_round_phenos)
             if not args.overwrite_pheno_data and pheno_export_path in phenos_already_exported:
                 pheno_file = p.read_input(pheno_export_path)
             else:
@@ -123,8 +136,9 @@ def main(args):
         null_models = {}
 
         for pheno_coding_trait in phenos_to_run:
-            pheno, coding, trait_type = pheno_coding_trait
-            null_glmm_root = f'{null_model_dir}/{trait_type}-{format_pheno_dir(pheno)}-{coding}'
+            trait_type, pheno, sex, coding, modifier = split_pheno_key(pheno_coding_trait, legacy=args.run_first_round_phenos)
+            null_glmm_root = get_pheno_output_path(null_model_dir, trait_type, pheno, sex, coding, modifier,
+                                                      legacy=args.run_first_round_phenos)
             model_file_path = f'{null_glmm_root}.rda'
             variance_ratio_file_path = f'{null_glmm_root}.{analysis_type}.varianceRatio.txt'
 
@@ -187,13 +201,14 @@ def main(args):
         result_dir = f'{root}/result/{pop}'
         overwrite_results = args.overwrite_results
         for i, pheno_coding_trait in enumerate(phenos_to_run):
-            pheno, coding, trait_type = pheno_coding_trait
+            trait_type, pheno, sex, coding, modifier = split_pheno_key(pheno_coding_trait, legacy=args.run_first_round_phenos)
             if pheno_coding_trait not in null_models: continue
             if not i % 10:
                 n_jobs = dict(Counter(map(lambda x: x.name, p.select_jobs("")))).get("run_saige", 0)
                 logger.info(f'Read {i} phenotypes ({n_jobs} new to run so far)...')
 
-            pheno_results_dir = f'{result_dir}/{trait_type}-{format_pheno_dir(pheno)}-{coding}'
+            pheno_results_dir = get_pheno_output_path(result_dir, trait_type, pheno, sex, coding, modifier,
+                                                      legacy=args.run_first_round_phenos)
             results_already_created = {}
             # logger.info(f'Checking {pheno_results_dir}...')
             if not overwrite_results and not args.skip_saige and hl.hadoop_exists(pheno_results_dir):
@@ -240,9 +255,17 @@ def main(args):
 
         logger.info(f'Setup took: {time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time))}')
         logger.info(f'Submitting: {get_tasks_from_pipeline(p)}')
-        logger.info(f"Total size: {sum([len(x._pretty()) for x in p.select_tasks('')])}")
+        logger.info(f"Total size: {sum([len(x._pretty()) for x in p.select_jobs('')])}")
         p.run(dry_run=args.dry_run, wait=False, delete_scratch_on_exit=False)
         logger.info(f'Finished: {get_tasks_from_pipeline(p)}')
+
+
+def get_pheno_output_path(pheno_export_dir, trait_type, pheno, sex, coding, modifier, legacy: bool = False):
+    if legacy:
+        pheno_export_path = f'{pheno_export_dir}/{trait_type}-{format_pheno_dir(pheno)}-{coding}.tsv'
+    else:
+        pheno_export_path = f'{pheno_export_dir}/{trait_type}-{format_pheno_dir(pheno)}-{sex}-{coding}-{modifier}.tsv'
+    return pheno_export_path
 
 
 if __name__ == '__main__':
@@ -257,9 +280,10 @@ if __name__ == '__main__':
     parser.add_argument('--overwrite_results', help='Force run of SAIGE tests', action='store_true')
     parser.add_argument('--overwrite_hail_results', help='Force run of results loading', action='store_true')
     parser.add_argument('--local_test', help='Local test of pipeline', action='store_true')
-    parser.add_argument('--phenos', help='Comma-separated list of trait_type-pheno-coding to run'
-                                         '(e.g. 50-irnt-continuous,E10-icd10-icd_all )')
-    parser.add_argument('--run_all_phenos', help='Run all phenotypes through pipeline (default: only pilot)', action='store_true')
+    parser.add_argument('--skip_case_count_filter', help='Skip running SAIGE tests', action='store_true')
+    parser.add_argument('--phenos', help='Comma-separated list of trait_type-phenocode-pheno_sex-coding-modifier regexes '
+                                         '(e.g. continuous-50-both_sexes--,icd10-E1.*,brain_mri-.* )')
+    parser.add_argument('--run_first_round_phenos', help='Run all phenotypes through pipeline (default: only pilot)', action='store_true')
     parser.add_argument('--dry_run', help='Dry run only', action='store_true')
     args = parser.parse_args()
 
