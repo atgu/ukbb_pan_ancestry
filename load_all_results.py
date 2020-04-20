@@ -39,7 +39,7 @@ def generate_sumstats_mt(all_variant_outputs, heritability_dict, pheno_dict, tem
     row_keys = ['locus', 'alleles', 'gene', 'annotation']
     col_keys = ['pheno', 'coding', 'trait_type']
 
-    all_hts = list(map(lambda x: unify_saige_ht_schema(hl.read_table(x)), all_variant_outputs))
+    all_hts = list(map(lambda x: unify_saige_ht_schema(hl.read_table(x), patch_case_control_count=x), all_variant_outputs))
     mt = join_pheno_hts_to_mt(all_hts, row_keys, col_keys, pheno_dict, temp_dir,
                               inner_mode=inner_mode, repartition_final=20000)
     entry = heritability_dict.get(mt.col_key)
