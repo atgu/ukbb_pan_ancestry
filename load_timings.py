@@ -31,8 +31,9 @@ def main(args):
     ht.write(get_results_timing_ht_path('null_model'), True)
 
     ht = hl.read_table(get_results_timing_ht_path('saige'))
-    x = ht.group_by('trait_type', 'pheno', 'coding').aggregate(time=hl.agg.sum(ht.saige_time))
-    x.order_by(-x.time).show()
+    ht = ht.group_by('pop', 'trait_type', 'pheno', 'coding').aggregate(saige_time=hl.agg.sum(ht.saige_time))
+    null_ht = hl.read_table(get_results_timing_ht_path('null_model'))
+    ht.annotate(**null_ht[ht.key]).write(get_results_timing_ht_path('full'), True)
 
 
 if __name__ == '__main__':
