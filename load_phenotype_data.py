@@ -10,6 +10,19 @@ from ukbb_pan_ancestry.resources import *
 pairwise_correlation_ht_path = f'{pheno_folder}/pheno_combo_explore/pairwise_correlations.ht'
 
 
+def load_dob_ht():
+    dob_ht = hl.import_table(pre_phesant_tsv_path, impute=False, min_partitions=100, missing='', key='userId',
+                             types={'userId': hl.tint32})
+    year_field, month_field = dob_ht.x34_0_0, dob_ht.x52_0_0
+    month_field = hl.cond(hl.len(month_field) == 1, '0' + month_field, month_field)
+    dob_ht = dob_ht.select(
+        dob=hl.experimental.strptime(year_field + month_field + '15 00:00:00', '%Y%m%d %H:%M:%S', 'GMT'),
+        month=month_field,
+        year=year_field
+    )
+    return dob_ht
+
+
 def load_hesin_data(overwrite: bool = False):
     overall_ht = hl.import_table(get_hesin_raw_data_path(), impute=True, min_partitions=40, missing='', key=('eid', 'ins_index'))
     overall_ht = overall_ht.filter(overall_ht.dsource == 'HES')
@@ -31,10 +44,7 @@ def load_hesin_data(overwrite: bool = False):
     diag_ht = diag_ht.annotate(values=hl.sorted(diag_ht.values, key=lambda x: x.admidate)[0])
     diag_ht = diag_ht.transmute(**diag_ht.values)
     diag_mt = diag_ht.to_matrix_table(row_key=['eid'], col_key=['diag_icd10'])
-    dob_ht = hl.import_table(pre_phesant_tsv_path, impute=False, min_partitions=100, missing='', key='userId', types={'userId': hl.tint32})
-    year_field, month_field = dob_ht.x34_0_0, dob_ht.x52_0_0
-    month_field = hl.cond(hl.len(month_field) == 1, '0' + month_field, month_field)
-    dob_ht = dob_ht.select(dob=hl.experimental.strptime(year_field + month_field + '15 00:00:00', '%Y%m%d %H:%M:%S', 'GMT'))
+    dob_ht = load_dob_ht()
     diag_mt = diag_mt.annotate_rows(dob=dob_ht[diag_mt.row_key].dob)
     diag_mt.write(get_hesin_mt_path('diag'), overwrite)
 
