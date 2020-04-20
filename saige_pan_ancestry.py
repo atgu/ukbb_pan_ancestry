@@ -79,13 +79,13 @@ def main(args):
     iteration = 1
 
     # if args.local_test:
-    #     backend = pipeline.LocalBackend(gsa_key_file='/Users/konradk/.hail/ukb-diverse-pops.json')
+    #     backend = hb.LocalBackend(gsa_key_file='/Users/konradk/.hail/ukb-diverse-pops.json')
     # else:
 
-    backend = pipeline.BatchBackend(billing_project='ukb_diverse_pops')
+    backend = hb.ServiceBackend(billing_project='ukb_diverse_pops')
     for pop in POPS:
-        p = pipeline.Pipeline(name=f'saige_pan_ancestry_{pop}', backend=backend, default_image=SAIGE_DOCKER_IMAGE,
-                              default_storage='500Mi', default_cpu=n_threads)
+        p = hb.Batch(name=f'saige_pan_ancestry_{pop}', backend=backend, default_image=SAIGE_DOCKER_IMAGE,
+                     default_storage='500Mi', default_cpu=n_threads)
         window = '1e7' if pop == 'EUR' else '1e6'
         logger.info(f'Setting up {pop}...')
         chunk_size = int(5e6) if pop != 'EUR' else int(1e6)
@@ -112,7 +112,7 @@ def main(args):
                 pheno_task.attributes['pop'] = pop
                 pheno_file = pheno_task.out
             pheno_exports[pheno_coding_trait] = pheno_file
-        completed = Counter([isinstance(x, pipeline.resource.InputResourceFile) for x in pheno_exports.values()])
+        completed = Counter([isinstance(x, InputResourceFile) for x in pheno_exports.values()])
         logger.info(f'Exporting {completed[False]} phenos (already found {completed[True]})...')
 
         overwrite_null_models = args.create_null_models
@@ -142,7 +142,7 @@ def main(args):
                 variance_ratio_file = fit_null_task.null_glmm[f'{analysis_type}.varianceRatio.txt']
             null_models[pheno_coding_trait] = (model_file, variance_ratio_file)
 
-        completed = Counter([type(x[0]) == pipeline.resource.InputResourceFile for x in null_models.values()])
+        completed = Counter([isinstance(x[0], InputResourceFile) for x in null_models.values()])
         logger.info(f'Running {completed[False]} null models (already found {completed[True]})...')
 
         use_bgen = True
@@ -181,7 +181,7 @@ def main(args):
             if args.local_test:
                 break
 
-        completed = Counter([type(x) == pipeline.resource.InputResourceFile for x in vcfs.values()])
+        completed = Counter([type(x) == InputResourceFile for x in vcfs.values()])
         logger.info(f'Creating {completed[False]} VCFs (already found {completed[True]})...')
 
         result_dir = f'{root}/result/{pop}'
@@ -190,7 +190,7 @@ def main(args):
             pheno, coding, trait_type = pheno_coding_trait
             if pheno_coding_trait not in null_models: continue
             if not i % 10:
-                n_jobs = dict(Counter(map(lambda x: x.name, p.select_tasks("")))).get("run_saige", 0)
+                n_jobs = dict(Counter(map(lambda x: x.name, p.select_jobs("")))).get("run_saige", 0)
                 logger.info(f'Read {i} phenotypes ({n_jobs} new to run so far)...')
 
             pheno_results_dir = f'{result_dir}/{trait_type}-{format_pheno_dir(pheno)}-{coding}'
