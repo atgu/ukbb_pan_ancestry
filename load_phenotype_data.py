@@ -246,16 +246,18 @@ def main(args):
         mt = combine_datasets({sex: get_ukb_pheno_mt_path('additional', sex) for sex in sexes})
         mt.write(get_ukb_pheno_mt_path('additional', 'full'), args.overwrite)
 
-        data_types = ('categorical', 'continuous', 'biomarkers', 'icd_all', 'prescriptions', 'phecode', 'additional')
+        data_types = ('categorical', 'continuous', 'biomarkers', 'icd_all', 'prescriptions', 'phecode', 'additional',
+                      'brain_mri', 'activity_monitor', 'icd_first_occurrence')
         location = {'categorical': 'full', 'continuous': 'full', 'additional': 'full'}
         pheno_file_dict = {data_type: hl.read_matrix_table(get_ukb_pheno_mt_path(data_type, location.get(data_type, 'both_sexes_no_sex_specific')))
                            for data_type in data_types}
         cov_ht = get_covariates(hl.int32).persist()
         mt = combine_pheno_files_multi_sex(pheno_file_dict, cov_ht)
         mt = add_white_noise_pheno(mt)
+        mt = mt.checkpoint(f'{temp_bucket}/pheno_{curdate}.mt', overwrite=args.overwrite, _read_if_exists=not args.overwrite)
         mt = add_whr(mt)
         mt = mt.checkpoint(get_ukb_pheno_mt_path(), args.overwrite, _read_if_exists=not args.overwrite)
-        mt.cols().export(f'{pheno_folder}/all_pheno_summary.txt.bgz')
+    summarize_data(args.overwrite)
 
 
     if args.add_dataset:
