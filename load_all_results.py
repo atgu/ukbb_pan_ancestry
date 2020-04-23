@@ -37,7 +37,7 @@ def generate_lambda_ht(pop):
 
 def generate_sumstats_mt(all_variant_outputs, heritability_dict, pheno_dict, temp_dir, inner_mode = '_read_if_exists'):
     row_keys = ['locus', 'alleles', 'gene', 'annotation']
-    col_keys = ['pheno', 'coding', 'trait_type']
+    col_keys = PHENO_KEY_FIELDS
 
     all_hts = list(map(lambda x: unify_saige_ht_schema(hl.read_table(x), patch_case_control_count=x), all_variant_outputs))
     mt = join_pheno_hts_to_mt(all_hts, row_keys, col_keys, pheno_dict, temp_dir,
@@ -170,9 +170,7 @@ def main(args):
 
 def get_pheno_dict():
     pheno_ht = hl.read_matrix_table(get_ukb_pheno_mt_path()).cols()
-    pheno_dict = create_broadcast_dict(
-        hl.struct(pheno=pheno_ht.pheno, coding=pheno_ht.coding, trait_type=pheno_ht.data_type),
-        pheno_ht.row_value)
+    pheno_dict = create_broadcast_dict(pheno_ht.key, pheno_ht.row_value)
     return pheno_dict
 
 
