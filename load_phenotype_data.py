@@ -148,13 +148,13 @@ def load_first_occurrence_data(overwrite: bool = False):
     ht = hl.import_table(first_exposure_and_activity_monitor_data_path, delimiter=',', quote='"', missing='', impute=True, key='eid')  #, min_partitions=500)
     pseudo_dates = {'1901-01-01', '2037-07-07'}  # Pseudo date information at http://biobank.ctsu.ox.ac.uk/showcase/coding.cgi?id=819
     dob_ht = load_dob_ht()[ht.key]
-    dob = dob_ht.dob
-    month = dob_ht.month
+    dob = dob_ht.date_of_birth
+    month = dob_ht.month_of_birth
 
     def parse_first_occurrence(x):
         return (hl.case(missing_false=True)
             .when((x.dtype == hl.tint32) | (x.dtype == hl.tfloat64), hl.float64(x))  # Source of the first code ...
-            .when(hl.literal(pseudo_dates).contains(hl.str(x)), hl.null(hl.float64))  # Setting past and future dates to missing
+            .when(hl.literal(pseudo_dates).contains(hl.str(x)), hl.null(hl.tfloat64))  # Setting past and future dates to missing
             .when(hl.str(x) == '1902-02-02', 0.0)  # Matches DOB
             .when(hl.str(x) == '1903-03-03',  # Within year of birth (taking midpoint between month of birth and EOY)
                   (hl.experimental.strptime('1970-12-31 00:00:00', '%Y-%m-%d %H:%M:%S', 'GMT') -
