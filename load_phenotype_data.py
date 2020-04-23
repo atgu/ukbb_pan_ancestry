@@ -184,6 +184,40 @@ def load_activity_monitor_data(overwrite: bool = False):
     mt.write(get_ukb_pheno_mt_path('activity_monitor'), overwrite)
 
 
+def load_covid_data(overwrite: bool = False):
+    ht = load_dob_ht()
+    ht = ht.checkpoint(f'{bucket}/misc/covid_test/basic_dob.ht', _read_if_exists=True)
+    covid_ht = hl.import_table(covid_data_path, delimiter='\t', missing='', impute=True, key='eid')
+    covid_ht = covid_ht.group_by('eid').aggregate(
+        origin=hl.agg.any(covid_ht.origin == 1),
+        result=hl.agg.any(covid_ht.result == 1)
+    )
+
+    # TODO: add aoo parse to separate trait_type (covid_quantitative?)
+    # dob = load_dob_ht()[ht.key].date_of_birth
+    # ht = ht.annotate(aoo=hl.or_missing(ht.result == 1, hl.experimental.strptime(ht.specdate + ' 00:00:00', '%d/%m/%Y %H:%M:%S', 'GMT') - dob),
+    #                  specdate=hl.experimental.strptime(ht.specdate + ' 00:00:00', '%d/%m/%Y %H:%M:%S', 'GMT')).drop('specdate')
+
+    ht = ht.annotate(**covid_ht[ht.key])
+    centers = hl.literal(ENGLAND_RECRUITMENT_CENTERS)
+
+    ht = ht.select(
+        covid_v_any=hl.or_else(ht.result, False),
+        covid_v_not=ht.result,
+        inpatient_v_not_among_covid=hl.or_missing(ht.result, ht.origin),
+        covid_v_any_england_only=hl.or_missing(centers.contains(ht.recruitment_center),
+                                               hl.or_else(ht.result, False)),
+        # covid_v_not_england_only=hl.or_missing(centers.contains(ht.recruitment_center), ht.result),
+        # inpatient_v_not_among_covid_england_only=hl.or_missing(centers.contains(ht.recruitment_center),
+        #                                                        hl.or_missing(ht.result == 1, ht.origin))
+    )
+
+    mt = filter_and_annotate_ukb_data(ht, lambda k, v: True, annotate_with_showcase=False)
+    mt = mt.key_cols_by(trait_type='categorical', phenocode=mt.pheno, pheno_sex='both_sexes', coding=NULL_STR_KEY, modifier=NULL_STR_KEY)
+    mt = mt.annotate_cols(category='covid')
+    return mt.checkpoint(get_ukb_pheno_mt_path('covid'), overwrite)
+
+
 def load_brain_mri_data(overwrite: bool = False):
     ht = hl.import_table(brain_mri_data_path, delimiter=',', quote='"', missing='', impute=True, key='eid')  #, min_partitions=500)
     mt = filter_and_annotate_ukb_data(ht, lambda x, v: v.dtype in {hl.tint32, hl.tfloat64})
