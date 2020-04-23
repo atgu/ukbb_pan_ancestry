@@ -119,7 +119,7 @@ def add_whr(mt):
     new_mt = (new_mt
               .key_cols_by(trait_type='continuous',
                            phenocode='whr', pheno_sex='both_sexes',
-                           coding=hl.null(hl.tstr),
+                           coding=NULL_STR_KEY,
                            modifier=pheno_modifier))
     new_mt = new_mt.select_cols(n_cases_both_sexes=hl.agg.count_where(hl.is_defined(new_mt.both_sexes)),
                                 n_cases_females=hl.agg.count_where(hl.is_defined(new_mt.females)),
@@ -164,9 +164,8 @@ def load_first_occurrence_data(overwrite: bool = False):
     mt = filter_and_annotate_ukb_data(ht, lambda k, v: k.startswith('13') and k.endswith('-0.0'), parse_first_occurrence)
 
     mt = mt.key_cols_by(trait_type='icd_first_occurrence',
-                        pheno=mt.pheno, pheno_sex='both_sexes',
-                        modifier=hl.if_else(mt.Field.startswith('Date'), 'first_occurrence_date', 'first_occurrence_source'),
-                        coding=hl.null(hl.tstr))
+                        phenocode=mt.pheno, pheno_sex='both_sexes',
+                        coding=NULL_STR_KEY, modifier=NULL_STR_KEY)
     mt.write(get_ukb_pheno_mt_path('icd_first_occurrence'), overwrite)
 
 
@@ -181,7 +180,7 @@ def load_activity_monitor_data(overwrite: bool = False):
 def load_brain_mri_data(overwrite: bool = False):
     ht = hl.import_table(brain_mri_data_path, delimiter=',', quote='"', missing='', impute=True, key='eid')  #, min_partitions=500)
     mt = filter_and_annotate_ukb_data(ht, lambda x, v: v.dtype in {hl.tint32, hl.tfloat64})
-    mt = mt.key_cols_by(trait_type='brain_mri', pheno=mt.pheno, pheno_sex='both_sexes', modifier=hl.null(hl.tstr), coding=hl.null(hl.tstr))
+    mt = mt.key_cols_by(trait_type='brain_mri', pheno=mt.pheno, pheno_sex='both_sexes', coding=NULL_STR_KEY, modifier=NULL_STR_KEY)
     mt.write(get_ukb_pheno_mt_path('brain_mri'), overwrite)
 
 
@@ -195,9 +194,9 @@ def load_custom_pheno(traittype_source: str, overwrite: bool = False, sex: str =
         ht = ht.annotate(**{x: hl.bool(ht[x]) for x in list(ht.row_value)})
 
     mt = pheno_ht_to_mt(ht, trait_type, rekey=False).annotate_cols(data_type=trait_type)
-    mt = mt.key_cols_by(trait_type=trait_type, phenocode=mt.phesant_pheno, pheno_sex=sex, coding=hl.null(hl.tstr),
-                        modifier=hl.null(hl.tstr)).drop('phesant_pheno')
-    mt = mt.annotate_cols(category=source)  # TODO: figure out if source should be in trait_type instead
+    mt = mt.key_cols_by(trait_type=trait_type, phenocode=mt.phesant_pheno, pheno_sex=sex, coding=NULL_STR_KEY,
+                        modifier=NULL_STR_KEY).drop('phesant_pheno')
+    mt = mt.annotate_cols(category=source)
     return mt.checkpoint(get_custom_pheno_path(traittype_source, extension='ht'), overwrite)
 
 
