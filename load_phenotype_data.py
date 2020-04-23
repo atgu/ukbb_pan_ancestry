@@ -173,9 +173,14 @@ def load_first_occurrence_data(overwrite: bool = False):
 
 def load_activity_monitor_data(overwrite: bool = False):
     ht = hl.import_table(first_exposure_and_activity_monitor_data_path, delimiter=',', quote='"', missing='', impute=True, key='eid')  #, min_partitions=500)
+    quality_fields = ['90015-0.0', '90016-0.0', '90017-0.0']
+    qual_ht = ht.select(hq=hl.is_missing(ht['90002-0.0']) & hl.all(lambda x: x == 1, [ht[x] for x in quality_fields]))
     mt = filter_and_annotate_ukb_data(ht, lambda x, v: x.startswith('90') and x.endswith('-0.0') and
                                                        v.dtype in {hl.tint32, hl.tfloat64})
-    mt = mt.key_cols_by(trait_type='activity_monitor', pheno=mt.pheno, pheno_sex='both_sexes', modifier=hl.null(hl.tstr), coding=hl.null(hl.tstr))
+    mt = mt.filter_cols(mt.ValueType == 'Continuous')
+    mt = mt.annotate_rows(**qual_ht[mt.row_key])
+    mt = mt.annotate_entries(value=hl.or_missing(hl.is_defined(mt.hq), mt.value))
+    mt = mt.key_cols_by(trait_type='continuous', pheno=mt.pheno, pheno_sex='both_sexes', coding=NULL_STR_KEY, modifier=NULL_STR_KEY)
     mt.write(get_ukb_pheno_mt_path('activity_monitor'), overwrite)
 
 
