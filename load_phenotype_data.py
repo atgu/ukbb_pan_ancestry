@@ -247,10 +247,10 @@ def main(args):
     data_types = ('categorical', 'continuous') #, 'biomarkers')
     curdate = date.today().strftime("%y%m%d")
 
+    load_first_occurrence_data(args.overwrite)
+    # load_brain_mri_data(args.overwrite)
     if args.load_data:
         load_hesin_data(args.overwrite)  # TODO: create derivative phenotypes from hesin data
-        load_first_occurrence_data(args.overwrite)
-        load_brain_mri_data(args.overwrite)
         load_activity_monitor_data(args.overwrite)
         load_prescription_data(prescription_tsv_path, prescription_mapping_path).write(get_ukb_pheno_mt_path('prescriptions'), args.overwrite)
         load_icd_data(pre_phesant_tsv_path, icd_codings_ht_path, f'{temp_bucket}/pheno').write(get_ukb_pheno_mt_path('icd'), args.overwrite)
