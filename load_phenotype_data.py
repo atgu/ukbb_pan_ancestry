@@ -12,13 +12,14 @@ pairwise_correlation_ht_path = f'{pheno_folder}/pheno_combo_explore/pairwise_cor
 
 def load_dob_ht():
     dob_ht = hl.import_table(pre_phesant_tsv_path, impute=False, min_partitions=100, missing='', key='userId',
-                             types={'userId': hl.tint32})
+                             types={'userId': hl.tint32, 'x54_0_0': hl.tint32})
     year_field, month_field = dob_ht.x34_0_0, dob_ht.x52_0_0
     month_field = hl.cond(hl.len(month_field) == 1, '0' + month_field, month_field)
     dob_ht = dob_ht.select(
-        dob=hl.experimental.strptime(year_field + month_field + '15 00:00:00', '%Y%m%d %H:%M:%S', 'GMT'),
-        month=month_field,
-        year=year_field
+        date_of_birth=hl.experimental.strptime(year_field + month_field + '15 00:00:00', '%Y%m%d %H:%M:%S', 'GMT'),
+        month_of_birth=month_field,
+        year_of_birth=year_field,
+        recruitment_center=dob_ht.x54_0_0
     )
     return dob_ht
 
