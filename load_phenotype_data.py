@@ -130,12 +130,14 @@ def add_whr(mt):
     return mt.union_cols(new_mt)
 
 
-def filter_and_annotate_ukb_data(ht, criteria, type_cast_function = hl.float64):
+def filter_and_annotate_ukb_data(ht, criteria, type_cast_function = hl.float64, annotate_with_showcase: bool = True):
     fields_to_keep = {x.split('-')[0]: type_cast_function(v) for x, v in ht.row_value.items() if criteria(x, v)}
     ht = ht.select(**fields_to_keep)
-    description_ht = load_showcase()
     mt = ht.to_matrix_table_row_major(columns=list(fields_to_keep), entry_field_name='value', col_field_name='pheno')
-    return mt.annotate_cols(**description_ht[mt.pheno])
+    if annotate_with_showcase:
+        description_ht = load_showcase()
+        mt = mt.annotate_cols(**description_ht[mt.pheno])
+    return mt
 
 
 def load_showcase():
