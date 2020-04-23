@@ -3,6 +3,7 @@
 __author__ = 'konradk'
 
 import sys
+import copy
 import argparse
 import logging
 logging.basicConfig(format="%(levelname)s (%(name)s %(lineno)s): %(message)s", level='INFO', filename='saige_pipeline.log')
@@ -19,7 +20,7 @@ logger.addHandler(logging.StreamHandler(sys.stderr))
 bucket = 'gs://ukb-diverse-pops'
 root = f'{bucket}/results'
 
-HAIL_DOCKER_IMAGE = 'gcr.io/ukbb-diversepops-neale/hail_utils:3.7'
+HAIL_DOCKER_IMAGE = 'gcr.io/ukbb-diversepops-neale/hail_utils:4.9'
 SAIGE_DOCKER_IMAGE = 'wzhou88/saige:0.36.6'
 QQ_DOCKER_IMAGE = 'konradjk/saige_qq:0.2'
 
@@ -32,20 +33,20 @@ def get_phenos_to_run(pop: str, limit: int = None, pilot: bool = False, single_s
 
     criteria = True
     if first_round_phenos:
-        trait_types = hl.literal({'categorical', 'continuous', 'biomarkers', 'icd10', 'prescriptions', 'phecode', 'additional'})
+        trait_types = hl.literal({'categorical', 'continuous', 'biomarkers', 'icd10', 'prescriptions', 'phecode'})
         criteria = (trait_types.contains(ht.trait_type) &
-                    ~hl.set({'raw', 'icd9'}).contains(ht.coding) &
-                    ~hl.set({'22601', '22617', '20024', '41230', '41210'}).contains(ht.pheno) &
+                    (ht.modifier != 'raw') &
+                    ~hl.set({'22601', '22617', '20024', '41230', '41210'}).contains(ht.phenocode) &
                     (ht.n_cases_by_pop >= min_cases))
     if not skip_case_count_filter:
-        criteria &= (ht.n_cases_both_sexes >= MIN_CASES_ALL)
+        criteria &= (ht.n_cases_by_pop >= min_cases)
 
     if single_sex_only:
         prop_female = ht.n_cases_females / (ht.n_cases_males + ht.n_cases_females)
         criteria &= ((prop_female <= 0.1) | (prop_female >= 0.9))
 
     ht = ht.filter(criteria)
-    print(f'Got {ht.count()} phenotypes from table...')
+    logger.info(f'Got {ht.count()} phenotypes from table...')
 
     output = set([tuple(x[field] for field in PHENO_KEY_FIELDS) for x in ht.key_by().select(*PHENO_KEY_FIELDS).collect()])
     if pilot:
@@ -53,7 +54,7 @@ def get_phenos_to_run(pop: str, limit: int = None, pilot: bool = False, single_s
     if specific_phenos:
         specific_phenos = specific_phenos.split(',')
         logger.info(f'Got regexes: {specific_phenos}')
-        output = [x for x in output if any([re.match(pcd, '-'.join(x)) for pcd in specific_phenos])]
+        output = [x for x in output if all(map(lambda y: y is not None, x)) and any([re.match(pcd, '-'.join(x)) for pcd in specific_phenos])]
     if limit:
         output = set(sorted(output)[:limit])
 
@@ -63,39 +64,44 @@ def get_phenos_to_run(pop: str, limit: int = None, pilot: bool = False, single_s
     return pheno_key_dict
 
 
-def format_pheno_dir(pheno):
-    return pheno.replace("/", "_")
-
-
-def recode_legacy_pkd(pheno_key_dict):
-    pheno_key_dict['coding'] = pheno_key_dict['sex'] if pheno_key_dict['sex'] else pheno_key_dict['coding'] if pheno_key_dict['coding'] else pheno_key_dict['modifier']
-    pheno_key_dict['sex'] = ''
-    pheno_key_dict['modifier'] = ''
-    return pheno_key_dict
+def recode_legacy_pkd(pheno_key_dict_list):
+    for pheno_key_dict in pheno_key_dict_list:
+        if pheno_key_dict['trait_type'] == 'icd10':
+            pheno_key_dict['trait_type'] = 'icd_all'
+            pheno_key_dict['coding'] = 'icd10'
+        elif pheno_key_dict['trait_type'] == 'phecode':
+            pheno_key_dict['coding'] = pheno_key_dict['pheno_sex']
+        elif pheno_key_dict['trait_type'] == 'biomarkers':
+            pheno_key_dict['coding'] = pheno_key_dict['phenocode']
+        else:
+            pheno_key_dict['coding'] = pheno_key_dict['coding'] if pheno_key_dict['coding'] else pheno_key_dict['modifier']
+        del pheno_key_dict['pheno_sex']
+        del pheno_key_dict['modifier']
+    return pheno_key_dict_list
 
 
 def stringify_pheno_key_dict(pheno_key_dict, format_phenocode_field: bool = False):
     return '-'.join([format_pheno_dir(pheno_key_dict[x])
                      if x == 'phenocode' and format_phenocode_field
-                     else pheno_key_dict[x] for x in PHENO_KEY_FIELDS])
+                     else pheno_key_dict[x] for x in PHENO_KEY_FIELDS if x in pheno_key_dict])
 
 
 
-def get_results_prefix(pheno_results_dir, pheno_key_dict, chromosome, start_pos):
+def get_results_prefix(pheno_results_dir, pheno_key_dict, chromosome, start_pos, legacy: bool = False):
     prefix = f'{pheno_results_dir}/result_'
-    if 'modifier' in pheno_key_dict:
-        prefix += stringify_pheno_key_dict(pheno_key_dict, True)
+    if legacy:
+        prefix += format_pheno_dir(pheno_key_dict["phenocode"])
     else:
-        prefix += format_pheno_dir(pheno_key_dict["pheno"])
+        prefix += stringify_pheno_key_dict(pheno_key_dict, True)
     return f'{prefix}_{chromosome}_{str(start_pos).zfill(9)}'
 
 
-def get_pheno_output_path(pheno_export_dir, pheno_coding_trait):
-    if 'modifier' in pheno_coding_trait:
-        extended_suffix = f'{pheno_coding_trait["sex"]}-{pheno_coding_trait["coding"]}-{pheno_coding_trait["modifier"]}'
-    else:
+def get_pheno_output_path(pheno_export_dir, pheno_coding_trait, extension = '.tsv', legacy: bool = False):
+    if legacy:
         extended_suffix = pheno_coding_trait['coding']
-    return f'{pheno_export_dir}/{pheno_coding_trait["trait_type"]}-{format_pheno_dir(pheno_coding_trait["pheno"])}-{extended_suffix}.tsv'
+    else:
+        extended_suffix = f'{pheno_coding_trait["pheno_sex"]}-{pheno_coding_trait["coding"]}-{pheno_coding_trait["modifier"]}'
+    return f'{pheno_export_dir}/{pheno_coding_trait["trait_type"]}-{format_pheno_dir(pheno_coding_trait["phenocode"])}-{extended_suffix}{extension}'
 
 
 
@@ -126,7 +132,7 @@ def main(args):
         logger.info(f'Setting up {pop}...')
         chunk_size = int(5e6) if pop != 'EUR' else int(1e6)
         phenos_to_run = get_phenos_to_run(pop, limit=int(args.local_test),
-                                          pilot=not args.run_first_round_phenos,
+                                          pilot=args.pilot,
                                           single_sex_only=args.single_sex_only, specific_phenos=args.phenos,
                                           skip_case_count_filter=args.skip_case_count_filter,
                                           first_round_phenos=args.run_first_round_phenos)
@@ -141,13 +147,13 @@ def main(args):
         pheno_exports = {}
 
         for pheno_key_dict in phenos_to_run:
-            pheno_export_path = get_pheno_output_path(pheno_export_dir, pheno_key_dict)
+            pheno_export_path = get_pheno_output_path(pheno_export_dir, pheno_key_dict, legacy=args.run_first_round_phenos)
             if not args.overwrite_pheno_data and pheno_export_path in phenos_already_exported:
                 pheno_file = p.read_input(pheno_export_path)
             else:
                 pheno_task = export_pheno(p, pheno_export_path, pheno_key_dict, 'ukbb_pan_ancestry',
-                                          HAIL_DOCKER_IMAGE, additional_args=pop, n_threads=n_threads)
-                pheno_task.attributes.update({'pop': pop}).update(pheno_key_dict)
+                                          HAIL_DOCKER_IMAGE, additional_args=pop, n_threads=n_threads, proportion_single_sex=0)
+                pheno_task.attributes.update({'pop': pop})
                 pheno_file = pheno_task.out
             pheno_exports[stringify_pheno_key_dict(pheno_key_dict)] = pheno_file
         completed = Counter([isinstance(x, InputResourceFile) for x in pheno_exports.values()])
@@ -161,7 +167,7 @@ def main(args):
         null_models = {}
 
         for pheno_key_dict in phenos_to_run:
-            null_glmm_root = get_pheno_output_path(null_model_dir, pheno_key_dict)
+            null_glmm_root = get_pheno_output_path(null_model_dir, pheno_key_dict, '', legacy=args.run_first_round_phenos)
             model_file_path = f'{null_glmm_root}.rda'
             variance_ratio_file_path = f'{null_glmm_root}.{analysis_type}.varianceRatio.txt'
 
@@ -175,7 +181,8 @@ def main(args):
                                               pheno_key_dict['trait_type'], covariates,
                                               get_ukb_grm_plink_path(pop, iteration, window), SAIGE_DOCKER_IMAGE,
                                               inv_normalize=False, n_threads=n_threads, min_covariate_count=1)
-                fit_null_task.attributes.update({'pop': pop}).update(pheno_key_dict)
+                fit_null_task.attributes.update({'pop': pop})
+                fit_null_task.attributes.update(copy.deepcopy(pheno_key_dict))
                 model_file = fit_null_task.null_glmm.rda
                 variance_ratio_file = fit_null_task.null_glmm[f'{analysis_type}.varianceRatio.txt']
             null_models[stringify_pheno_key_dict(pheno_key_dict)] = (model_file, variance_ratio_file)
@@ -232,7 +239,7 @@ def main(args):
                 n_jobs = dict(Counter(map(lambda x: x.name, p.select_jobs("")))).get("run_saige", 0)
                 logger.info(f'Read {i} phenotypes ({n_jobs} new to run so far)...')
 
-            pheno_results_dir = get_pheno_output_path(result_dir, pheno_key_dict)
+            pheno_results_dir = get_pheno_output_path(result_dir, pheno_key_dict, '', legacy=args.run_first_round_phenos)
             results_already_created = {}
 
             if not overwrite_results and not args.skip_saige and hl.hadoop_exists(pheno_results_dir):
@@ -246,13 +253,14 @@ def main(args):
                     end_pos = chrom_length if start_pos + chunk_size > chrom_length else (start_pos + chunk_size)
                     interval = f'{chromosome}:{start_pos}-{end_pos}'
                     vcf_file = vcfs[interval]
-                    results_path = get_results_prefix(pheno_results_dir, pheno_key_dict, chromosome, start_pos)
+                    results_path = get_results_prefix(pheno_results_dir, pheno_key_dict, chromosome, start_pos, legacy=args.run_first_round_phenos)
                     if overwrite_results or f'{results_path}.single_variant.txt' not in results_already_created:
                         samples_file = p.read_input(get_ukb_samples_file_path(pop, iteration))
                         saige_task = run_saige(p, results_path, model_file, variance_ratio_file, vcf_file, samples_file,
                                                SAIGE_DOCKER_IMAGE, trait_type=pheno_key_dict['trait_type'], use_bgen=use_bgen,
                                                chrom=chromosome)
-                        saige_task.attributes.update({'interval': interval, 'pop': pop}).update(pheno_key_dict)
+                        saige_task.attributes.update({'interval': interval, 'pop': pop})
+                        saige_task.attributes.update(copy.deepcopy(pheno_key_dict))
                         saige_tasks.append(saige_task)
                     if args.local_test:
                         break
@@ -261,19 +269,28 @@ def main(args):
 
             res_tasks = []
             if overwrite_results or args.overwrite_hail_results or \
-                    f'{pheno_results_dir}/variant_results.mt' not in results_already_created or \
-                    not hl.hadoop_exists(f'{pheno_results_dir}/variant_results.mt/_SUCCESS'):
+                    f'{pheno_results_dir}/variant_results.ht' not in results_already_created or \
+                    not hl.hadoop_exists(f'{pheno_results_dir}/variant_results.ht/_SUCCESS'):
+                null_glmm_root = get_pheno_output_path(null_model_dir, pheno_key_dict, f'.{analysis_type}.log',
+                                                       legacy=args.run_first_round_phenos)
+
+                prefix = get_results_prefix(pheno_results_dir, pheno_key_dict,
+                                            f'{"chr" if reference == "GRCh38" else ""}{{chrom}}', 1,
+                                            legacy=args.run_first_round_phenos)
+                saige_log = f'{prefix}.{analysis_type}.log'
+
                 load_task = load_results_into_hail(p, pheno_results_dir, pheno_key_dict,
                                                    saige_tasks, get_ukb_vep_path(), HAIL_DOCKER_IMAGE,
-                                                   reference=reference, analysis_type=analysis_type,
-                                                   n_threads=n_threads,
-                                                   # null_glmm_log=f'{null_model_dir}/{trait_type}-{format_pheno_dir(pheno)}-{coding}.{analysis_type}.log'
-                                                   )
+                                                   saige_log=saige_log, analysis_type=analysis_type,
+                                                   n_threads=n_threads, null_glmm_log=null_glmm_root,
+                                                   reference=reference)
                 load_task.attributes['pop'] = pop
                 res_tasks.append(load_task)
                 qq_export, qq_plot = qq_plot_results(p, pheno_results_dir, res_tasks, HAIL_DOCKER_IMAGE, QQ_DOCKER_IMAGE, n_threads=n_threads)
-                qq_export.attributes.update({'pop': pop}).update(pheno_key_dict)
-                qq_plot.attributes.update({'pop': pop}).update(pheno_key_dict)
+                qq_export.attributes.update({'pop': pop})
+                qq_export.attributes.update(copy.deepcopy(pheno_key_dict))
+                qq_plot.attributes.update({'pop': pop})
+                qq_plot.attributes.update(copy.deepcopy(pheno_key_dict))
 
         logger.info(f'Setup took: {time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time))}')
         logger.info(f'Submitting: {get_tasks_from_pipeline(p)}')
@@ -298,6 +315,7 @@ if __name__ == '__main__':
     parser.add_argument('--phenos', help='Comma-separated list of trait_type-phenocode-pheno_sex-coding-modifier regexes '
                                          '(e.g. continuous-50-both_sexes--,icd10-E1.*,brain_mri-.* )')
     parser.add_argument('--run_first_round_phenos', help='Run all phenotypes through pipeline (default: only pilot)', action='store_true')
+    parser.add_argument('--pilot', help='Run all phenotypes through pipeline (default: only pilot)', action='store_true')
     parser.add_argument('--dry_run', help='Dry run only', action='store_true')
     args = parser.parse_args()
 
