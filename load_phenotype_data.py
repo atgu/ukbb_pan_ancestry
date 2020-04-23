@@ -297,18 +297,20 @@ def main(args):
         mt = add_white_noise_pheno(mt)
         mt = mt.checkpoint(f'{temp_bucket}/pheno_{curdate}.mt', overwrite=args.overwrite, _read_if_exists=not args.overwrite)
         mt = add_whr(mt)
-        mt = mt.checkpoint(get_ukb_pheno_mt_path(), args.overwrite, _read_if_exists=not args.overwrite)
-    summarize_data(args.overwrite)
-
+        mt.write(get_ukb_pheno_mt_path(), args.overwrite)
+        summarize_data(args.overwrite)
 
     if args.add_dataset:
-        mt = load_custom_pheno(args.add_dataset, args.overwrite)
+        if args.add_dataset == 'covid':
+            mt = load_covid_data(args.overwrite)
+        else:
+            mt = load_custom_pheno(args.add_dataset, args.overwrite)
         cov_ht = get_covariates(hl.int32).persist()
         mt = combine_pheno_files_multi_sex({'custom': mt}, cov_ht)
         original_mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
         original_mt = original_mt.checkpoint(get_ukb_pheno_mt_path(f'full_before_{curdate}', sex='full'), args.overwrite)
         original_mt.cols().export(f'{pheno_folder}/all_pheno_summary_before_{curdate}.txt.bgz')
-        mt = original_mt.union_cols(mt).write(get_ukb_pheno_mt_path(), args.overwrite)
+        original_mt.union_cols(mt, row_join_type='outer').write(get_ukb_pheno_mt_path(), args.overwrite)
         summarize_data(args.overwrite)
 
 
