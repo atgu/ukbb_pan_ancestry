@@ -339,11 +339,11 @@ def summarize_data(overwrite):
     mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
     ht = mt.group_rows_by('pop').aggregate(
         stats=hl.agg.stats(mt.both_sexes),
-        n_cases_by_pop=hl.cond(hl.set({'continuous', 'biomarkers'}).contains(mt.data_type),
+        n_cases_by_pop=hl.cond(hl.set({'continuous', 'biomarkers'}).contains(mt.trait_type),
                                hl.agg.count_where(hl.is_defined(mt.both_sexes)),
                                hl.int64(hl.agg.sum(mt.both_sexes)))
     ).entries()
-    ht = ht.key_by('pop', 'pheno', 'coding', trait_type=ht.data_type)
+    ht = ht.key_by('pop', *PHENO_KEY_FIELDS)
     ht = ht.checkpoint(get_phenotype_summary_path('full'), overwrite=overwrite, _read_if_exists=not overwrite)
     ht.flatten().export(get_phenotype_summary_path('full', 'tsv'))
 
@@ -354,6 +354,7 @@ if __name__ == '__main__':
     parser.add_argument('--overwrite', help='Overwrite everything', action='store_true')
     parser.add_argument('--load_data', help='Load data', action='store_true')
     parser.add_argument('--combine_data', help='Load data', action='store_true')
+    parser.add_argument('--summarize_data', help='Load data', action='store_true')
     parser.add_argument('--add_dataset', help='Load data')
     parser.add_argument('--pairwise_correlations', help='Load data', action='store_true')
     parser.add_argument('--slack_channel', help='Send message to Slack channel/user', default='@konradjk')
