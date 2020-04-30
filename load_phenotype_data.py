@@ -7,8 +7,6 @@ from datetime import date
 from ukb_common import *
 from ukbb_pan_ancestry.resources import *
 
-pairwise_correlation_ht_path = f'{pheno_folder}/pheno_combo_explore/pairwise_correlations.ht'
-
 
 def load_dob_ht():
     dob_ht = hl.import_table(pre_phesant_tsv_path, impute=False, min_partitions=100, missing='', key='userId',
@@ -331,7 +329,7 @@ def main(args):
 
     if args.pairwise_correlations:
         mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
-        make_correlation_ht(mt).write(pairwise_correlation_ht_path, args.overwrite)
+        make_pairwise_ht(mt, mt.both_sexes, correlation=True).write(pairwise_correlation_ht_path, args.overwrite)
         hl.read_table(pairwise_correlation_ht_path).flatten().export(pairwise_correlation_ht_path.replace('.ht', '.txt.bgz'))
 
 

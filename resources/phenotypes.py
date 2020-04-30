@@ -78,3 +78,6 @@ def get_phenotype_summary_path(data_type: str, extension = 'ht'):
 def get_custom_pheno_path(traittype_source: str, extension = 'ht'):
     return f'{pheno_folder}/custom/{traittype_source}.{extension}'
 
+pairwise_cooccurrence_ht_path = f'{pheno_folder}/pheno_combo_explore/pheno_overlap.ht'
+pairwise_correlation_ht_path = f'{pheno_folder}/pheno_combo_explore/pairwise_correlations.ht'
+
