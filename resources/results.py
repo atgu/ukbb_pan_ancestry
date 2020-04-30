@@ -24,4 +24,4 @@ def get_results_timing_ht_path(timing_type: str):
 
 
 def get_heritability_txt_path():
-    return f'{bucket}/results/misc/all_heritabilities_plus_pilot.txt'
+    return f'{bucket}/results/misc/all_heritabilities_plus_pilot_whr.txt'
