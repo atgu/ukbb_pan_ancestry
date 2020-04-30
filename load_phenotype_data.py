@@ -4,253 +4,7 @@ __author__ = 'konradk'
 
 import argparse
 from datetime import date
-from ukb_common import *
-from ukbb_pan_ancestry.resources import *
-
-
-def load_dob_ht():
-    dob_ht = hl.import_table(pre_phesant_tsv_path, impute=False, min_partitions=100, missing='', key='userId',
-                             types={'userId': hl.tint32, 'x54_0_0': hl.tint32})
-    year_field, month_field = dob_ht.x34_0_0, dob_ht.x52_0_0
-    month_field = hl.cond(hl.len(month_field) == 1, '0' + month_field, month_field)
-    dob_ht = dob_ht.select(
-        date_of_birth=hl.experimental.strptime(year_field + month_field + '15 00:00:00', '%Y%m%d %H:%M:%S', 'GMT'),
-        month_of_birth=month_field,
-        year_of_birth=year_field,
-        recruitment_center=dob_ht.x54_0_0
-    )
-    return dob_ht
-
-
-def load_hesin_data(overwrite: bool = False):
-    overall_ht = hl.import_table(get_hesin_raw_data_path(), impute=True, min_partitions=40, missing='', key=('eid', 'ins_index'))
-    overall_ht = overall_ht.filter(overall_ht.dsource == 'HES')
-
-    # Useful fields:
-    # pctcode	Current PCT responsible for patient
-    # gpprpct	PCT where patients GP was registered
-    # More coding data in:
-    # coding_ht = hl.read_table(coding_ht_path)
-
-    diag_ht = hl.import_table(get_hesin_raw_data_path('diag'), impute=True, min_partitions=40, missing='', key=('eid', 'ins_index'))
-    diag_ht = diag_ht.annotate(**overall_ht[diag_ht.key])
-    date_fields = ('epistart', 'epiend', 'elecdate', 'admidate', 'disdate')
-    # diag_ht = diag_ht.annotate(admidate=hl.experimental.strptime(diag_ht.admidate, '%Y%m%d'))
-    diag_ht = diag_ht.annotate(**{date: hl.experimental.strptime(hl.str(diag_ht[date]) + ' 00:00:00', '%Y%m%d %H:%M:%S', 'GMT') for date in date_fields})
-    # assert diag_ht.aggregate(hl.agg.all(hl.is_defined(diag_ht.admidate)))
-    diag_ht = diag_ht.key_by('eid', 'diag_icd10').collect_by_key()
-    # Only first entry by admission date
-    diag_ht = diag_ht.annotate(values=hl.sorted(diag_ht.values, key=lambda x: x.admidate)[0])
-    diag_ht = diag_ht.transmute(**diag_ht.values)
-    diag_mt = diag_ht.to_matrix_table(row_key=['eid'], col_key=['diag_icd10'])
-    dob_ht = load_dob_ht()
-    diag_mt = diag_mt.annotate_rows(dob=dob_ht[diag_mt.row_key].dob)
-    diag_mt.write(get_hesin_mt_path('diag'), overwrite)
-
-    oper_ht = hl.import_table(get_hesin_raw_data_path('oper'), impute=True, missing='', key=('eid', 'ins_index'))
-    oper_ht = oper_ht.annotate(**overall_ht[oper_ht.key])
-    oper_ht = oper_ht.filter(hl.is_defined(oper_ht.admidate))
-    oper_ht = oper_ht.key_by('eid', 'oper4').collect_by_key('operations')
-    oper_mt = oper_ht.to_matrix_table(row_key=['eid'], col_key=['oper4'])
-    oper_mt.write(get_hesin_mt_path('oper'), overwrite)
-    # Useful fields:
-    # posopdur	Duration of post-operative stay
-
-    maternity_ht = hl.import_table(get_hesin_raw_data_path('maternity'), impute=True, missing='', key=('eid', 'ins_index'))
-    delivery_ht = hl.import_table(get_hesin_raw_data_path('delivery'), impute=True, missing='', key=('eid', 'ins_index'))
-    delivery_ht = delivery_ht.annotate(**maternity_ht[delivery_ht.key])
-    delivery_ht = delivery_ht.annotate(**overall_ht[delivery_ht.key])
-    delivery_ht.write(get_hesin_delivery_ht_path(), overwrite)
-
-
-def add_white_noise_pheno(mt):
-    new_mt = mt.add_col_index()
-    new_mt = (new_mt.filter_cols(new_mt.col_idx == 0).drop('col_idx')
-              .key_cols_by(trait_type='continuous', phenocode='random', pheno_sex='both_sexes', coding='', modifier='random'))
-    new_mt = new_mt.select_entries(both_sexes=hl.rand_norm(seed=42),
-                                   females=hl.or_missing(new_mt.sex == 0, hl.rand_norm(seed=43)),
-                                   males=hl.or_missing(new_mt.sex == 1, hl.rand_norm(mean=1, seed=44)))
-    new_mt = new_mt.select_cols(n_cases_both_sexes=hl.agg.count(),
-                                n_cases_females=hl.agg.count_where(new_mt.sex == 0),
-                                n_cases_males=hl.agg.count_where(new_mt.sex == 1),
-                                description='hl.rand_norm(seed=42)', description_more=NULL_STR,
-                                coding_description=NULL_STR, category=NULL_STR)
-
-    new_mt2 = mt.add_col_index()
-    pop_dict = new_mt2.aggregate_rows(
-        hl.dict(hl.zip_with_index(hl.array(hl.agg.collect_as_set(new_mt2.pop)), index_first=False)),
-        _localize=False)
-    new_mt2 = (new_mt2.filter_cols(new_mt2.col_idx == 0).drop('col_idx')
-              .key_cols_by(trait_type='continuous', phenocode='random', pheno_sex='both_sexes', coding='', modifier='random_strat'))
-    new_mt2 = new_mt2.select_entries(both_sexes=hl.rand_norm(mean=pop_dict[new_mt2.pop], seed=42),
-                                     females=hl.or_missing(new_mt2.sex == 0, hl.rand_norm(mean=pop_dict[new_mt2.pop], seed=43)),
-                                     males=hl.or_missing(new_mt2.sex == 1, hl.rand_norm(mean=pop_dict[new_mt2.pop] + 1, seed=44)))
-    new_mt2 = new_mt2.select_cols(n_cases_both_sexes=hl.agg.count(),
-                                  n_cases_females=hl.agg.count_where(new_mt2.sex == 0),
-                                  n_cases_males=hl.agg.count_where(new_mt2.sex == 1),
-                                  description='hl.rand_norm(mean=pop_dict[mt.pop], seed=42)', description_more=NULL_STR,
-                                  coding_description=NULL_STR, category=NULL_STR)
-
-    return mt.union_cols(new_mt).union_cols(new_mt2)
-
-
-def irnt(he: hl.expr.Expression, output_loc: str = 'irnt'):
-    ht = he._indices.source
-    n_rows = ht.count()
-    ht = ht.order_by(he).add_index()
-    return ht.annotate(**{output_loc: hl.qnorm((ht.idx + 0.5) / n_rows)})
-
-
-def add_whr(mt):
-    new_mt = mt.filter_cols(hl.set({'48', '49'}).contains(mt.phenocode) & (mt.modifier == 'raw'))
-    new_ht = new_mt.annotate_rows(whr=hl.agg.sum(new_mt.both_sexes * hl.int(new_mt.phenocode == '48')) /
-                                      hl.agg.sum(new_mt.both_sexes * hl.int(new_mt.phenocode == '49'))
-                                  ).rows()
-    new_ht = irnt(new_ht.whr).key_by('userId').select('whr', 'irnt')
-    new_mt = new_mt.annotate_rows(**new_ht[new_mt.row_key])
-    # Hijacking the 48 and 49 phenos to be irnt and raw respectively
-    pheno_value = hl.if_else(new_mt.phenocode == '48', new_mt.irnt, new_mt.whr)
-    new_mt = new_mt.annotate_entries(both_sexes=pheno_value,
-                                     females=hl.or_missing(new_mt.sex == 0, pheno_value),
-                                     males=hl.or_missing(new_mt.sex == 1, pheno_value))
-    pheno_modifier = hl.if_else(new_mt.phenocode == '48', 'irnt', 'raw')
-    new_mt = (new_mt
-              .key_cols_by(trait_type='continuous',
-                           phenocode='whr', pheno_sex='both_sexes',
-                           coding=NULL_STR_KEY,
-                           modifier=pheno_modifier))
-    new_mt = new_mt.select_cols(n_cases_both_sexes=hl.agg.count_where(hl.is_defined(new_mt.both_sexes)),
-                                n_cases_females=hl.agg.count_where(hl.is_defined(new_mt.females)),
-                                n_cases_males=hl.agg.count_where(hl.is_defined(new_mt.males)),
-                                description='pheno 48 / pheno 49', description_more=NULL_STR,
-                                coding_description=NULL_STR, category=NULL_STR)
-
-    return mt.union_cols(new_mt)
-
-
-def filter_and_annotate_ukb_data(ht, criteria, type_cast_function = hl.float64, annotate_with_showcase: bool = True):
-    fields_to_keep = {x.split('-')[0]: type_cast_function(v) for x, v in ht.row_value.items() if criteria(x, v)}
-    ht = ht.select(**fields_to_keep)
-    mt = ht.to_matrix_table_row_major(columns=list(fields_to_keep), entry_field_name='value', col_field_name='phenocode')
-    if annotate_with_showcase:
-        description_ht = load_showcase()
-        mt = mt.annotate_cols(**description_ht[mt.phenocode])
-    return mt
-
-
-def load_showcase():
-    return hl.import_table(pheno_description_path, impute=True, missing='', key='FieldID', types={'FieldID': hl.tstr})
-
-
-def load_first_occurrence_data(overwrite: bool = False):
-    ht = hl.import_table(first_exposure_and_activity_monitor_data_path, delimiter=',', quote='"', missing='', impute=True, key='eid')  #, min_partitions=500)
-    pseudo_dates = {'1901-01-01', '2037-07-07'}  # Pseudo date information at http://biobank.ctsu.ox.ac.uk/showcase/coding.cgi?id=819
-    mt = filter_and_annotate_ukb_data(ht, lambda k, v: k.startswith('13') and k.endswith('-0.0'), hl.str)
-
-    dob_ht = load_dob_ht()[mt.row_key]
-    dob = dob_ht.date_of_birth
-    month = dob_ht.month_of_birth
-
-    def parse_first_occurrence(x):
-        return (hl.case(missing_false=True)
-            .when(hl.is_defined(hl.parse_float(x)), hl.float64(x))  # Source of the first code ...
-            .when(hl.literal(pseudo_dates).contains(hl.str(x)), hl.null(hl.tfloat64))  # Setting past and future dates to missing
-            .when(hl.str(x) == '1902-02-02', 0.0)  # Matches DOB
-            .when(hl.str(x) == '1903-03-03',  # Within year of birth (taking midpoint between month of birth and EOY)
-                  (hl.experimental.strptime('1970-12-31 00:00:00', '%Y-%m-%d %H:%M:%S', 'GMT') -
-                   hl.experimental.strptime('1970-' + month + '-15 00:00:00', '%Y-%m-%d %H:%M:%S',
-                                            'GMT')) / 2)
-            .default(hl.experimental.strptime(hl.str(x) + ' 00:00:00', '%Y-%m-%d %H:%M:%S', 'GMT') - dob
-        ))
-    mt = mt.annotate_entries(value=parse_first_occurrence(mt.value))
-
-    mt = mt.key_cols_by(trait_type='icd_first_occurrence',
-                        phenocode=mt.phenocode, pheno_sex='both_sexes',
-                        coding=NULL_STR_KEY, modifier=NULL_STR_KEY)
-    mt.write(get_ukb_pheno_mt_path('icd_first_occurrence'), overwrite)
-
-
-def load_activity_monitor_data(overwrite: bool = False):
-    ht = hl.import_table(first_exposure_and_activity_monitor_data_path, delimiter=',', quote='"', missing='', impute=True, key='eid')  #, min_partitions=500)
-    quality_fields = ['90015-0.0', '90016-0.0', '90017-0.0']
-    qual_ht = ht.select(hq=hl.is_missing(ht['90002-0.0']) & hl.all(lambda x: x == 1, [ht[x] for x in quality_fields]))
-    mt = filter_and_annotate_ukb_data(ht, lambda x, v: x.startswith('90') and x.endswith('-0.0') and
-                                                       v.dtype in {hl.tint32, hl.tfloat64})
-    mt = mt.filter_cols(mt.ValueType == 'Continuous')
-    mt = mt.annotate_rows(**qual_ht[mt.row_key])
-    mt = mt.annotate_entries(value=hl.or_missing(hl.is_defined(mt.hq), mt.value))
-    mt = mt.key_cols_by(trait_type='continuous', phenocode=mt.phenocode, pheno_sex='both_sexes', coding=NULL_STR_KEY, modifier=NULL_STR_KEY)
-    mt.write(get_ukb_pheno_mt_path('activity_monitor'), overwrite)
-
-
-def load_covid_data(wave: str = '01', overwrite: bool = False):
-    ht = load_dob_ht()
-    ht = ht.checkpoint(f'{bucket}/misc/covid_test/basic_dob.ht', _read_if_exists=True)
-    covid_ht = hl.import_table(get_covid_data_path(wave), delimiter='\t', missing='', impute=True, key='eid')
-    covid_ht = covid_ht.group_by('eid').aggregate(
-        origin=hl.agg.any(covid_ht.origin == 1),
-        result=hl.agg.any(covid_ht.result == 1)
-    )
-
-    # TODO: add aoo parse to separate trait_type (covid_quantitative?)
-    # dob = load_dob_ht()[ht.key].date_of_birth
-    # ht = ht.annotate(aoo=hl.or_missing(ht.result == 1, hl.experimental.strptime(ht.specdate + ' 00:00:00', '%d/%m/%Y %H:%M:%S', 'GMT') - dob),
-    #                  specdate=hl.experimental.strptime(ht.specdate + ' 00:00:00', '%d/%m/%Y %H:%M:%S', 'GMT')).drop('specdate')
-
-    ht = ht.annotate(**covid_ht[ht.key])
-    centers = hl.literal(ENGLAND_RECRUITMENT_CENTERS)
-
-    ht = ht.select(
-        covid_v_any=hl.or_else(ht.result, False),
-        covid_v_not=ht.result,
-        inpatient_v_not_among_covid=hl.or_missing(ht.result, ht.origin),
-        covid_v_any_england_only=hl.or_missing(centers.contains(ht.recruitment_center),
-                                               hl.or_else(ht.result, False)),
-        # covid_v_not_england_only=hl.or_missing(centers.contains(ht.recruitment_center), ht.result),
-        # inpatient_v_not_among_covid_england_only=hl.or_missing(centers.contains(ht.recruitment_center),
-        #                                                        hl.or_missing(ht.result == 1, ht.origin))
-    )
-
-    mt = filter_and_annotate_ukb_data(ht, lambda k, v: True, annotate_with_showcase=False)
-    mt = mt.key_cols_by(trait_type='categorical', phenocode=mt.phenocode, pheno_sex='both_sexes', coding=NULL_STR_KEY, modifier=NULL_STR_KEY)
-    mt = mt.annotate_cols(category='covid')
-    return mt.checkpoint(get_ukb_pheno_mt_path('covid'), overwrite)
-
-
-def load_brain_mri_data(overwrite: bool = False):
-    ht = hl.import_table(brain_mri_data_path, delimiter=',', quote='"', missing='', impute=True, key='eid')  #, min_partitions=500)
-    mt = filter_and_annotate_ukb_data(ht, lambda x, v: v.dtype in {hl.tint32, hl.tfloat64})
-    mt = mt.key_cols_by(trait_type='brain_mri', phenocode=mt.phenocode, pheno_sex='both_sexes', coding=NULL_STR_KEY, modifier=NULL_STR_KEY)
-    mt.write(get_ukb_pheno_mt_path('brain_mri'), overwrite)
-
-
-def load_custom_pheno(traittype_source: str, overwrite: bool = False, sex: str = 'both_sexes'):
-    trait_type, source = traittype_source.split('-')
-    print(f'Loading {get_custom_pheno_path(traittype_source, extension="txt")}')
-    ht = hl.import_table(get_custom_pheno_path(traittype_source, extension='txt'), impute=True)
-    inferred_sample_column = list(ht.row)[0]
-    ht = ht.key_by(userId=ht[inferred_sample_column]).drop(inferred_sample_column)
-    if trait_type == 'categorical':
-        ht = ht.annotate(**{x: hl.bool(ht[x]) for x in list(ht.row_value)})
-
-    mt = pheno_ht_to_mt(ht, trait_type, rekey=False).annotate_cols(data_type=trait_type)
-    mt = mt.key_cols_by(trait_type=trait_type, phenocode=mt.phesant_pheno, pheno_sex=sex, coding=NULL_STR_KEY,
-                        modifier=NULL_STR_KEY).drop('phesant_pheno')
-    mt = mt.annotate_cols(category=source)
-    return mt.checkpoint(get_custom_pheno_path(traittype_source, extension='ht'), overwrite)
-
-
-def summarize_data(overwrite):
-    mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
-    ht = mt.group_rows_by('pop').aggregate(
-        stats=hl.agg.stats(mt.both_sexes),
-        n_cases_by_pop=hl.cond(hl.set({'continuous', 'biomarkers'}).contains(mt.trait_type),
-                               hl.agg.count_where(hl.is_defined(mt.both_sexes)),
-                               hl.int64(hl.agg.sum(mt.both_sexes)))
-    ).entries()
-    ht = ht.key_by('pop', *PHENO_KEY_FIELDS)
-    ht = ht.checkpoint(get_phenotype_summary_path('full'), overwrite=overwrite, _read_if_exists=not overwrite)
-    ht.flatten().export(get_phenotype_summary_path('full', 'tsv'))
+from ukbb_pan_ancestry import *
 
 
 def main(args):
@@ -259,11 +13,11 @@ def main(args):
     data_types = ('categorical', 'continuous') #, 'biomarkers')
     curdate = date.today().strftime("%y%m%d")
 
-    # load_brain_mri_data(args.overwrite)
+    # load_brain_mri_data(brain_mri_data_path).write(get_ukb_pheno_mt_path('brain_mri'), overwrite)
     if args.load_data:
-        load_first_occurrence_data(args.overwrite)
-        load_hesin_data(args.overwrite)  # TODO: create derivative phenotypes from hesin data
-        load_activity_monitor_data(args.overwrite)
+        load_first_occurrence_data(first_exposure_and_activity_monitor_data_path,
+                                   pre_phesant_tsv_path).write(get_ukb_pheno_mt_path('icd_first_occurrence'), args.overwrite)
+        load_activity_monitor_data(first_exposure_and_activity_monitor_data_path).write(get_ukb_pheno_mt_path('activity_monitor'), args.overwrite)
         load_prescription_data(prescription_tsv_path, prescription_mapping_path).write(get_ukb_pheno_mt_path('prescriptions'), args.overwrite)
         load_icd_data(pre_phesant_tsv_path, icd_codings_ht_path, f'{temp_bucket}/pheno').write(get_ukb_pheno_mt_path('icd'), args.overwrite)
         load_icd_data(pre_phesant_tsv_path, icd9_codings_ht_path, f'{temp_bucket}/pheno_icd9', icd9=True).write(get_ukb_pheno_mt_path('icd9'), args.overwrite)
@@ -314,9 +68,9 @@ def main(args):
 
     if args.add_dataset:
         if args.add_dataset == 'covid':
-            mt = load_covid_data(args.overwrite)
+            mt = load_covid_data(pre_phesant_tsv_path).checkpoint(get_ukb_pheno_mt_path('covid'), args.overwrite)
         else:
-            mt = load_custom_pheno(args.add_dataset, args.overwrite)
+            mt = load_custom_pheno(args.add_dataset).checkpoint(get_custom_pheno_path(args.add_dataset, extension='ht'), args.overwrite)
         cov_ht = get_covariates(hl.int32).persist()
         mt = combine_pheno_files_multi_sex({'custom': mt}, cov_ht)
         original_mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
@@ -358,17 +112,6 @@ def main(args):
         mt = mt.union_cols(new_mt)
         ht = make_pairwise_ht(mt, mt.pheno_indicator)
         ht.write(pairwise_cooccurrence_ht_path, True)
-
-
-def combine_phenotypes_in_mt(mt, pheno_combo_dict):
-    new_mt = combine_phenotypes_with_name(mt.key_cols_by(), mt.phenocode, mt.pheno_indicator,
-                                          pheno_combo_dict, 'new_pheno', 'pheno_indicator')
-    new_mt = new_mt.key_cols_by(
-        **{x: new_mt.new_pheno if x == 'phenocode' else '' for x in PHENO_KEY_FIELDS})
-    new_mt = new_mt.annotate_cols(
-        **compute_cases_binary(new_mt.pheno_indicator, new_mt.sex),
-        **{x: hl.null(hl.tstr) for x in PHENO_COLUMN_FIELDS if 'n_cases' not in x})
-    return new_mt
 
 
 if __name__ == '__main__':
