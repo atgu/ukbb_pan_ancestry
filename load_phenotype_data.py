@@ -102,7 +102,7 @@ def irnt(he: hl.expr.Expression, output_loc: str = 'irnt'):
 
 
 def add_whr(mt):
-    new_mt = mt.filter_cols(hl.set({'48', '49'}).contains(mt.phenocode) & (mt.coding == 'raw'))
+    new_mt = mt.filter_cols(hl.set({'48', '49'}).contains(mt.phenocode) & (mt.modifier == 'raw'))
     new_ht = new_mt.annotate_rows(whr=hl.agg.sum(new_mt.both_sexes * hl.int(new_mt.phenocode == '48')) /
                                       hl.agg.sum(new_mt.both_sexes * hl.int(new_mt.phenocode == '49'))
                                   ).rows()
@@ -113,7 +113,7 @@ def add_whr(mt):
     new_mt = new_mt.annotate_entries(both_sexes=pheno_value,
                                      females=hl.or_missing(new_mt.sex == 0, pheno_value),
                                      males=hl.or_missing(new_mt.sex == 1, pheno_value))
-    pheno_modifier = hl.if_else(new_mt.phenocode == '48', 'irnt', 'whr')
+    pheno_modifier = hl.if_else(new_mt.phenocode == '48', 'irnt', 'raw')
     new_mt = (new_mt
               .key_cols_by(trait_type='continuous',
                            phenocode='whr', pheno_sex='both_sexes',
@@ -131,10 +131,10 @@ def add_whr(mt):
 def filter_and_annotate_ukb_data(ht, criteria, type_cast_function = hl.float64, annotate_with_showcase: bool = True):
     fields_to_keep = {x.split('-')[0]: type_cast_function(v) for x, v in ht.row_value.items() if criteria(x, v)}
     ht = ht.select(**fields_to_keep)
-    mt = ht.to_matrix_table_row_major(columns=list(fields_to_keep), entry_field_name='value', col_field_name='pheno')
+    mt = ht.to_matrix_table_row_major(columns=list(fields_to_keep), entry_field_name='value', col_field_name='phenocode')
     if annotate_with_showcase:
         description_ht = load_showcase()
-        mt = mt.annotate_cols(**description_ht[mt.pheno])
+        mt = mt.annotate_cols(**description_ht[mt.phenocode])
     return mt
 
 
@@ -164,7 +164,7 @@ def load_first_occurrence_data(overwrite: bool = False):
     mt = filter_and_annotate_ukb_data(ht, lambda k, v: k.startswith('13') and k.endswith('-0.0'), parse_first_occurrence)
 
     mt = mt.key_cols_by(trait_type='icd_first_occurrence',
-                        phenocode=mt.pheno, pheno_sex='both_sexes',
+                        phenocode=mt.phenocode, pheno_sex='both_sexes',
                         coding=NULL_STR_KEY, modifier=NULL_STR_KEY)
     mt.write(get_ukb_pheno_mt_path('icd_first_occurrence'), overwrite)
 
@@ -178,7 +178,7 @@ def load_activity_monitor_data(overwrite: bool = False):
     mt = mt.filter_cols(mt.ValueType == 'Continuous')
     mt = mt.annotate_rows(**qual_ht[mt.row_key])
     mt = mt.annotate_entries(value=hl.or_missing(hl.is_defined(mt.hq), mt.value))
-    mt = mt.key_cols_by(trait_type='continuous', pheno=mt.pheno, pheno_sex='both_sexes', coding=NULL_STR_KEY, modifier=NULL_STR_KEY)
+    mt = mt.key_cols_by(trait_type='continuous', phenocode=mt.phenocode, pheno_sex='both_sexes', coding=NULL_STR_KEY, modifier=NULL_STR_KEY)
     mt.write(get_ukb_pheno_mt_path('activity_monitor'), overwrite)
 
 
@@ -211,7 +211,7 @@ def load_covid_data(overwrite: bool = False):
     )
 
     mt = filter_and_annotate_ukb_data(ht, lambda k, v: True, annotate_with_showcase=False)
-    mt = mt.key_cols_by(trait_type='categorical', phenocode=mt.pheno, pheno_sex='both_sexes', coding=NULL_STR_KEY, modifier=NULL_STR_KEY)
+    mt = mt.key_cols_by(trait_type='categorical', phenocode=mt.phenocode, pheno_sex='both_sexes', coding=NULL_STR_KEY, modifier=NULL_STR_KEY)
     mt = mt.annotate_cols(category='covid')
     return mt.checkpoint(get_ukb_pheno_mt_path('covid'), overwrite)
 
@@ -219,7 +219,7 @@ def load_covid_data(overwrite: bool = False):
 def load_brain_mri_data(overwrite: bool = False):
     ht = hl.import_table(brain_mri_data_path, delimiter=',', quote='"', missing='', impute=True, key='eid')  #, min_partitions=500)
     mt = filter_and_annotate_ukb_data(ht, lambda x, v: v.dtype in {hl.tint32, hl.tfloat64})
-    mt = mt.key_cols_by(trait_type='brain_mri', pheno=mt.pheno, pheno_sex='both_sexes', coding=NULL_STR_KEY, modifier=NULL_STR_KEY)
+    mt = mt.key_cols_by(trait_type='brain_mri', phenocode=mt.phenocode, pheno_sex='both_sexes', coding=NULL_STR_KEY, modifier=NULL_STR_KEY)
     mt.write(get_ukb_pheno_mt_path('brain_mri'), overwrite)
 
 
