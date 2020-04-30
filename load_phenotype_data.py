@@ -346,18 +346,29 @@ def main(args):
         make_pairwise_ht(mt, mt.both_sexes, correlation=True).write(pairwise_correlation_ht_path, args.overwrite)
         hl.read_table(pairwise_correlation_ht_path).flatten().export(pairwise_correlation_ht_path.replace('.ht', '.txt.bgz'))
 
+        mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
+        bool_types = {'icd10', 'prescriptions', 'categorical'}
+        mt = mt.select_entries(pheno_indicator=hl.case(missing_false=True)
+                               .when((mt.trait_type == 'icd_first_occurrence') & mt.description.startswith('Date'), hl.is_defined(mt.both_sexes))
+                               .when(hl.literal(bool_types).contains(mt.trait_type), hl.bool(mt.both_sexes))
+                               .default(hl.null(hl.tbool)))
+        mt = mt.filter_cols(hl.agg.all(hl.is_defined(mt.pheno_indicator)))
+        new_mt = combine_phenotypes_in_mt(mt, {'combined_parkinsons': ["dopamine pro-drug _ decarboxylase inhibitor|Parkinson's", "131022"]})
 
-def summarize_data(overwrite):
-    mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
-    ht = mt.group_rows_by('pop').aggregate(
-        stats=hl.agg.stats(mt.both_sexes),
-        n_cases_by_pop=hl.cond(hl.set({'continuous', 'biomarkers'}).contains(mt.trait_type),
-                               hl.agg.count_where(hl.is_defined(mt.both_sexes)),
-                               hl.int64(hl.agg.sum(mt.both_sexes)))
-    ).entries()
-    ht = ht.key_by('pop', *PHENO_KEY_FIELDS)
-    ht = ht.checkpoint(get_phenotype_summary_path('full'), overwrite=overwrite, _read_if_exists=not overwrite)
-    ht.flatten().export(get_phenotype_summary_path('full', 'tsv'))
+        mt = mt.union_cols(new_mt)
+        ht = make_pairwise_ht(mt, mt.pheno_indicator)
+        ht.write(pairwise_cooccurrence_ht_path, True)
+
+
+def combine_phenotypes_in_mt(mt, pheno_combo_dict):
+    new_mt = combine_phenotypes_with_name(mt.key_cols_by(), mt.phenocode, mt.pheno_indicator,
+                                          pheno_combo_dict, 'new_pheno', 'pheno_indicator')
+    new_mt = new_mt.key_cols_by(
+        **{x: new_mt.new_pheno if x == 'phenocode' else '' for x in PHENO_KEY_FIELDS})
+    new_mt = new_mt.annotate_cols(
+        **compute_cases_binary(new_mt.pheno_indicator, new_mt.sex),
+        **{x: hl.null(hl.tstr) for x in PHENO_COLUMN_FIELDS if 'n_cases' not in x})
+    return new_mt
 
 
 if __name__ == '__main__':
@@ -373,6 +384,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.slack_channel:
-        try_slack(args.slack_channel, main, args)
-    else:
-        main(args)
+        from slack_token_pkg.slack_creds import slack_token
+        with slack.slack_notifications(slack_token, args.slack_channel):
+            main(args)
