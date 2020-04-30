@@ -48,7 +48,7 @@ def main(args):
 
             output += f'{pop}\t{tpc}\t{null_model_time}\t{null_model_wall}\n'
 
-    with hl.hadoop_open(f'{root}/misc/timings_null_models.txt', 'w') as f:
+    with hl.hadoop_open(f'{root}/misc/timings_null_model.txt', 'w') as f:
         f.write(output)
 
 
