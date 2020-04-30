@@ -300,7 +300,7 @@ def main(args):
         mt.write(get_ukb_pheno_mt_path('additional', 'full'), args.overwrite)
 
         data_types = ('categorical', 'continuous', 'biomarkers', 'icd_all', 'prescriptions', 'phecode', 'additional',
-                      'brain_mri', 'activity_monitor', 'icd_first_occurrence')
+                      'activity_monitor', 'icd_first_occurrence')  # 'brain_mri')
         location = {'categorical': 'full', 'continuous': 'full', 'additional': 'full'}
         pheno_file_dict = {data_type: hl.read_matrix_table(get_ukb_pheno_mt_path(data_type, location.get(data_type, 'both_sexes_no_sex_specific')))
                            for data_type in data_types}
