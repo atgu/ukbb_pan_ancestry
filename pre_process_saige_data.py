@@ -2,6 +2,7 @@
 
 __author__ = 'konradk'
 
+import argparse
 from ukb_common import *
 from ukbb_pan_ancestry import *
 
@@ -85,6 +86,7 @@ def main(args):
                 hl.export_plink(mt, get_ukb_grm_plink_path(pop, iteration, window))
 
             mt = get_filtered_mt(chrom='22', pop=pop)
+            # TODO: residualize GRM by first 20 PCs
             if args.overwrite or not hl.hadoop_exists(get_ukb_samples_file_path(pop, iteration)):
                 with hl.hadoop_open(get_ukb_samples_file_path(pop, iteration), 'w') as f:
                     f.write('\n'.join(mt.s.collect()) + '\n')
