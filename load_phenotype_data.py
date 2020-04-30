@@ -183,10 +183,10 @@ def load_activity_monitor_data(overwrite: bool = False):
     mt.write(get_ukb_pheno_mt_path('activity_monitor'), overwrite)
 
 
-def load_covid_data(overwrite: bool = False):
+def load_covid_data(wave: str = '01', overwrite: bool = False):
     ht = load_dob_ht()
     ht = ht.checkpoint(f'{bucket}/misc/covid_test/basic_dob.ht', _read_if_exists=True)
-    covid_ht = hl.import_table(covid_data_path, delimiter='\t', missing='', impute=True, key='eid')
+    covid_ht = hl.import_table(get_covid_data_path(wave), delimiter='\t', missing='', impute=True, key='eid')
     covid_ht = covid_ht.group_by('eid').aggregate(
         origin=hl.agg.any(covid_ht.origin == 1),
         result=hl.agg.any(covid_ht.result == 1)
