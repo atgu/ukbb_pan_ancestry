@@ -145,13 +145,15 @@ def load_showcase():
 def load_first_occurrence_data(overwrite: bool = False):
     ht = hl.import_table(first_exposure_and_activity_monitor_data_path, delimiter=',', quote='"', missing='', impute=True, key='eid')  #, min_partitions=500)
     pseudo_dates = {'1901-01-01', '2037-07-07'}  # Pseudo date information at http://biobank.ctsu.ox.ac.uk/showcase/coding.cgi?id=819
-    dob_ht = load_dob_ht()[ht.key]
+    mt = filter_and_annotate_ukb_data(ht, lambda k, v: k.startswith('13') and k.endswith('-0.0'), hl.str)
+
+    dob_ht = load_dob_ht()[mt.row_key]
     dob = dob_ht.date_of_birth
     month = dob_ht.month_of_birth
 
     def parse_first_occurrence(x):
         return (hl.case(missing_false=True)
-            .when((x.dtype == hl.tint32) | (x.dtype == hl.tfloat64), hl.float64(x))  # Source of the first code ...
+            .when(hl.is_defined(hl.parse_float(x)), hl.float64(x))  # Source of the first code ...
             .when(hl.literal(pseudo_dates).contains(hl.str(x)), hl.null(hl.tfloat64))  # Setting past and future dates to missing
             .when(hl.str(x) == '1902-02-02', 0.0)  # Matches DOB
             .when(hl.str(x) == '1903-03-03',  # Within year of birth (taking midpoint between month of birth and EOY)
@@ -160,8 +162,7 @@ def load_first_occurrence_data(overwrite: bool = False):
                                             'GMT')) / 2)
             .default(hl.experimental.strptime(hl.str(x) + ' 00:00:00', '%Y-%m-%d %H:%M:%S', 'GMT') - dob
         ))
-
-    mt = filter_and_annotate_ukb_data(ht, lambda k, v: k.startswith('13') and k.endswith('-0.0'), parse_first_occurrence)
+    mt = mt.annotate_entries(value=parse_first_occurrence(mt.value))
 
     mt = mt.key_cols_by(trait_type='icd_first_occurrence',
                         phenocode=mt.phenocode, pheno_sex='both_sexes',
@@ -239,15 +240,28 @@ def load_custom_pheno(traittype_source: str, overwrite: bool = False, sex: str =
     return mt.checkpoint(get_custom_pheno_path(traittype_source, extension='ht'), overwrite)
 
 
+def summarize_data(overwrite):
+    mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
+    ht = mt.group_rows_by('pop').aggregate(
+        stats=hl.agg.stats(mt.both_sexes),
+        n_cases_by_pop=hl.cond(hl.set({'continuous', 'biomarkers'}).contains(mt.trait_type),
+                               hl.agg.count_where(hl.is_defined(mt.both_sexes)),
+                               hl.int64(hl.agg.sum(mt.both_sexes)))
+    ).entries()
+    ht = ht.key_by('pop', *PHENO_KEY_FIELDS)
+    ht = ht.checkpoint(get_phenotype_summary_path('full'), overwrite=overwrite, _read_if_exists=not overwrite)
+    ht.flatten().export(get_phenotype_summary_path('full', 'tsv'))
+
+
 def main(args):
     hl.init(log='/load_pheno.log')
     sexes = ('both_sexes_no_sex_specific', 'females', 'males')
     data_types = ('categorical', 'continuous') #, 'biomarkers')
     curdate = date.today().strftime("%y%m%d")
 
-    load_first_occurrence_data(args.overwrite)
     # load_brain_mri_data(args.overwrite)
     if args.load_data:
+        load_first_occurrence_data(args.overwrite)
         load_hesin_data(args.overwrite)  # TODO: create derivative phenotypes from hesin data
         load_activity_monitor_data(args.overwrite)
         load_prescription_data(prescription_tsv_path, prescription_mapping_path).write(get_ukb_pheno_mt_path('prescriptions'), args.overwrite)
