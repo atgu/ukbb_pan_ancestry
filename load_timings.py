@@ -18,7 +18,6 @@ def main(args):
     hl.init(log=f'/tmp/saige_temp_hail.log')
     hts = []
     for pop in POPS:
-        if pop == 'EUR': continue
         ht = hl.import_table(get_results_timing_tsv_path('saige', pop), types={'saige_time': hl.tfloat64}, min_partitions=100)
         ht = ht.annotate(locus=hl.parse_locus(ht.locus))
         ht = ht.key_by('pop', 'trait_type', 'pheno', 'coding', 'locus')
@@ -27,7 +26,7 @@ def main(args):
     ht.write(get_results_timing_ht_path('saige'), True)
 
     ht = hl.import_table(get_results_timing_tsv_path('null_model'), impute=True)
-    ht = ht.key_by('pop', 'trait_type', 'pheno', 'coding')
+    ht = ht.key_by('pop', trait_type=ht.trait, pheno=ht.pheno, coding=ht.coding)
     ht.write(get_results_timing_ht_path('null_model'), True)
 
     ht = hl.read_table(get_results_timing_ht_path('saige'))
