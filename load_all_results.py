@@ -25,8 +25,8 @@ def get_heritability_dict(pop):
     return heritability_dict
 
 
-def generate_lambda_ht(pop, k: int = 75):
-    _intervals = get_n_even_intervals(5000)
+def generate_lambda_ht(pop, k: int = 100):
+    # _intervals = get_n_even_intervals(5000)
     mt = hl.read_matrix_table(get_variant_results_path(pop, 'mt'))#, _intervals=_intervals)
     ac_cutoffs = list(range(0, 6)) + [10, 20, 50, 100]
     af_cutoffs = sorted([0] + [y * 10 ** x for y in (1, 2, 5) for x in range(-4, 0)] + [0.99])
@@ -43,11 +43,15 @@ def generate_lambda_ht(pop, k: int = 75):
     mt = mt.annotate_cols(sumstats_qc=hl.struct(**{
         f'{metric}_{breakdown}_{flavor}': [hl.agg.filter(breakdown_dict[flavor] >= cutoff, agg) for cutoff in cutoffs]
         for flavor, cutoffs in (('ac', ac_cutoffs), ('af', af_cutoffs))
-        for breakdown, breakdown_dict in (('by_case', {'ac': ac_cases}),  #, 'af': af_cases}),
-                                          ('by', {# 'ac': ac_total,
-                                                  'af': af_total})) if flavor in breakdown_dict
+        for breakdown, breakdown_dict in (('by_case', {'ac': ac_cases,
+                                                       'af': af_cases
+                                                       }),
+                                          ('by', {
+                                              'ac': ac_total,
+                                              'af': af_total
+                                          })) if flavor in breakdown_dict
         for metric, agg in (
-            ('lambda_gc', hl.methods.statgen._lambda_gc_agg(p_value_field, k=k)),
+            ('lambda_gc', hl.methods.statgen._lambda_gc_agg(p_value_field)),
             ('n_variants', hl.agg.count()),
             ('n_sig', hl.agg.count_where(p_value_field < sig_threshold))
         )
@@ -180,10 +184,10 @@ def main(args):
             mt = original_mt.union_cols(mt, row_join_type='outer')
             mt.write(get_variant_results_path(pop, 'mt'), overwrite=args.overwrite)
 
-    # _intervals = get_n_even_intervals(5000)
-    # print(_intervals[0])
 
     if args.test_approx_median_k:
+        _intervals = get_n_even_intervals(5000)
+        print(_intervals[0])
         # test_approx_median_k()
         # ht = hl.read_matrix_table(get_variant_results_path('AFR', 'mt')).rows()
         # ht = ht.collect_by_key()
