@@ -25,10 +25,34 @@ def get_heritability_dict(pop):
     return heritability_dict
 
 
-def generate_lambda_ht(pop):
-    mt = hl.read_matrix_table(get_variant_results_path(pop, 'mt'))
-    mt = mt.annotate_cols(lambda_gc=hl.methods.statgen._lambda_gc_agg(mt.Pvalue),
-                          n_vars=hl.agg.count_where(hl.is_defined(mt.Pvalue)))
+def generate_lambda_ht(pop, k: int = 75):
+    _intervals = get_n_even_intervals(5000)
+    mt = hl.read_matrix_table(get_variant_results_path(pop, 'mt'))#, _intervals=_intervals)
+    ac_cutoffs = list(range(0, 6)) + [10, 20, 50, 100]
+    af_cutoffs = sorted([0] + [y * 10 ** x for y in (1, 2, 5) for x in range(-4, 0)] + [0.99])
+
+    af_cases = mt['AF.Cases']
+    ac_cases = af_cases * mt.n_cases * 2
+
+    af_total = mt['AF_Allele2']
+    ac_total = af_total * 2 * (mt.n_cases + mt.n_controls)
+    p_value_field = mt.Pvalue
+
+    sig_threshold = 5e-8
+
+    mt = mt.annotate_cols(sumstats_qc=hl.struct(**{
+        f'{metric}_{breakdown}_{flavor}': [hl.agg.filter(breakdown_dict[flavor] >= cutoff, agg) for cutoff in cutoffs]
+        for flavor, cutoffs in (('ac', ac_cutoffs), ('af', af_cutoffs))
+        for breakdown, breakdown_dict in (('by_case', {'ac': ac_cases}),  #, 'af': af_cases}),
+                                          ('by', {# 'ac': ac_total,
+                                                  'af': af_total})) if flavor in breakdown_dict
+        for metric, agg in (
+            ('lambda_gc', hl.methods.statgen._lambda_gc_agg(p_value_field, k=k)),
+            ('n_variants', hl.agg.count()),
+            ('n_sig', hl.agg.count_where(p_value_field < sig_threshold))
+        )
+    })).annotate_globals(ac_cutoffs=ac_cutoffs, af_cutoffs=af_cutoffs)
+
     ht = mt.cols()
     ht = ht.key_by(pop=pop, *PHENO_KEY_FIELDS)
     return ht
@@ -80,7 +104,8 @@ def generate_and_write_lambdas(overwrite):
     for pop in POPS:
         ht = generate_lambda_ht(pop)
         ht = ht.checkpoint(get_variant_results_path(pop, 'lambdas.ht'), overwrite=overwrite, _read_if_exists=not overwrite)
-        ht.export(get_variant_results_path(pop, 'lambdas.txt.bgz'))
+        explode_lambda_ht(ht).export(get_variant_results_path(pop, 'lambdas_by_ac.txt.bgz'))
+        explode_lambda_ht(ht, 'af').export(get_variant_results_path(pop, 'lambdas_by_af.txt.bgz'))
         lambda_hts.append(ht)
 
     full_ht = lambda_hts[0].union(*lambda_hts[1:])
@@ -93,6 +118,14 @@ def generate_and_write_lambdas(overwrite):
     print('Pops per pheno:')
     pprint(dict(Counter(full_ht.aggregate(hl.agg.group_by(full_ht.key.drop('pop'), hl.agg.count()).values()))))
     full_ht.flatten().export(f'{bucket}/combined_results/all_lambdas.txt.bgz')
+
+
+def explode_lambda_ht(ht, by='ac'):
+    ac_ht = ht.annotate(sumstats_qc=ht.sumstats_qc.select(*[x for x in ht.sumstats_qc.keys() if f'_{by}' in x]))
+    ac_ht = ac_ht.annotate(index_ac=hl.zip_with_index(ac_ht[f'{by}_cutoffs'])).explode('index_ac')
+    ac_ht = ac_ht.transmute(**{by: ac_ht.index_ac[1]},
+                            **{x: ac_ht.sumstats_qc[x][ac_ht.index_ac[0]] for x in ac_ht.sumstats_qc})
+    return ac_ht
 
 
 def main(args):
@@ -109,6 +142,7 @@ def main(args):
 
             mt = generate_sumstats_mt(all_variant_outputs, heritability_dict, pheno_dict, f'{temp_bucket}/{pop}/variant', inner_mode)
             mt.write(get_variant_results_path(pop, 'mt'), overwrite=args.overwrite)
+        if pops != POPS: sys.exit(0)
 
     if args.run_additional_load:
         today = date.today().strftime("%y%m%d")
@@ -188,10 +222,11 @@ if __name__ == '__main__':
     parser.add_argument('--load_only', help='Comma-separated list of trait_type-pheno-coding to run'
                                             '(e.g. continuous-50-irnt,icd_all-E10-icd10 )')
     parser.add_argument('--find_errors', help='Overwrite everything', action='store_true')
+    parser.add_argument('--pops', help='comma-separated list')
     parser.add_argument('--slack_channel', help='Send message to Slack channel/user', default='@konradjk')
     args = parser.parse_args()
 
     if args.slack_channel:
-        from gnomad_hail.slack_creds import slack_token
+        from slack_token_pkg.slack_creds import slack_token
         with slack.slack_notifications(slack_token, args.slack_channel):
             main(args)
