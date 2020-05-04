@@ -180,6 +180,19 @@ def main(args):
             mt = original_mt.union_cols(mt, row_join_type='outer')
             mt.write(get_variant_results_path(pop, 'mt'), overwrite=args.overwrite)
 
+    # _intervals = get_n_even_intervals(5000)
+    # print(_intervals[0])
+
+    if args.test_approx_median_k:
+        # test_approx_median_k()
+        # ht = hl.read_matrix_table(get_variant_results_path('AFR', 'mt')).rows()
+        # ht = ht.collect_by_key()
+        # ht = ht.filter((hl.len(ht.values) > 1))
+        # pprint(ht.aggregate(hl.agg.counter(hl.delimit(hl.sorted(ht.values.annotation)))))
+        ht = hl.read_matrix_table(get_variant_results_path('AFR', 'mt')).rows()
+        print(ht._force_count())
+        ht = hl.read_matrix_table(get_variant_results_path('AFR', 'mt'), _intervals=_intervals).rows()
+        print(ht._force_count())
 
     if args.run_basic_load or args.run_additional_load or args.run_combine_load:
         generate_and_write_lambdas(args.overwrite)
@@ -205,6 +218,38 @@ def main(args):
             pprint(dict(all_errors).keys())
 
 
+def test_approx_median_k():
+    ht = hl.read_table('gs://ukb-diverse-pops/results/result/AFR/icd_all-I48-icd10/variant_results.ht')
+    ks = [x * 10 for x in range(1, 11)]
+    ac_cutoffs = list(range(0, 6)) + [10, 20, 50, 100]
+    af_cutoffs = sorted([0] + [y * 10 ** x for y in (1, 2, 5) for x in range(-4, 0)] + [0.99])
+    af_cases = ht['AF.Cases']
+    ac_cases = af_cases * ht.n_cases * 2
+    af_total = ht['AF_Allele2']
+    ac_total = af_total * 2 * (ht.n_cases + ht.n_controls)
+    p_value_field = ht.Pvalue
+    sig_threshold = 5e-8
+    test = ht.group_by(_x=True).aggregate(
+        sumstats_qc=hl.struct(**{
+            f'{metric}_{breakdown}_{flavor}_{k}': [hl.agg.filter(breakdown_dict[flavor] >= cutoff, agg) for cutoff in
+                                                   cutoffs]
+            for flavor, cutoffs in (('ac', ac_cutoffs), ('af', af_cutoffs))
+            for breakdown, breakdown_dict in (('by_case', {'ac': ac_cases}),  # , 'af': af_cases}),
+                                              ('by', {  # 'ac': ac_total,
+                                                  'af': af_total})) if flavor in breakdown_dict
+            for k in ks
+            for metric, agg in (
+                ('lambda_gc', hl.methods.statgen._lambda_gc_agg(p_value_field, k=k)),
+                ('n_variants', hl.agg.count()),
+                ('n_sig', hl.agg.count_where(p_value_field < sig_threshold))
+            )
+        })
+    ).annotate_globals(ac_cutoffs=ac_cutoffs, af_cutoffs=af_cutoffs)
+    test = test.checkpoint(f'{temp_bucket}/test.ht', overwrite=True)
+    explode_lambda_ht(test).export(f'{temp_bucket}/test_ac.txt.bgz')
+    explode_lambda_ht(test, 'af').export(f'{temp_bucket}/test_af.txt.bgz')
+
+
 def get_pheno_dict():
     pheno_ht = hl.read_matrix_table(get_ukb_pheno_mt_path()).cols()
     pheno_dict = create_broadcast_dict(pheno_ht.key)
@@ -218,6 +263,7 @@ if __name__ == '__main__':
     parser.add_argument('--run_basic_load', help='Overwrite everything', action='store_true')
     parser.add_argument('--run_additional_load', help='Overwrite everything', action='store_true')
     parser.add_argument('--run_combine_load', help='Overwrite everything', action='store_true')
+    parser.add_argument('--test_approx_median_k', help='Overwrite everything', action='store_true')
     parser.add_argument('--dry_run', help='Overwrite everything', action='store_true')
     parser.add_argument('--load_only', help='Comma-separated list of trait_type-pheno-coding to run'
                                             '(e.g. continuous-50-irnt,icd_all-E10-icd10 )')
