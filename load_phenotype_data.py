@@ -40,7 +40,7 @@ def main(args):
         ht = hl.import_table(phesant_biomarker_phenotypes_tsv_path, impute=True, min_partitions=100, missing='', key='userId', force_bgz=True, quote='"')
         ht = ht.checkpoint(get_biomarker_ht_path(), overwrite=args.overwrite)
         mt = pheno_ht_to_mt(ht, 'continuous')
-        description_ht = load_showcase()
+        description_ht = load_showcase(pheno_description_path)
         mt.annotate_cols(**description_ht[hl.str(mt.pheno)]).write(get_ukb_pheno_mt_path('biomarkers'), args.overwrite)
 
     if args.combine_data:
@@ -59,7 +59,7 @@ def main(args):
         pheno_file_dict = {data_type: hl.read_matrix_table(get_ukb_pheno_mt_path(data_type, location.get(data_type, 'both_sexes_no_sex_specific')))
                            for data_type in data_types}
         cov_ht = get_covariates(hl.int32).persist()
-        mt = combine_pheno_files_multi_sex(pheno_file_dict, cov_ht)
+        mt = combine_pheno_files_multi_sex_legacy(pheno_file_dict, cov_ht)
         mt = add_white_noise_pheno(mt)
         mt = mt.checkpoint(f'{temp_bucket}/pheno_{curdate}.mt', overwrite=args.overwrite, _read_if_exists=not args.overwrite)
         mt = add_whr(mt)
@@ -72,7 +72,7 @@ def main(args):
         else:
             mt = load_custom_pheno(args.add_dataset).checkpoint(get_custom_pheno_path(args.add_dataset, extension='ht'), args.overwrite)
         cov_ht = get_covariates(hl.int32).persist()
-        mt = combine_pheno_files_multi_sex({'custom': mt}, cov_ht)
+        mt = combine_pheno_files_multi_sex_legacy({'custom': mt}, cov_ht)
         original_mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
         original_mt = original_mt.checkpoint(get_ukb_pheno_mt_path(f'full_before_{curdate}', sex='full'), args.overwrite)
         original_mt.cols().export(f'{pheno_folder}/all_pheno_summary_before_{curdate}.txt.bgz')
