@@ -203,7 +203,7 @@ def main(args):
                                                    saige_tasks, get_ukb_vep_path(), HAIL_DOCKER_IMAGE,
                                                    saige_log=saige_log, analysis_type=analysis_type,
                                                    n_threads=n_threads, null_glmm_log=null_glmm_root,
-                                                   reference=reference)
+                                                   reference=reference, legacy_annotations=True)
                 load_task.attributes['pop'] = pop
                 res_tasks.append(load_task)
                 qq_export, qq_plot = qq_plot_results(p, pheno_results_dir, res_tasks, HAIL_DOCKER_IMAGE, QQ_DOCKER_IMAGE, n_threads=n_threads)
