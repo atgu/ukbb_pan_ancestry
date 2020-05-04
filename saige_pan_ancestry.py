@@ -20,7 +20,7 @@ logger.addHandler(logging.StreamHandler(sys.stderr))
 bucket = 'gs://ukb-diverse-pops'
 root = f'{bucket}/results'
 
-HAIL_DOCKER_IMAGE = 'gcr.io/ukbb-diversepops-neale/hail_utils:4.9'
+HAIL_DOCKER_IMAGE = 'gcr.io/ukbb-diversepops-neale/hail_utils:5.0'
 SAIGE_DOCKER_IMAGE = 'wzhou88/saige:0.36.6'
 QQ_DOCKER_IMAGE = 'konradjk/saige_qq:0.2'
 
