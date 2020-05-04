@@ -99,9 +99,10 @@ def main(args):
     hl.init(default_reference='GRCh37', log='/combine_results.log')
 
     inner_mode = 'overwrite' if args.overwrite else '_read_if_exists'
+    pops = args.pops.split(',') if args.pops else POPS
 
     if args.run_basic_load:
-        for pop in POPS:
+        for pop in pops:
             all_variant_outputs = get_all_valid_variant_results_ht_paths(pop)
             pheno_dict = get_pheno_dict()
             heritability_dict = get_heritability_dict(pop)
