@@ -34,7 +34,7 @@ def get_filtered_mt(chrom: str = 'all',
     # get ac or mac based on filter_mac_instead_of_ac
     def get_ac(af, an):
         if filter_mac_instead_of_ac:
-            return (0.5 - abs(0.5 - af)) * an
+            return (0.5 - hl.abs(0.5 - af)) * an
         else:
             return af * an
 
