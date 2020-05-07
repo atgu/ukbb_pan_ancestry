@@ -24,13 +24,26 @@ def get_ukb_imputed_data(chromosome: str = '1', variant_list: hl.Table = None, e
                           sample_file=get_sample_file(chromosome), **add_args)
 
 
-def get_filtered_mt(chrom: str = 'all', pop: str = 'all', imputed: bool = True, min_mac: int = 20, entry_fields = ('GP', )):
+def get_filtered_mt(chrom: str = 'all',
+                    pop: str = 'all',
+                    imputed: bool = True,
+                    min_mac: int = 20,
+                    entry_fields=('GP',),
+                    filter_mac_instead_of_ac: bool = False):
+
+    # get ac or mac based on filter_mac_instead_of_ac
+    def get_ac(af, an):
+        if filter_mac_instead_of_ac:
+            return (0.5 - abs(0.5 - af)) * an
+        else:
+            return af * an
+
     if imputed:
         ht = hl.read_table(get_ukb_af_ht_path())
         if pop == 'all':
-            ht = ht.filter(hl.any(lambda x: ht.af[x] * ht.an[x] >= min_mac, hl.literal(POPS)))
+            ht = ht.filter(hl.any(lambda x: get_ac(ht.af[x], ht.an[x]) >= min_mac, hl.literal(POPS)))
         else:
-            ht = ht.filter(ht.af[pop] * ht.an[pop] >= min_mac)
+            ht = ht.filter(get_ac(ht.af[pop], ht.an[pop]) >= min_mac)
         mt = get_ukb_imputed_data(chrom, variant_list=ht, entry_fields=entry_fields)
     else:
         mt = hl.read_matrix_table('gs://ukb31063/ukb31063.genotype.mt')
