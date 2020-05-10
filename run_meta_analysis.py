@@ -21,7 +21,7 @@ def all_and_leave_one_out(x, pop_array, all_f=hl.sum, loo_f=lambda i, x: hl.sum(
     """
     arr = hl.array([all_f(x)])
     arr = arr.extend(hl.map(lambda i: loo_f(i, x), hl.range(hl.len(pop_array))))
-    return arr
+    return hl.or_missing(hl.any(hl.is_defined, x), arr)
 
 
 def main(args):
@@ -32,7 +32,7 @@ def main(args):
 
     # Annotate per-entry sample size
     def get_n(pheno_data, i):
-        return pheno_data[i].n_cases + pheno_data[i].n_controls
+        return pheno_data[i].n_cases + hl.or_else(pheno_data[i].n_controls, 0)
 
     mt = mt.annotate_entries(
         summary_stats=hl.map(lambda x: x[1].annotate(N=hl.or_missing(hl.is_defined(x[1]), get_n(mt.pheno_data, x[0]))),
