@@ -6,9 +6,10 @@ import sys
 import argparse
 from pprint import pprint
 from datetime import date
-from collections import defaultdict, Counter
-from ukbb_pan_ancestry import *
+from collections import Counter
 from tqdm import tqdm
+from gnomad.utils import slack
+from ukbb_pan_ancestry import *
 
 
 def get_all_valid_variant_results_ht_paths(pop):
@@ -18,48 +19,35 @@ def get_all_valid_variant_results_ht_paths(pop):
     return [x for x in all_variant_outputs if 'prescriptions--' not in x]
 
 
-def get_heritability_dict(pop):
-    heritability_ht = hl.import_table(get_heritability_txt_path(), impute=True, key=PHENO_KEY_FIELDS)
-    heritability_ht = heritability_ht.filter(heritability_ht.pop == pop)
-    heritability_dict = create_broadcast_dict(heritability_ht.key)
-    return heritability_dict
+def patch_mt_keys(mt, patch_more: bool = False):
+    mt = mt.key_cols_by(**{x: hl.case(missing_false=True)
+                        .when((mt.phenocode == 'whr') & (x == 'modifier'), 'irnt')  # Patch for accidental coding of irnt-whr as "whr" for SAIGE run
+                        .when((mt.trait_type == 'biomarkers') & (x == 'coding'), NULL_STR_KEY)  # Patch for accidental coding of biomarkers as their phenocode for SAIGE run
+                        .when((mt.trait_type == 'biomarkers') & (x == 'modifier'), 'irnt')  # Patch for accidental coding of biomarkers as "" for SAIGE run
+                        .when((mt.phenocode == '5097') & (x == 'modifier'), 'irnt')  # Patch for accidental coding of 5097 as "" for SAIGE run
+                        .when(patch_more & (mt.trait_type == 'continuous') & (x == 'modifier') &
+                              (mt.modifier == mt.phenocode), '')  # Patch for accidental coding of continuous as their phenocode for SAIGE run
+                        .default(mt[x])
+                           for x in PHENO_KEY_FIELDS})
+    return mt
 
 
-def generate_lambda_ht(pop, k: int = 100):
-    # _intervals = get_n_even_intervals(5000)
-    mt = hl.read_matrix_table(get_variant_results_path(pop, 'mt'))#, _intervals=_intervals)
-    ac_cutoffs = list(range(0, 6)) + [10, 20, 50, 100]
-    af_cutoffs = sorted([0] + [y * 10 ** x for y in (1, 2, 5) for x in range(-4, 0)] + [0.99])
+def apply_qc(mt, case_ac_threshold: int = 3, overall_mac_threshold: int = 20, min_case_count: int = 50):
+    mt = mt.filter_cols(mt.n_cases >= min_case_count)
+    ac_cases = mt.n_cases * 2 * mt['AF.Cases']
+    an_controls = mt.n_controls * 2 * mt['AF.Controls']
 
-    af_cases = mt['AF.Cases']
-    ac_cases = af_cases * mt.n_cases * 2
+    maf_total = 0.5 - hl.abs(0.5 - mt['AF_Allele2'])
+    an_total = (mt.n_cases + hl.or_else(mt.n_controls, 0)) * 2
+    mac_total = maf_total * an_total
 
-    af_total = mt['AF_Allele2']
-    ac_total = af_total * 2 * (mt.n_cases + mt.n_controls)
-    p_value_field = mt.Pvalue
-
-    sig_threshold = 5e-8
-
-    mt = mt.annotate_cols(sumstats_qc=hl.struct(**{
-        f'{metric}_{breakdown}_{flavor}': [hl.agg.filter(breakdown_dict[flavor] >= cutoff, agg) for cutoff in cutoffs]
-        for flavor, cutoffs in (('ac', ac_cutoffs), ('af', af_cutoffs))
-        for breakdown, breakdown_dict in (('by_case', {'ac': ac_cases,
-                                                       'af': af_cases
-                                                       }),
-                                          ('by', {
-                                              'ac': ac_total,
-                                              'af': af_total
-                                          })) if flavor in breakdown_dict
-        for metric, agg in (
-            ('lambda_gc', hl.methods.statgen._lambda_gc_agg(p_value_field)),
-            ('n_variants', hl.agg.count()),
-            ('n_sig', hl.agg.count_where(p_value_field < sig_threshold))
-        )
-    })).annotate_globals(ac_cutoffs=ac_cutoffs, af_cutoffs=af_cutoffs)
-
-    ht = mt.cols()
-    ht = ht.key_by(pop=pop, *PHENO_KEY_FIELDS)
-    return ht
+    return mt.annotate_entries(
+        low_confidence=hl.case(missing_false=True)
+            .when(ac_cases <= case_ac_threshold, True)
+            .when(an_controls <= case_ac_threshold, True)
+            .when(mac_total <= overall_mac_threshold, True)
+            .default(False)
+    )
 
 
 def generate_sumstats_mt(all_variant_outputs, heritability_dict, pheno_dict, temp_dir, inner_mode = '_read_if_exists'):
@@ -69,9 +57,8 @@ def generate_sumstats_mt(all_variant_outputs, heritability_dict, pheno_dict, tem
     all_hts = [unify_saige_ht_schema(hl.read_table(x), patch_case_control_count=x) for x in tqdm(all_variant_outputs)]
     mt = join_pheno_hts_to_mt(all_hts, row_keys, col_keys, temp_dir=temp_dir,
                               inner_mode=inner_mode, repartition_final=20000)
-    # Patch for accidental coding of irnt-whr as "whr" for SAIGE run
-    mt = mt.key_cols_by(**{x: hl.if_else((mt.phenocode == 'whr') & (x == 'modifier'), 'irnt', mt[x])
-                           for x in PHENO_KEY_FIELDS})
+
+    mt = patch_mt_keys(mt)
     key = mt.col_key.annotate(phenocode=format_pheno_dir(mt.phenocode))
     mt = mt.annotate_cols(**pheno_dict.get(key), **heritability_dict.get(key))
     mt = mt.filter_cols(mt.phenocode != "").drop('varT', 'varTstar', 'Is.SPA.converge',
@@ -84,6 +71,15 @@ def write_full_mt(overwrite):
     mts = []
     for pop in POPS:
         mt = hl.read_matrix_table(get_variant_results_path(pop, 'mt')).annotate_cols(pop=pop)
+
+        mt = mt.filter_cols((mt.coding != 'zekavat_20200409') & ~mt.phenocode.contains('covid'))
+        mt = apply_qc(mt)
+        mt = patch_mt_keys(mt)
+        mt = reannotate_cols(mt, pop)
+        mt = patch_mt_keys(mt, patch_more=True)
+        mt = mt.filter_cols(hl.is_defined(mt.heritability) &
+                            (hl.is_defined(mt.description) | (mt.trait_type == 'prescriptions')))
+
         mt = mt.select_cols(pheno_data=mt.col_value)
         mt = mt.select_entries(summary_stats=mt.entry)
         mts.append(mt)
