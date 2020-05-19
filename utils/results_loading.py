@@ -38,3 +38,16 @@ def get_phenos_to_run(pop: str, limit: int = None, pilot: bool = False, single_s
     if first_round_phenos:
         pheno_key_dict = recode_pkd_to_legacy(pheno_key_dict)
     return pheno_key_dict
+
+
+def get_pheno_dict():
+    pheno_ht = hl.read_matrix_table(get_ukb_pheno_mt_path()).cols()
+    pheno_dict = create_broadcast_dict(pheno_ht.key)
+    return pheno_dict
+
+
+def get_heritability_dict(pop):
+    heritability_ht = hl.import_table(get_heritability_txt_path(), impute=True, key=PHENO_KEY_FIELDS)
+    heritability_ht = heritability_ht.filter(heritability_ht.pop == pop)
+    heritability_dict = create_broadcast_dict(heritability_ht.key)
+    return heritability_dict
