@@ -66,14 +66,22 @@ def main(args):
         mt.write(get_ukb_pheno_mt_path(), args.overwrite)
         summarize_data(args.overwrite)
 
-    if args.add_dataset:
-        if args.add_dataset == 'covid':
-            mt = load_covid_data(pre_phesant_tsv_path).checkpoint(get_ukb_pheno_mt_path('covid'), args.overwrite)
+    if args.add_dataset or args.add_covid_wave:
+        if args.add_covid_wave:
+            mt = load_covid_data(pre_phesant_tsv_path, wave=args.add_covid_wave).checkpoint(
+                get_ukb_pheno_mt_path(f'covid_wave{args.add_covid_wave}'), args.overwrite)
         else:
             mt = load_custom_pheno(args.add_dataset).checkpoint(get_custom_pheno_path(args.add_dataset, extension='ht'), args.overwrite)
         cov_ht = get_covariates(hl.int32).persist()
         mt = combine_pheno_files_multi_sex_legacy({'custom': mt}, cov_ht)
+
+        mt.group_rows_by('pop').aggregate(
+            n_cases=hl.agg.count_where(mt.both_sexes == 1.0),
+            n_controls=hl.agg.count_where(mt.both_sexes == 0.0)
+        ).entries().drop(*[x for x in PHENO_COLUMN_FIELDS if x != 'description']).show(100, width=180)
+
         original_mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
+        original_mt = original_mt.filter_cols(~original_mt.phenocode.contains('covid'))
         original_mt = original_mt.checkpoint(get_ukb_pheno_mt_path(f'full_before_{curdate}', sex='full'), args.overwrite)
         original_mt.cols().export(f'{pheno_folder}/all_pheno_summary_before_{curdate}.txt.bgz')
         original_mt.union_cols(mt, row_join_type='outer').write(get_ukb_pheno_mt_path(), args.overwrite)
@@ -122,6 +130,7 @@ if __name__ == '__main__':
     parser.add_argument('--combine_data', help='Load data', action='store_true')
     parser.add_argument('--summarize_data', help='Load data', action='store_true')
     parser.add_argument('--add_dataset', help='Load data')
+    parser.add_argument('--add_covid_wave', help='Load data')
     parser.add_argument('--pairwise_correlations', help='Load data', action='store_true')
     parser.add_argument('--slack_channel', help='Send message to Slack channel/user', default='@konradjk')
     args = parser.parse_args()
