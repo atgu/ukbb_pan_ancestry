@@ -8,6 +8,7 @@ import argparse
 import logging
 logging.basicConfig(format="%(levelname)s (%(name)s %(lineno)s): %(message)s", level='INFO', filename='saige_pipeline.log')
 
+from gnomad.utils import slack
 from ukb_common import *
 import time
 import re
@@ -39,13 +40,14 @@ def main(args):
     reference = 'GRCh37'
     chrom_lengths = hl.get_reference(reference).lengths
     iteration = 1
+    pops = args.pops.split(',') if args.pops else POPS
 
     # if args.local_test:
     #     backend = hb.LocalBackend(gsa_key_file='/Users/konradk/.hail/ukb-diverse-pops.json')
     # else:
 
     backend = hb.ServiceBackend(billing_project='ukb_diverse_pops')
-    for pop in POPS:
+    for pop in pops:
         p = hb.Batch(name=f'saige_pan_ancestry_{pop}', backend=backend, default_image=SAIGE_DOCKER_IMAGE,
                      default_storage='500Mi', default_cpu=n_threads)
         window = '1e7' if pop == 'EUR' else '1e6'
@@ -234,14 +236,10 @@ if __name__ == '__main__':
     parser.add_argument('--skip_case_count_filter', help='Skip running SAIGE tests', action='store_true')
     parser.add_argument('--phenos', help='Comma-separated list of trait_type-phenocode-pheno_sex-coding-modifier regexes '
                                          '(e.g. continuous-50-both_sexes--,icd10-E1.*,brain_mri-.* )')
+    parser.add_argument('--pops', help='comma-searated list')
     parser.add_argument('--run_first_round_phenos', help='Run all phenotypes through pipeline (default: only pilot)', action='store_true')
     parser.add_argument('--pilot', help='Run all phenotypes through pipeline (default: only pilot)', action='store_true')
     parser.add_argument('--dry_run', help='Dry run only', action='store_true')
     args = parser.parse_args()
 
-    if args.local_test:
-        try_slack('@konradjk', main, args)
-    else:
-        main(args)
-
-
+    main(args)
