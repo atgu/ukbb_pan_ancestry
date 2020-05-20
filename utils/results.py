@@ -1,11 +1,13 @@
 from ukbb_pan_ancestry.resources.results import *
 
 
-def annotate_nearest_gene(t, add_contig: bool = False, loc: str = 'nearest_genes'):
+def annotate_nearest_gene(t, add_contig: bool = False, add_only_gene_symbols_as_str: bool = False, loc: str = 'nearest_genes'):
     intervals_ht = hl.read_table(get_gene_intervals_path())
     if add_contig:
         intervals_ht = intervals_ht.annotate(contig=intervals_ht.interval.start.contig)
     annotation = intervals_ht.index(t.locus, all_matches=True)
+    if add_only_gene_symbols_as_str:
+        annotation = hl.delimit(annotation.gene_name)
     if loc: annotation = {loc: annotation}
     return t.annotate_rows(**annotation) if isinstance(t, hl.MatrixTable) else t.annotate(**annotation)
 
