@@ -2,8 +2,8 @@
 # coding: utf-8
 import argparse
 import hail as hl
-from ukbb_pan_ancestry import *
-from ukb_common import *
+from ukbb_pan_ancestry.resources.results import *
+from ukbb_pan_ancestry.utils.results import *
 
 
 def all_and_leave_one_out(x, pop_array, all_f=hl.sum, loo_f=lambda i, x: hl.sum(x) - hl.or_else(x[i], 0)):
@@ -28,7 +28,11 @@ def main(args):
     hl.init()
 
     # Read in all sumstats
-    mt = hl.read_matrix_table('gs://ukb-diverse-pops/combined_results/results_full.mt')
+    mt = load_final_sumstats_mt(filter_phenos=True,
+                                filter_variants=False,
+                                filter_sumstats=True,
+                                separate_columns_by_pop=False,
+                                annotate_with_nearest_gene=False)
 
     # Annotate per-entry sample size
     def get_n(pheno_data, i):

@@ -14,6 +14,10 @@ def get_variant_results_qc_path(extension: str = 'ht'):
     return f'{bucket}/combined_results/full_variant_qc_metrics.{extension}'
 
 
+def get_meta_analysis_results_path(extension: str = 'mt'):
+    return f'{bucket}/combined_results/meta_analysis.{extension}'
+
+
 def get_phenotype_results_qc_path(extension: str = 'ht'):
     return f'{bucket}/combined_results/full_phenotype_qc_metrics.{extension}'
 
