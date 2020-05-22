@@ -13,7 +13,7 @@ def annotate_nearest_gene(t, add_contig: bool = False, add_only_gene_symbols_as_
 
 
 def filter_lambda_gc(lambda_gc):
-    return (lambda_gc > 0.8) & (lambda_gc < 1.2)
+    return (lambda_gc > 0.5) & (lambda_gc < 2)
 
 
 def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = True,
