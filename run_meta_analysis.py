@@ -97,7 +97,7 @@ def main(args):
         lambda i: hl.struct(**{field: mt[field][i] for field in col_fields}), hl.range(hl.len(mt.pop))))
 
     mt.describe()
-    mt.write('gs://ukb-diverse-pops/combined_results/meta_analysis.mt', overwrite=args.overwrite)
+    mt.write(get_meta_analysis_results_path(), overwrite=args.overwrite)
 
     hl.copy_log('gs://ukb-diverse-pops/combined_results/meta_analysis.log')
 
