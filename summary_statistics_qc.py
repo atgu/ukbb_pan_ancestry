@@ -79,15 +79,6 @@ def prepare_gnomad_stats(overwrite):
     ht.naive_coalesce(1000).write(get_analysis_data_path('gnomad_comparison', 'qc', 'full', 'ht'), overwrite=overwrite)
 
 
-def downsample_table_by_x_y(ht, x, y, label: dict = None, x_field_name: str = 'x', y_field_name: str = 'y'):
-    res = ht.aggregate(hl.agg.downsample(x, y, label=list(label.values())), _localize=False)
-    ht = hl.utils.range_table(1).annotate(data=res).explode('data')
-    # ht = ht.drop('idx')  # TODO: add once https://github.com/hail-is/hail/issues/8751 is fixed
-    ht = ht.select(**{x_field_name: ht.data[0], y_field_name: ht.data[1]},
-                   **{l: ht.data[2][i] for i, l in enumerate(label.keys())})
-    return ht
-
-
 def generate_gnomad_plot_data():
     ht_all = hl.read_table(get_analysis_data_path('gnomad_comparison', 'qc', 'full', 'ht'))
     calling_regions = hl.import_locus_intervals('gs://gcp-public-data--broad-references/hg19/v0/wgs_calling_regions.v1.interval_list', reference_genome='GRCh37')
@@ -236,8 +227,8 @@ def main(args):
         generate_qc_lambdas(args.overwrite)
 
     if args.compute_variant_metrics:
-        # prepare_gnomad_stats(args.overwrite)
-        # generate_gnomad_plot_data()
+        prepare_gnomad_stats(args.overwrite)
+        generate_gnomad_plot_data()
         generate_variant_qc_file(args.overwrite)
 
     if args.compute_final_lambdas:
@@ -273,8 +264,6 @@ def main(args):
         res = ht.aggregate(hl.struct(total_sig_variants=hl.agg.sum(ht.pheno_data.n_sig_variants),
                                      total_variants=hl.agg.sum(ht.pheno_data.n_variants)))
         print(f'Got {res.total_sig_variants:,} significant hits (out of {res.total_variants:,} total tests)')
-
-        mt = load_final_sumstats_mt()
 
 
 
