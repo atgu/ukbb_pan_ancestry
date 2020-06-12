@@ -11,7 +11,7 @@ def get_variant_results_path(pop: str, extension: str = 'mt'):
 
 
 def get_variant_results_qc_path(extension: str = 'ht'):
-    return f'{bucket}/combined_results/full_variant_qc_metrics.{extension}'
+    return f'{public_bucket}/sumstats_qc_analysis/full_variant_qc_metrics.{extension}'
 
 
 def get_meta_analysis_results_path(extension: str = 'mt'):
