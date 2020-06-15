@@ -207,21 +207,35 @@ def filter_by_chisq(freq, or_cutoff: float = 2.0, p_cutoff: float = 1e-6):
 
 
 def generate_variant_qc_file(overwrite: bool = False):
-    ht_all = hl.read_table(get_analysis_data_path('gnomad_comparison', 'qc', 'full', 'ht'))
-    chisq_results = ht_all.freq.filter(lambda x: hl.is_defined(x.gnomad_genomes_af) & ~filter_by_chisq(x))
-    ht = ht_all.annotate(
+    ht = hl.read_table(get_analysis_data_path('gnomad_comparison', 'qc', 'full', 'ht'))
+    chisq_results = ht.freq.filter(lambda x: hl.is_defined(x.gnomad_genomes_af) & ~filter_by_chisq(x))
+    ht = ht.annotate(
         n_passing_populations=hl.len(chisq_results),
-        high_quality=ht_all.pass_gnomad_genomes & (hl.len(chisq_results) == 4)
+        high_quality=ht.pass_gnomad_genomes & (hl.len(chisq_results) == 4)
     ).drop('af', 'an')
-    # TODO: figure out why some "nearest genes" are missing
     ht = annotate_nearest_gene(ht, add_only_gene_symbols_as_str=True)
-    ht = ht.checkpoint(get_variant_results_qc_path(), overwrite)
-    # TODO: fix export
-    ht.drop('vep').export(get_variant_results_qc_path('txt.bgz'))
+    info_score = hl.read_table(ukb_imputed_info_ht_path)
+    ht = ht.annotate(info=info_score[ht.key].info).checkpoint(get_variant_results_qc_path(), overwrite, _read_if_exists=not overwrite)
+
+    ht = ht.drop('vep', 'pass_gnomad_exomes')
+    def get_freq_data(pop):
+        metrics = ('ac', 'an', 'af')
+        freq = ht.freq.find(lambda x: x.pop == pop).drop('pop', *[f'gnomad_exomes_{m}' for m in metrics])
+        if pop in ('CSA', 'MID'):
+            freq = freq.drop(*[f'gnomad_genomes_{m}' for m in metrics])
+        return freq
+    ht2 = ht.transmute(**{pop: get_freq_data(pop) for pop in POPS}).flatten()
+    def rename_pop_metric(pop_metric):
+        if '.' not in pop_metric: return pop_metric
+        pop, metric = pop_metric.split('.')
+        return f'{metric}_{pop}'
+    ht2 = ht2.rename({x: rename_pop_metric(x) for x in ht2.row_value})
+    ht = locus_alleles_to_chr_pos_ref_alt(ht2, True)
+    ht.export(get_variant_results_qc_path('txt.bgz'))
 
 
 def main(args):
-    hl.init(default_reference='GRCh37', log='/combine_results.log')
+    hl.init(default_reference='GRCh37', log='/combine_results.log', branching_factor=8)
 
     if args.compute_qc_lambdas:
         generate_qc_lambdas(args.overwrite)
@@ -235,7 +249,7 @@ def main(args):
         generate_final_lambdas(args.overwrite)
 
     if args.gwas_run_stats:
-        mt = hl.read_matrix_table(get_variant_results_path('full', 'mt'))
+        mt = hl.read_matrix_table(get_variant_results_path('full'))
         ht = mt.cols()
         pprint(f'Phenos by number of pops: {ht.aggregate(hl.agg.counter(hl.len(ht.pheno_data)))}')
         ht = ht.explode('pheno_data')
@@ -247,6 +261,13 @@ def main(args):
             n_samples=hl.agg.max(ht.pheno_data.n_cases + hl.or_else(ht.pheno_data.n_controls, 0)),
             total_n_phenos=hl.agg.count(),
             **{trait_type: hl.agg.count_where(ht.trait_type == trait_type) for trait_type in trait_types}).show()
+
+        # Confirmed that the overall number matches those with genotype+phenotype data:
+        # genotyped_samples = get_filtered_mt('22').cols()
+        # ht = hl.read_matrix_table(get_ukb_pheno_mt_path()).rows()
+        # ht = ht.key_by(s=hl.str(ht.userId))
+        # all_samples = genotyped_samples.filter(hl.is_defined(ht[genotyped_samples.key]))
+        # all_samples.aggregate(hl.agg.counter(all_samples.pop))
 
         # x = ht.filter(ht.trait_type == 'biomarkers')
         # x.group_by(x.phenocode, x.description).aggregate(n=hl.agg.count()).show(40)
