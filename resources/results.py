@@ -7,7 +7,10 @@ def get_gene_intervals_path(reference: str = 'GRCh37'):
 
 
 def get_variant_results_path(pop: str, extension: str = 'mt'):
-    return f'{bucket}/combined_results/results_{pop}.{extension}'
+    if pop == 'full':
+        return f'{public_bucket}/sumstats_release/results_{pop}.{extension}'
+    else:
+        return f'{bucket}/combined_results/results_{pop}.{extension}'
 
 
 def get_variant_results_qc_path(extension: str = 'ht'):
@@ -15,7 +18,7 @@ def get_variant_results_qc_path(extension: str = 'ht'):
 
 
 def get_meta_analysis_results_path(extension: str = 'mt'):
-    return f'{bucket}/combined_results/meta_analysis.{extension}'
+    return f'{public_bucket}/combined_results/meta_analysis.{extension}'
 
 
 def get_phenotype_results_qc_path(extension: str = 'ht'):
@@ -24,6 +27,10 @@ def get_phenotype_results_qc_path(extension: str = 'ht'):
 
 def get_analysis_data_path(subdir: str, dataset: str, pop: str, extension: str = 'txt.bgz'):
     return f'{public_bucket}/sumstats_qc_analysis/{subdir}/{dataset}_{pop}.{extension}'
+
+
+def get_final_lambdas_path():
+    return get_analysis_data_path('lambda', 'lambdas', 'full', 'ht')
 
 
 def get_results_timing_tsv_path(timing_type: str, pop: str = ''):
