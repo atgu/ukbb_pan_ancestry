@@ -1,6 +1,6 @@
 ---
 id: technical-overview
-title: Technical overview
+title: Overview
 ---
 
 

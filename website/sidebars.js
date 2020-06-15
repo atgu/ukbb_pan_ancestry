@@ -1,10 +1,6 @@
 module.exports = {
   docs: [
     {
-      type: 'doc',
-      id: 'summary',
-    },
-    {
       type: 'category',
       label: 'FAQ',
       items: ['background', 'study-design', 'implications'],
