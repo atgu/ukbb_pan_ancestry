@@ -426,8 +426,7 @@ def make_pheno_manifest(export=True):
     
     dropbox_manifest = hl.import_table(f'{ldprune_dir}/UKBB_Pan_Populations-Manifest_20200615-manifest_info.tsv',
                                        impute=True,
-                                       key='File')
-    dropbox_manifest = dropbox_manifest.filter(dropbox_manifest['is_old_file']!='1')
+                                       key='File') # no need to filter table for duplicates because dropbox links are the same for updated phenos
     bgz = dropbox_manifest.filter(~dropbox_manifest.File.contains('.tbi'))
     bgz = bgz.rename({'File':'filename'})
     tbi = dropbox_manifest.filter(dropbox_manifest.File.contains('.tbi'))

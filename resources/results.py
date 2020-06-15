@@ -51,4 +51,4 @@ def get_heritability_txt_path(from_date: str = None):
 
 
 def get_pheno_manifest_path():
-    return f'{bucket}/combined_results/phenotype_manifest.tsv.bgz'
+    return f'{public_bucket}/sumstats_release/phenotype_manifest.tsv.bgz'
