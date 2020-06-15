@@ -26,8 +26,10 @@ This command generates static content into the `build` directory and can be serv
 
 ### Deployment
 
-```
-$ GIT_USER=<Your GitHub username> USE_SSH=true yarn deploy
-```
+Fix a bug in `@docusaurus/core@^2.0.0-alpha.56`. 
 
-If you are using GitHub pages for hosting, this command is a convenient way to build the website and push to the `gh-pages` branch.
+`npm run patch-route-bug`
+
+Build and upload build to storage bucket.
+
+`npm run deploy`
