@@ -13,7 +13,7 @@ import hail as hl
 from itertools import combinations
 from time import time
 from math import ceil
-from ukbb_pan_ancestry.utils.results import load_final_sumstats_mt, get_meta_analysis_results_path
+from ukbb_pan_ancestry.utils.results import load_final_sumstats_mt, get_meta_analysis_results_path, get_pheno_manifest_path
 
 bucket = 'gs://ukb-diverse-pops'
 public_bucket = 'gs://ukb-diverse-pops-public'
@@ -424,9 +424,10 @@ def make_pheno_manifest(export=True):
     annotate_dict.update({'filename': get_pheno_id(tb=ht)+'.tsv.bgz'})
     ht = ht.annotate(**annotate_dict)
     
-    dropbox_manifest = hl.import_table(f'{ldprune_dir}/UKBB_Pan_Populations-Manifest-20200615-manifest_info.tsv',
+    dropbox_manifest = hl.import_table(f'{ldprune_dir}/UKBB_Pan_Populations-Manifest_20200615-manifest_info.tsv',
                                        impute=True,
                                        key='File')
+    dropbox_manifest = dropbox_manifest.filter(dropbox_manifest['is_old_file']!='1')
     bgz = dropbox_manifest.filter(~dropbox_manifest.File.contains('.tbi'))
     bgz = bgz.rename({'File':'filename'})
     tbi = dropbox_manifest.filter(dropbox_manifest.File.contains('.tbi'))
@@ -445,8 +446,8 @@ def make_pheno_manifest(export=True):
                                            )+suffix:tb[ht.filename][field]})
     ht = ht.annotate(**dropbox_annotate_dict)
     ht = ht.drop('pheno_data')
-    print(ht.describe())
-    print(ht.show())
+    ht.describe()
+    ht.show()
 #    if export:
 #        ht.export(get_pheno_manifest_path())
 #    else:
