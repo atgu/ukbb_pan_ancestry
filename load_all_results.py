@@ -50,7 +50,29 @@ def apply_qc(mt, case_ac_threshold: int = 3, overall_mac_threshold: int = 20, mi
     )
 
 
-def generate_sumstats_mt(all_variant_outputs, heritability_dict, pheno_dict, temp_dir, inner_mode = '_read_if_exists'):
+def check_and_annotate_with_dict(mt, input_dict, dict_key_from_mt, axis='cols'):
+    direction = mt.col if axis == 'cols' else mt.row
+    annotation = {}
+    for key, value in list(input_dict.values()[0].items()):
+        if key in list(direction):
+            annotation[key] = hl.case().when(
+                hl.is_defined(mt[key]), mt[key]).when(
+                hl.is_defined(input_dict.get(dict_key_from_mt)), input_dict.get(dict_key_from_mt)[key]).default(
+                hl.null(value.dtype)
+            )
+        else:
+            annotation[key] = hl.if_else(hl.is_defined(input_dict.get(dict_key_from_mt)),
+                                         input_dict.get(dict_key_from_mt)[key],
+                                         hl.null(value.dtype))
+    if axis == 'cols':
+        mt = mt.annotate_cols(**annotation)
+    else:
+        mt = mt.annotate_rows(**annotation)
+    return mt
+
+
+def generate_sumstats_mt(all_variant_outputs, heritability_dict, pheno_dict, temp_dir, inner_mode = '_read_if_exists',
+                         checkpoint: bool = False):
     row_keys = ['locus', 'alleles', 'gene', 'annotation']
     col_keys = PHENO_KEY_FIELDS
 
@@ -58,9 +80,13 @@ def generate_sumstats_mt(all_variant_outputs, heritability_dict, pheno_dict, tem
     mt = join_pheno_hts_to_mt(all_hts, row_keys, col_keys, temp_dir=temp_dir,
                               inner_mode=inner_mode, repartition_final=20000)
 
+    if checkpoint:
+        mt = mt.checkpoint(f'{temp_dir}/staging.mt', **{inner_mode: True})
     mt = patch_mt_keys(mt)
     key = mt.col_key.annotate(phenocode=format_pheno_dir(mt.phenocode))
-    mt = mt.annotate_cols(**pheno_dict.get(key), **heritability_dict.get(key))
+    mt = check_and_annotate_with_dict(mt, pheno_dict, key)
+    key = mt.col_key.annotate(phenocode=format_pheno_dir(mt.phenocode))
+    mt = check_and_annotate_with_dict(mt, heritability_dict, key)
     mt = mt.filter_cols(mt.phenocode != "").drop('varT', 'varTstar', 'Is.SPA.converge',
                                                  'AC_Allele2', 'N', 'Tstat')
     mt = mt.key_rows_by('locus', 'alleles')
@@ -79,7 +105,7 @@ def write_full_mt(overwrite):
         mt = patch_mt_keys(mt, patch_more=True)
         mt = mt.filter_cols(hl.is_defined(mt.heritability) &
                             (hl.is_defined(mt.description) | (mt.trait_type == 'prescriptions')))
-
+        mt = re_colkey_mt(mt)
         mt = mt.select_cols(pheno_data=mt.col_value)
         mt = mt.select_entries(summary_stats=mt.entry)
         mts.append(mt)
@@ -88,10 +114,9 @@ def write_full_mt(overwrite):
     for mt in mts[1:]:
         full_mt = full_mt.union_cols(mt, row_join_type='outer')
     full_mt = full_mt.collect_cols_by_key()
-    description_fields = ('description', 'description_more', 'coding_description', 'category')
     full_mt = full_mt.annotate_cols(
         pheno_data=full_mt.pheno_data.map(lambda x: x.drop(*PHENO_COLUMN_FIELDS)),
-        **{x: full_mt.pheno_data[x][0] for x in description_fields},
+        **{x: full_mt.pheno_data[x][0] for x in PHENO_DESCRIPTION_FIELDS},
         **{f'n_cases_full_cohort_{sex}': full_mt.pheno_data[f'n_cases_{sex}'][0]
            for sex in ('both_sexes', 'females', 'males')}
     )
@@ -103,13 +128,37 @@ def write_full_mt(overwrite):
 def reannotate_cols(mt, pop):
     heritability_dict = get_heritability_dict(pop)
     pheno_dict = get_pheno_dict()
+    key = get_modified_key(mt)
+    mt = check_and_annotate_with_dict(mt, pheno_dict, key)
+    key = get_modified_key(mt)
+    return check_and_annotate_with_dict(mt, heritability_dict, key)
+
+
+def get_modified_key(mt):
     key = mt.col_key.annotate(phenocode=format_pheno_dir(mt.phenocode),
                               modifier=hl.case(missing_false=True)
                               .when(mt.trait_type == "biomarkers", "")
                               .when((mt.pop == 'EAS') & (mt.phenocode == '104550'), '104550')
                               .default(mt.modifier))
-    return mt.annotate_cols(**pheno_dict.get(key), **heritability_dict.get(key))
+    return key
 
+
+def recode_single_pheno_struct_to_legacy_path(pheno_struct):
+    trait_type = pheno_struct.trait_type
+    phenocode = pheno_struct.phenocode
+    if trait_type == 'icd10':
+        trait_type = 'icd_all'
+        coding = 'icd10'
+    elif trait_type == 'phecode':
+        coding = pheno_struct.pheno_sex
+    elif trait_type == 'biomarkers':
+        coding = pheno_struct.phenocode
+    else:
+        if phenocode == 'whr':
+            coding = 'whr'
+        else:
+            coding = pheno_struct.coding if pheno_struct.coding else pheno_struct.modifier
+    return f'{trait_type}-{format_pheno_dir(phenocode)}-{coding}'
 
 
 def main(args):
@@ -154,18 +203,27 @@ def main(args):
             if len(all_variant_outputs) < 20:
                 print(all_variant_outputs)
             if args.dry_run:
-                sys.exit(0)
+                continue
+            if not len(all_variant_outputs):
+                continue
 
             mt = generate_sumstats_mt(all_variant_outputs, heritability_dict, pheno_dict,
                                       f'{temp_bucket}/{pop}/variant_{today}', inner_mode)
 
             original_mt = hl.read_matrix_table(get_variant_results_path(pop, 'mt'))
-            original_mt = original_mt.checkpoint(f'{temp_bucket}/{pop}/variant_before_{today}.mt', _read_if_exists=True)
+            original_mt = original_mt.checkpoint(f'{temp_bucket}/{pop}/variant_before_{today}.mt', overwrite=True)
+            mt = re_colkey_mt(mt)
+            original_mt = re_colkey_mt(original_mt)
             mt = original_mt.union_cols(mt, row_join_type='outer')
             mt.write(get_variant_results_path(pop, 'mt'), overwrite=args.overwrite)
 
     if args.run_combine_load:
         write_full_mt(args.overwrite)
+
+
+def re_colkey_mt(mt):
+    mt = mt.key_cols_by().select_cols(*PHENO_KEY_FIELDS, *PHENO_COLUMN_FIELDS, *PHENO_GWAS_FIELDS, 'pop')
+    return mt.key_cols_by(*PHENO_KEY_FIELDS)
 
 
 if __name__ == '__main__':
