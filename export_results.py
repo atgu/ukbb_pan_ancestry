@@ -37,7 +37,8 @@ def get_final_sumstats_mt_for_export():
     mt0 = mt0.select_rows()
     return mt0
 
-def export_results(num_pops, trait_types='all', batch_size=256, mt=None, export_path_str=None):
+def export_results(num_pops, trait_types='all', batch_size=256, mt=None, 
+                   export_path_str=None, skip_binary_eur=True):
     r'''
     `num_pops`: exact number of populations for which phenotype is defined
     `trait_types`: trait category (options: all, binary, quant)
@@ -133,7 +134,7 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None, export_
         for pop_set in pop_sets:    
             start = time()
             
-            if pop_set == {'EUR'} and trait_category == 'binary': # run EUR-only binary traits separately
+            if (pop_set == {'EUR'} and trait_category == 'binary') and skip_binary_eur: # run EUR-only binary traits separately
                 print('\nSkipping EUR-only binary traits\n')
                 continue
             
@@ -391,13 +392,15 @@ def export_updated_phenos(num_pops=None):
                            trait_types='all', 
                            batch_size=256, 
                            mt=mt0, 
-                           export_path_str='update')
+                           export_path_str='update',
+                           skip_binary_eur=False)
     else: # useful if parallelizing num_pops over multiple clusters
         export_results(num_pops=num_pops, 
                        trait_types='all', 
                        batch_size=256, 
                        mt=mt0, 
-                       export_path_str='update')
+                       export_path_str='update',
+                       skip_binary_eur=False)
 
 
 def make_pheno_manifest(export=True):    
@@ -434,7 +437,7 @@ def make_pheno_manifest(export=True):
 if __name__=="__main__":
     
     parser = argparse.ArgumentParser()
-    parser.add_argument('--num-pops', type=int, default=0, help='number of defined pops (options: 6,5,...,2,1)')
+    parser.add_argument('--num-pops', type=int, default=None, help='number of defined pops (options: 6,5,...,2,1)')
     parser.add_argument('--trait-types', type=str, default='all', help='trait types to export (options: all, quant, binary)')
     parser.add_argument('--phenocode', type=str, default=None, help='phenocode to filter to for exporting results')
     parser.add_argument('--export-results', action='store_true')
@@ -457,4 +460,4 @@ if __name__=="__main__":
     elif args.export_loo:
         export_loo(batch_size=args.batch_size)
     elif args.export_updated_phenos:
-        export_updated_phenos()
+        export_updated_phenos(num_pops=args.num_pops)
