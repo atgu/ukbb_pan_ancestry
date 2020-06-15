@@ -26,24 +26,29 @@ def get_pheno_id(tb):
                 ).replace(' ','_').replace('/','_')
     return pheno_id
 
-def export_results(num_pops, trait_types='all', batch_size=256, phenocode=None):
+def get_pheno_manifest_path():
+    return f'{bucket}/combined_results/phenotype_manifest.tsv.bgz'
+
+def get_final_sumstats_mt_for_export():
+    mt0 = load_final_sumstats_mt(filter_sumstats=False,
+                                 filter_variants=False,
+                                 separate_columns_by_pop=False,
+                                 annotate_with_nearest_gene=False)
+    mt0 = mt0.select_rows()
+    return mt0
+
+def export_results(num_pops, trait_types='all', batch_size=256, mt=None, export_path_str=None):
     r'''
     `num_pops`: exact number of populations for which phenotype is defined
     `trait_types`: trait category (options: all, binary, quant)
     `batch_size`: batch size argument for export entries by col
     '''
     assert trait_types in {'all','quant','binary'}, "trait_types must be one of the following: {'all','quant','binary'}"
-    hl.init(default_reference='GRCh38', log='/tmp/export_entries_by_col.log')
     print(f'\n\nExporting {trait_types} trait types for {num_pops} pops\n\n')
-    mt0 = load_final_sumstats_mt(filter_sumstats=False,
-                                 filter_variants=False,
-                                 separate_columns_by_pop=False,
-                                 annotate_with_nearest_gene=False)
-    mt0 = mt0.select_rows()
-    
-    if phenocode != None:
-        print('\nFiltering to traits with phenocode: {phenocode}\n')
-        mt0 = mt0.filter_cols(mt0.phenocode==phenocode)
+    if mt == None:
+        mt0 = get_final_sumstats_mt_for_export()
+    else:
+        mt0 = mt
         
     meta_mt0 = hl.read_matrix_table(get_meta_analysis_results_path())
     
@@ -165,18 +170,18 @@ def export_results(num_pops, trait_types='all', batch_size=256, phenocode=None):
             mt2 = mt2.key_rows_by().drop('locus','alleles','summary_stats') # row fields that are no longer included: 'gene','annotation'
             
             batch_idx = 1        
-            get_export_path = lambda batch_idx: f'{ldprune_dir}/release/{trait_category}/{"" if phenocode is None else f"{phenocode}/"}{"-".join(pop_list)}_batch{batch_idx}'
+            get_export_path = lambda batch_idx: f'{ldprune_dir}/export_results/{"" if export_path_str is None else f"{export_path_str}/"}{trait_category}/{"-".join(pop_list)}_batch{batch_idx}'
             print(mt2.describe())
             while hl.hadoop_is_dir(get_export_path(batch_idx)):
                 batch_idx += 1
             print(f'\nExporting {col_ct} phenos to: {get_export_path(batch_idx)}\n')
-            assert False
-            hl.experimental.export_entries_by_col(mt = mt2,
-                                                  path = get_export_path(batch_idx),
-                                                  bgzip = True,
-                                                  batch_size = batch_size,
-                                                  use_string_key_as_file_name = True,
-                                                  header_json_in_file = False)
+
+#            hl.experimental.export_entries_by_col(mt = mt2,
+#                                                  path = get_export_path(batch_idx),
+#                                                  bgzip = True,
+#                                                  batch_size = batch_size,
+#                                                  use_string_key_as_file_name = True,
+#                                                  header_json_in_file = False)
             end = time()
             print(f'\nExport complete for:\n{trait_types}\n{pop_list}\ntime: {round((end-start)/3600,2)} hrs')
 
@@ -187,13 +192,7 @@ def export_binary_eur(cluster_idx, num_clusters=10, batch_size = 256):
     across `num_clusters` clusters for reduced wall time and robustness to mid-export errors.
     NOTE: `cluster_idx` is 1-indexed.
     '''
-    
-    hl.init(default_reference='GRCh38', log='/tmp/export_entries_by_col.log')
-    mt0 = load_final_sumstats_mt(filter_sumstats=False,
-                                 filter_variants=False,
-                                 separate_columns_by_pop=False,
-                                 annotate_with_nearest_gene=False)
-    mt0 = mt0.select_rows()
+    mt0 = get_final_sumstats_mt_for_export()
     meta_mt0 = hl.read_matrix_table(get_meta_analysis_results_path())
     
     mt0 = mt0.annotate_cols(pheno_id = get_pheno_id(tb=mt0))
@@ -288,6 +287,26 @@ def export_binary_eur(cluster_idx, num_clusters=10, batch_size = 256):
     end = time()
     print(f'\nExport complete for:\n{trait_types}\n{pop_list}\ntime: {round((end-start)/3600,2)} hrs')
     
+def export_subset(num_pops=None, phenocode=None):
+    mt0 = get_final_sumstats_mt_for_export()
+    if phenocode != None:
+        print('\nFiltering to traits with phenocode: {phenocode}\n')
+        mt0 = mt0.filter_cols(mt0.phenocode==phenocode)
+    if num_pops is None:
+        for num_pops in range(1,7):
+                export_results(num_pops=num_pops, 
+                               trait_types='all', 
+                               batch_size=256, 
+                               mt = mt0, 
+                               export_path_str=phenocode)
+    else:
+        export_results(num_pops=num_pops, 
+                       trait_types='all', 
+                       batch_size=256, 
+                       mt = mt0, 
+                       export_path_str=phenocode)
+                
+    
 def export_loo(batch_size=256):
     r'''
     For exporting p-values of meta-analysis of leave-one-out population sets
@@ -331,7 +350,57 @@ def export_loo(batch_size=256):
                                           batch_size = batch_size,
                                           use_string_key_as_file_name = True,
                                           header_json_in_file = False)
-def make_pheno_manifest():    
+    
+def export_updated_phenos(num_pops=None):
+    old_manifest = hl.import_table(get_pheno_manifest_path(),
+                                   key=['trait_type','phenocode','pheno_sex',
+                                        'coding','modifier'],
+                                   impute=True)
+    new_manifest = make_pheno_manifest(export=False)
+    joined_manifest = old_manifest.join(new_manifest, how='outer')
+    joined_manifest = joined_manifest.annotate(pheno_id = get_pheno_id(tb=joined_manifest))
+    
+    pheno_ids_new_phenos = joined_manifest.filter(hl.is_missing(joined_manifest.pops)).pheno_id.collect()
+    pheno_ids_to_update = joined_manifest.filter(joined_manifest.pops!=joined_manifest.pops_1).pheno_id.collect()
+    pheno_ids_new_phenos_str = '\n'.join(pheno_ids_new_phenos)
+    pheno_ids_to_update_str = '\n'.join(pheno_ids_to_update)
+    print(f'\n\nNew phenotypes to be exported:\n{pheno_ids_new_phenos_str}')
+    print(f'\nUpdated phenotypes to be exported:\n{pheno_ids_to_update_str}')
+    print(f'\n> Number of new phenotypes to be exported: {len(pheno_ids_new_phenos)}')
+    print(f'\n> Number of phenotypes to be updated: {len(pheno_ids_to_update)}')
+    print(f'\n> Total number of phenotypes to be exported: {len(pheno_ids_to_update+pheno_ids_new_phenos)}\n')
+    
+    # identify phenotypes that should be removed from previous results
+    to_remove = joined_manifest.filter((hl.is_missing(joined_manifest.pops_1)))
+    pheno_ids_to_remove = get_pheno_id(tb=to_remove).collect()
+    pheno_ids_to_remove_str = '\n'.join(pheno_ids_to_remove)
+    print(f'\nPhenotypes to remove:\n{pheno_ids_to_remove_str}')
+    print(f'\n> Number of phenotypes to be removed: {len(pheno_ids_to_remove)}\n')
+    
+    # filtered to phenotypes that need to be updated (either completely new or a different set of populations)
+    to_export = joined_manifest.filter((joined_manifest.pops!=joined_manifest.pops_1)|
+                                       (hl.is_missing(joined_manifest.pops)))
+        
+    mt0 = get_final_sumstats_mt_for_export()
+    mt0 = mt0.filter_cols(hl.is_defined(to_export[mt0.col_key]))
+    
+    if num_pops == None:
+        num_pops_set = set(to_export.num_pops_1.collect()) # get set of num_pops to run
+        for num_pops in num_pops_set:
+            export_results(num_pops=num_pops, 
+                           trait_types='all', 
+                           batch_size=256, 
+                           mt=mt0, 
+                           export_path_str='update')
+    else: # useful if parallelizing num_pops over multiple clusters
+        export_results(num_pops=num_pops, 
+                       trait_types='all', 
+                       batch_size=256, 
+                       mt=mt0, 
+                       export_path_str='update')
+
+
+def make_pheno_manifest(export=True):    
     mt0 = load_final_sumstats_mt(filter_sumstats=False,
                                  filter_variants=False,
                                  separate_columns_by_pop=False,
@@ -356,7 +425,10 @@ def make_pheno_manifest():
 #    dropbox_dir= f'{bucket}/sumstats_flat_files'
 #    ht = ht.annotate('file_location' = dropbox_dir+'/'+})
     ht = ht.drop('pheno_data','pheno_indices')
-    ht.export(f'{bucket}/combined_results/phenotype_manifest.v2.tsv.bgz')
+    if export:
+        ht.export(get_pheno_manifest_path())
+    else:
+        return ht
     
 
 if __name__=="__main__":
@@ -369,6 +441,7 @@ if __name__=="__main__":
     parser.add_argument('--export-binary_eur', action='store_true')
     parser.add_argument('--export-loo', action='store_true')
     parser.add_argument('--make-pheno-manifest', action='store_true')
+    parser.add_argument('--export-updated-phenos', action='store_true')
     parser.add_argument('--cluster-idx',type=int, default=None, help='cluster index for splitting export of binary EUR traits')
     parser.add_argument('--batch_size', type=int, default=256, help='max number of phenotypes per batch for export_entries_by_col')
     args = parser.parse_args()
@@ -383,3 +456,5 @@ if __name__=="__main__":
         make_pheno_manifest()
     elif args.export_loo:
         export_loo(batch_size=args.batch_size)
+    elif args.export_updated_phenos:
+        export_updated_phenos()
