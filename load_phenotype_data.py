@@ -4,6 +4,7 @@ __author__ = 'konradk'
 
 import argparse
 from datetime import date
+from gnomad.utils import slack
 from ukbb_pan_ancestry import *
 
 
@@ -33,7 +34,7 @@ def main(args):
                 pheno_ht_to_mt(pheno_ht, data_type).write(get_ukb_pheno_mt_path(data_type, sex), args.overwrite)
 
             ht = hl.import_table(get_ukb_additional_phenos_tsv_path(sex), impute=True, min_partitions=100, missing='NA', key='userId')
-            mt = pheno_ht_to_mt(ht, 'continuous', pheno_function_type=hl.str)
+            mt = pheno_ht_to_mt(ht, 'continuous')
             description_ht = hl.import_table(get_ukb_additional_phenos_description_path(), impute=True, quote='"', key=['pheno', 'coding'])
             mt.annotate_cols(**description_ht[mt.col_key]).write(get_ukb_pheno_mt_path('additional', sex), args.overwrite)
 
