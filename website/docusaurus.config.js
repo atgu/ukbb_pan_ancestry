@@ -18,16 +18,12 @@ module.exports = {
         {
           to: 'docs/background',
           activeBasePath: 'docs',
-          label: 'FAQ',
-          position: 'left',
-        },
-        {
-          to: 'docs/downloads',
-          activeBasePath: 'docs',
-          label: 'Downloads',
+          label: 'About',
           position: 'left',
         },
         {to: 'blog', label: 'News', position: 'left'},
+        {to: 'downloads', label: 'Downloads', position: 'left'},
+        {to: 'results', label: 'Results', position: 'left'},
         {
           href: 'https://github.com/atgu/ukbb_pan_ancestry',
           label: 'GitHub',
@@ -48,15 +44,10 @@ module.exports = {
           // It is recommended to set document id as docs home page (`docs/` path).
           homePageId: 'background',
           sidebarPath: require.resolve('./sidebars.js'),
-          // Please change this to your repo.
-          editUrl:
-            'https://github.com/atgu/ukbb_pan_ancestry/edit/master/website',
         },
         blog: {
           showReadingTime: true,
           // Please change this to your repo.
-          editUrl:
-            'https://github.com/atgu/ukbb_pan_ancestry/edit/master/website/blog',
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),

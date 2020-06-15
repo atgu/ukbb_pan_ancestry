@@ -16,10 +16,6 @@ module.exports = {
     },
     {
       type: 'doc',
-      id: 'downloads',
-    },
-    {
-      type: 'doc',
       id: 'contact',
     },
     {

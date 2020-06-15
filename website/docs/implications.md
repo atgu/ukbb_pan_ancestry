@@ -3,9 +3,7 @@ id: implications
 title: Social and Ethical Implications
 ---
 
-## What are potential benefits? 
-
-What can be done with the results of this research? What are the potential benefits of this research?
+## What can be done with the results of this research? What are the potential benefits of this research?
 
 :::note
 Including more diverse populations in gene discovery efforts benefits _all individuals_, and may be especially beneficial for underserved populations.
@@ -30,9 +28,7 @@ Several researchers, including some involved in this project, have also conducte
 (https://www.thessgac.org/faqs).
 
 
-## Do genes determine choices?
-
-Do genes determine the choices we make?
+## Do genes determine the choices we make?
 
 :::note
 Genes do not determine our choices or who we become.
@@ -52,9 +48,7 @@ No. Making policy or clinical decisions based on the results of this study would
 GWAS look for associations between genetic variants and phenotypes in the world as it is today. Policy and clinical questions ask what the world would look like if we did things differently. GWAS cannot answer those questions. We are hopeful that the results of this study will facilitate future policy and clinical research for the global population, but those who use our results to make broad policy claims are overinterpreting the results.
 
 
-## How has genetics been misused?
-
-How has genetics research been used in the past to harm different groups?
+## How has genetics research been used in the past to harm different groups?
 
 :::note
 Genetics research unfortunately has a legacy of racist research that has harmed minority populations.
@@ -67,18 +61,14 @@ In addition to racist policies in the name of science, a lack of community invol
 Acknowledging the harm done to certain groups in the past in the name of science reminds us of the importance of careful communication of the implication of scientific research and intense vigilance that disadvantaged groups are not further harmed by this and other related work.
 
 
-## Are there risks? 
-
-Could this research be used to harm certain groups (e.g., through discrimination or stigmatization)?
+## Could this research be used to harm certain groups (e.g., through discrimination or stigmatization)?
 
 :::note
-As described above, genetics has [a long history](#how-has-genetics-research-been-used-in-the-past-to-harm-different-groups) of being used to stigmatize certain groups, and it is likely that some will misuse these results in bad faith. We have carried out a number of activities in an effort to maximize benefits and minimize risks from this research. See our response in “[What has been done to reduce the potential harms of this research?](#what-has-been-done-to-reduce-the-potential-harms-of-this-research)” for more information.
+As described above, genetics has [a long history](implications#how-has-genetics-been-misused) of being used to stigmatize certain groups, and it is likely that some will misuse these results in bad faith. We have carried out a number of activities in an effort to maximize benefits and minimize risks from this research. See our response in “[What has been done to reduce the potential harms of this research?](implications#how-are-risks-mitigated)” for more information.
 :::note
 
 
-## How are risks mitigated? 
-
-What has been done to reduce the potential harms of this research?
+## What has been done to reduce the potential harms of this research?
 
 :::note
 We have adopted several strategies in an effort to reduce the potential harms of this research.

@@ -19,15 +19,13 @@ The data used in these analyses comes from the [UK Biobank](https://www.ukbioban
 :::note
 
 
-## Are participants from beyond the UK? 
-
-Have you used data from countries other than the UK?
+## Have you used data from countries other than the UK? 
 
 :::note
 No, all participants lived in the UK at the time that the data were collected.
 :::note
 
-Because all of our data come from the UK Biobank and we did not collect additional data as part of this project, all individuals must have lived in the UK during the UK Biobank recruitment phase. (See “[How were participants recruited?](#how-were-participants-recruited)”) However, the data do include individuals who were born outside of the UK but were recruited to be part of the UK Biobank sample after having moved to the UK. Since there are important differences in genetic diversity between the UK, the US, and other countries, we hope that resources comparable to this one will be produced as large new datasets become available in the future.
+Because all of our data come from the UK Biobank and we did not collect additional data as part of this project, all individuals must have lived in the UK during the UK Biobank recruitment phase. (See “[How were participants recruited?](study-design#how-were-participants-recruited)”) However, the data do include individuals who were born outside of the UK but were recruited to be part of the UK Biobank sample after having moved to the UK. Since there are important differences in genetic diversity between the UK, the US, and other countries, we hope that resources comparable to this one will be produced as large new datasets become available in the future.
 
 
 ## How were participants recruited?
@@ -39,9 +37,7 @@ Our team did not recruit participants for this study. Instead, we analysed exist
 Here, we describe how participants in the UK Biobank cohort were recruited. Following the success of an initial pilot study in 2005-2006, the main stage of recruitment for the UK Biobank resource began in 2007, with the goal of recruiting 500,000 individuals between the ages of 40 and 69. The age restriction was due to the primary aim of the study: to improve the prevention, diagnosis and treatment of serious illnesses that typically onset later in life, including diabetes, cancer, arthritis, heart disease, stroke, and dementia. To that end, individuals from across the UK were contacted by post to participate in the study, with names, addresses, and dates of birth provided by the UK National Health Service (NHS). The 500,000 recruitment goal was reached in July of 2010, and recruitment ended shortly after. Focusing on voluntary recruitment of an older subset of the UK population sent by mail resulted in a sample of individuals that is more healthy and wealthy than the average Brit and that **had a greater fraction of European ancestries than the UK population overall**. This means that this cohort is not a perfect representation of the UK population, which further means that the results of our study may not reflect the UK population as a whole. This limitation is important to keep in mind when considering our results.
 
 
-## What phenotypes did you study?
-
-How did you decide which phenotypes to study?
+## How did you decide which phenotypes to study?
 
 :::note
 We included all phenotypes that were available to us for which there was sufficient data to conduct a GWAS.
@@ -59,9 +55,7 @@ Different ancestry groups are separately analyzed for statistical reasons; this 
 To help understand why previous scientific efforts have restricted to only one ancestry group, a classic GWAS example is of chopstick use. If we conducted such a GWAS in a group with some people with East Asian ancestries and some people with non-East Asian ancestries, we would almost surely find many associations. These associations would not likely correspond to biological mechanisms that affect manual dexterity or a personal preference for wooden cutlery, but they would just identify genetic variants that are _by chance_ more or less common in East Asian populations relative to the ancestries represented by others in the data. When GWAS is conducted in groups of individuals with similar ancestries, associations are less likely to be driven by these types of non-causal factors, which makes the results easier to interpret and makes follow-up work more productive.
 
 
-## How was ancestry determined? 
-
-How did you decide what ancestry groups to include? How did you assign individuals to each ancestry group?
+## How did you decide what ancestry groups to include? How did you assign individuals to each ancestry group?
 
 :::note
 The ancestry groups we used in these analyses are based on those described in two large existing globally and genetically diverse datasets. To assign each person to each ancestry group, we applied statistical methods to each individual’s genetic data.
@@ -69,7 +63,7 @@ The ancestry groups we used in these analyses are based on those described in tw
 
 Specifically, we compared the genome of each participant in the UK Biobank to the data in two large reference datasets containing genetically diverse individuals from across the globe, the [1000 Genomes Project](https://www.internationalgenome.org/) and [Human Genome Diversity Project (HGDP)](https://www.hagsc.org/hgdp/). We statistically assessed how similar each participant’s ancestry was to individuals from the populations included in these reference panels. These previous studies included labels which break down populations broadly into continental groupings that share ancestors and history over the course of tens to thousands of generations. The ancestry labels include African, American (which in these studies is the ancestry shared by many Hispanic/Latino groups), Central/South Asian, East Asian, European, and Middle Eastern. We assigned each individual into the ancestry groups that he/she was most similar to, adopting the same labels as used previously for consistency. We dropped those individuals who did not have a confident ancestry assignment. Notably, this approach does not rely on any other information, including self-reported race, ethnicity, or ancestry. We conducted our studies in all of the populations that had large enough numbers of individuals to learn about the genetic underpinnings of some traits, with individuals from each population analyzed together.
 
-These ancestry labels have many limitations. First, as described in response to the question [“What is ancestry?”](#what-is-ancestry-is-it-the-same-as-race-or-ethnicity), there is substantial diversity within each labeled population. Second, the 1000 Genome Project and HGDP data used to define continental populations have gaps in representation. They include more individuals from some regions than others, but this is not necessarily reflective of a region’s corresponding genetic diversity. For example, the individuals in the “African” population in the 1000 Genomes Project data have more West African ancestors than ancestors from other parts of Africa. For this reason, groups with ancestries from other parts of Africa may not be identified as accurately. Third, many individuals have ancestors from more than one of the groups defined by the 1000 Genome Project and HGDP. Such individuals are said to be “admixed,” which means that different parts of their genomes come from different continental populations. We discuss how such individuals affect our analysis more in the question below in [“What about people with mixed ancestries?”](#what-about-people-with-mixed-ancestries). We hope that in the future, more diverse reference data sets will become available so that analyses such as ours will be less susceptible to these limitations.
+These ancestry labels have many limitations. First, as described in response to the question [“What is ancestry?”](background#what-is-ancestry), there is substantial diversity within each labeled population. Second, the 1000 Genome Project and HGDP data used to define continental populations have gaps in representation. They include more individuals from some regions than others, but this is not necessarily reflective of a region’s corresponding genetic diversity. For example, the individuals in the “African” population in the 1000 Genomes Project data have more West African ancestors than ancestors from other parts of Africa. For this reason, groups with ancestries from other parts of Africa may not be identified as accurately. Third, many individuals have ancestors from more than one of the groups defined by the 1000 Genome Project and HGDP. Such individuals are said to be “admixed,” which means that different parts of their genomes come from different continental populations. We discuss how such individuals affect our analysis more in the question below in [“What about people with mixed ancestries?”](study-design#what-about-people-with-mixed-ancestries). We hope that in the future, more diverse reference data sets will become available so that analyses such as ours will be less susceptible to these limitations.
 
 
 ## What about people with mixed ancestries?
@@ -81,9 +75,7 @@ Many admixed individuals are included in this study.
 Since ancestry is a continuum (see _[“What is ancestry?”](#what-is-ancestry-is-it-the-same-as-race-or-ethnicity)_), some ancestry labels consist nearly exclusively of individuals with varying amounts of admixture. For example, most individuals that are labeled as having “American” or “African” ancestries by our statistical algorithms share recent common ancestors with those labeled as having “European” ancestries. As long as there are enough people with a similar pattern of admixture -- as there are in the “African” and “American” ancestry groups -- we can study them together in a GWAS. However, some individuals have less common patterns of admixture, such that there are not enough similar individuals that we can group them together in a genetic study. Therefore, we currently drop such individuals from analysis. However, we believe that including these individuals should also be a priority, and plan to implement tools that allow us to include them in ongoing and future work to allow for increased inclusion of admixed participants in future studies. 
 
 
-## Why were individuals excluded previously?
-
-Why have certain individuals been excluded in previous research?
+## Why have certain individuals been excluded in previous research?
 
 :::note
 There have been many drivers of the exclusion of diverse populations from genetic studies, including historical, infrastructural, political, ideological, monetary and other societal forces, in addition to analytic ones.
@@ -91,7 +83,7 @@ There have been many drivers of the exclusion of diverse populations from geneti
 
 Previous work [link] described some of the more societal explanations for why data collection has heavily focused on European populations. For statistical reasons (see Why do you analyze ancestry groups separately?), standard practice in genetic studies has been to only analyze the largest homogenous subset of the data, which in practice means only including individuals who are of the largest ancestry group. Due to this Euro-centric bias in data collection, the largest group is most frequently those who are classified as having European ancestry. This snowballing effect has driven the overrepresentation of European-ancestry individuals in published GWAS, and perpetuates the continued data collection and study of European-ancestry individuals given that they have been more fully characterized. 
 
-A description of how ancestry is classified and where ancestry labels come from is in the section on “[How did you decide what populations to include? How did you assign individuals to each ancestry group?](#how-did-you-decide-what-populations-to-include-how-did-you-assign-individuals-to-each-ancestry-group)”.
+A description of how ancestry is classified and where ancestry labels come from is in the section on “[How did you decide what populations to include? How did you assign individuals to each ancestry group?](study-design#what-phenotypes-did-you-study)”.
 
 
 ## Why are you including them now? 

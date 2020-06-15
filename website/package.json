@@ -8,7 +8,7 @@
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "clean": "rm -rf build && npm run build && gsutil -m rm -r \"gs://pan-dev.ukbb.broadinstitute.org/*\"",
-    "rsync": "gsutil rsync -R build gs://pan-dev.ukbb.broadinstitute.org",
+    "rsync": "gsutil -m rsync -R build gs://pan-dev.ukbb.broadinstitute.org",
     "update": "npm run clean && npm run rsync"
   },
   "dependencies": {
