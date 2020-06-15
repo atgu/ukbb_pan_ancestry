@@ -4,8 +4,6 @@ module.exports = {
   url: 'https://pan-dev.ukbb.broadinstitute.org',
   baseUrl: '/',
   favicon: 'img/favicon.ico',
-  organizationName: 'atgu', // Usually your GitHub org/user name.
-  projectName: 'ukbb_pan_ancestry', // Usually your repo name.
   themeConfig: {
     sidebarCollapsible: false,
     navbar: {
