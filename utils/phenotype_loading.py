@@ -132,59 +132,6 @@ def load_custom_pheno(traittype_source: str, sex: str = 'both_sexes'):
     return mt
 
 
-def load_covid_data(pre_phesant_tsv_path, wave: str = '01'):
-    print(f'Loading COVID wave {wave}...')
-    ht = load_dob_ht(pre_phesant_tsv_path)
-    ht = ht.checkpoint(f'{bucket}/misc/covid_test/basic_dob.ht', _read_if_exists=True)
-    covid_ht = hl.import_table(get_covid_data_path(wave), delimiter='\t', missing='', impute=True, key='eid')
-    covid_ht = covid_ht.group_by('eid').aggregate(
-        origin=hl.agg.any(covid_ht.origin == 1),
-        result=hl.agg.any(covid_ht.result == 1)
-    )
-
-    # TODO: add aoo parse to separate trait_type (covid_quantitative?)
-    # dob = load_dob_ht(pre_phesant_tsv_path)[ht.key].date_of_birth
-    # ht = ht.annotate(aoo=hl.or_missing(ht.result == 1, hl.experimental.strptime(ht.specdate + ' 00:00:00', '%d/%m/%Y %H:%M:%S', 'GMT') - dob),
-    #                  specdate=hl.experimental.strptime(ht.specdate + ' 00:00:00', '%d/%m/%Y %H:%M:%S', 'GMT')).drop('specdate')
-
-    ht = ht.annotate(**covid_ht[ht.key])
-    centers = hl.literal(ENGLAND_RECRUITMENT_CENTERS)
-
-    analyses = {
-        'ANA2': hl.or_missing(ht.result, ht.origin),
-        'ANA5': hl.or_else(ht.result, False),
-        'ANA5_england_controls': hl.or_missing(centers.contains(ht.recruitment_center),
-                                               hl.or_else(ht.result, False)),
-        'ANA5_strict': ht.result,
-        'ANA6': hl.or_else(ht.result & ht.origin, False)
-    }
-    analysis_names = {
-        'ANA2': 'Hospitalized vs non-hospitalized (among COVID-19 positive)',
-        'ANA5': 'COVID-19 positive (controls include untested)',
-        'ANA5_england_controls': 'COVID-19 positive (controls include untested), only patients from centers in England',
-        'ANA5_strict': 'COVID-19 positive (controls only COVID-19 negative)',
-        'ANA6': 'Hospitalized vs non-hospitalized (controls include untested)'
-    }
-    assert set(analyses.keys()) == set(analysis_names.keys())
-
-    # python saige_pan_ancestry.py --phenos categorical-.*COVID.*02 --dry_run
-
-    ht = ht.select(**analyses)
-
-    mt = filter_and_annotate_ukb_data(ht, lambda k, v: True, annotate_with_showcase=False,
-                                      format_col_name=lambda x: x)
-    mt = mt.key_cols_by(trait_type='categorical', phenocode='COVID19', pheno_sex='both_sexes',
-                        coding=mt.phenocode, modifier=wave)
-    mt = mt.annotate_cols(description=hl.literal(analysis_names)[mt.coding])
-
-    mt.annotate_cols(
-        n_cases=hl.agg.count_where(mt.value == 1.0),
-        n_controls=hl.agg.count_where(mt.value == 0.0)
-    ).cols().show()
-
-    return mt
-
-
 def summarize_data(overwrite):
     mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
     ht = mt.group_rows_by('pop').aggregate(

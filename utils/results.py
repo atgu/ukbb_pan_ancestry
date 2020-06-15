@@ -18,8 +18,11 @@ def filter_lambda_gc(lambda_gc):
 
 def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = True,
                            filter_sumstats: bool = True, separate_columns_by_pop: bool = True,
-                           annotate_with_nearest_gene: bool = True):
-    mt = hl.read_matrix_table(get_variant_results_path('full', 'mt'))
+                           annotate_with_nearest_gene: bool = True, add_only_gene_symbols_as_str: bool = False,
+                           load_contig: str = None):
+    mt = hl.read_matrix_table(get_variant_results_path('full', 'mt')).drop('gene', 'annotation')
+    if load_contig:
+        mt = mt.filter_rows(mt.locus.contig == load_contig)
     variant_qual_ht = hl.read_table(get_variant_results_qc_path())
     mt = mt.annotate_rows(**variant_qual_ht[mt.row_key])
     pheno_qual_ht = hl.read_table(get_analysis_data_path('lambda', 'lambdas', 'full', 'ht'))
@@ -35,7 +38,7 @@ def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = T
         mt = mt.annotate_entries(
             summary_stats=hl.zip_with_index(mt.summary_stats).filter(
                 lambda x: mt.pheno_indices.contains(x[0])).map(lambda x: x[1])
-        )
+        ).drop('pheno_indices')
         mt = mt.filter_cols(hl.len(mt.pheno_data) > 0)
 
     if filter_sumstats:
@@ -48,7 +51,7 @@ def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = T
         mt = mt.filter_rows(mt.high_quality)
 
     if annotate_with_nearest_gene:
-        mt = annotate_nearest_gene(mt)
+        mt = annotate_nearest_gene(mt, add_only_gene_symbols_as_str=add_only_gene_symbols_as_str)
 
     if separate_columns_by_pop:
         mt = separate_results_mt_by_pop(mt)
