@@ -26,9 +26,6 @@ def get_pheno_id(tb):
                 ).replace(' ','_').replace('/','_')
     return pheno_id
 
-def get_pheno_manifest_path():
-    return f'{bucket}/combined_results/phenotype_manifest.tsv.bgz'
-
 def get_final_sumstats_mt_for_export():
     mt0 = load_final_sumstats_mt(filter_sumstats=False,
                                  filter_variants=False,
@@ -176,13 +173,12 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
             while hl.hadoop_is_dir(get_export_path(batch_idx)):
                 batch_idx += 1
             print(f'\nExporting {col_ct} phenos to: {get_export_path(batch_idx)}\n')
-
-#            hl.experimental.export_entries_by_col(mt = mt2,
-#                                                  path = get_export_path(batch_idx),
-#                                                  bgzip = True,
-#                                                  batch_size = batch_size,
-#                                                  use_string_key_as_file_name = True,
-#                                                  header_json_in_file = False)
+            hl.experimental.export_entries_by_col(mt = mt2,
+                                                  path = get_export_path(batch_idx),
+                                                  bgzip = True,
+                                                  batch_size = batch_size,
+                                                  use_string_key_as_file_name = True,
+                                                  header_json_in_file = False)
             end = time()
             print(f'\nExport complete for:\n{trait_types}\n{pop_list}\ntime: {round((end-start)/3600,2)} hrs')
 
@@ -381,12 +377,14 @@ def export_updated_phenos(num_pops=None):
     # filtered to phenotypes that need to be updated (either completely new or a different set of populations)
     to_export = joined_manifest.filter((joined_manifest.pops!=joined_manifest.pops_1)|
                                        (hl.is_missing(joined_manifest.pops)))
+    print(to_export.select('pops','pops_1').show(int(1e6)))
         
     mt0 = get_final_sumstats_mt_for_export()
     mt0 = mt0.filter_cols(hl.is_defined(to_export[mt0.col_key]))
     
     if num_pops == None:
         num_pops_set = set(to_export.num_pops_1.collect()) # get set of num_pops to run
+        print(f'num_pops set: {num_pops_set}')
         for num_pops in num_pops_set:
             export_results(num_pops=num_pops, 
                            trait_types='all', 
@@ -425,13 +423,34 @@ def make_pheno_manifest(export=True):
                                                                field_expr[idx])})
     annotate_dict.update({'filename': get_pheno_id(tb=ht)+'.tsv.bgz'})
     ht = ht.annotate(**annotate_dict)
-#    dropbox_dir= f'{bucket}/sumstats_flat_files'
-#    ht = ht.annotate('file_location' = dropbox_dir+'/'+})
-    ht = ht.drop('pheno_data','pheno_indices')
-    if export:
-        ht.export(get_pheno_manifest_path())
-    else:
-        return ht
+    
+    dropbox_manifest = hl.import_table(f'{ldprune_dir}/UKBB_Pan_Populations-Manifest-20200615-manifest_info.tsv',
+                                       impute=True,
+                                       key='File')
+    bgz = dropbox_manifest.filter(~dropbox_manifest.File.contains('.tbi'))
+    bgz = bgz.rename({'File':'filename'})
+    tbi = dropbox_manifest.filter(dropbox_manifest.File.contains('.tbi'))
+    tbi = tbi.annotate(filename = tbi.File.replace('.tbi','')).key_by('filename')
+        
+    dropbox_annotate_dict = {}
+    
+    rename_dict = {'dbox link':'dropbox_link',
+                   'size (bytes)':'size_in_bytes'}
+    
+    dropbox_annotate_dict.update({'filename_tabix':tbi[ht.filename].File})
+    for field in ['dbox link','wget', 'size (bytes)','md5 hex']:
+        for tb, suffix in [(bgz, ''), (tbi, '_tabix')]:
+            dropbox_annotate_dict.update({(rename_dict[field] if field in rename_dict 
+                                           else field.replace(' ','_')
+                                           )+suffix:tb[ht.filename][field]})
+    ht = ht.annotate(**dropbox_annotate_dict)
+    ht = ht.drop('pheno_data')
+    print(ht.describe())
+    print(ht.show())
+#    if export:
+#        ht.export(get_pheno_manifest_path())
+#    else:
+#        return ht
     
 
 if __name__=="__main__":

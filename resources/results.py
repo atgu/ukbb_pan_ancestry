@@ -48,3 +48,6 @@ def get_results_timing_ht_path(timing_type: str):
 
 def get_heritability_txt_path(from_date: str = None):
     return f'{bucket}/results/misc/all_heritabilities{"_" + from_date if from_date else ""}.txt'
+
+def get_pheno_manifest_path():
+    return f'{bucket}/combined_results/phenotype_manifest.tsv.bgz'
