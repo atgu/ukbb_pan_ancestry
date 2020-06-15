@@ -20,8 +20,8 @@ module.exports = {
           position: 'left',
         },
         {to: 'blog', label: 'News', position: 'left'},
-        {to: 'downloads', label: 'Downloads', position: 'left'},
-        {to: 'results', label: 'Results', position: 'left'},
+        // {to: 'downloads', label: 'Downloads', position: 'left'},
+        // {to: 'results', label: 'Results', position: 'left'},
         {
           href: 'https://github.com/atgu/ukbb_pan_ancestry',
           label: 'GitHub',
