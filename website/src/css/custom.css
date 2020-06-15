@@ -76,3 +76,14 @@ html[data-theme="dark"] .alert a {
 .markdown > h3 {
   --ifm-h3-font-size: 1.0rem;
 }
+
+
+.menu > .menu__list > .menu__list-item > .menu__link:hover {
+  background: initial;
+  cursor: default;
+}
+
+
+.menu > .menu__list > .menu__list-item > .menu__link {
+  font-weight: bold;
+}
