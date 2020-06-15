@@ -69,7 +69,11 @@ def main(args):
 
     if args.add_dataset or args.add_covid_wave:
         if args.add_covid_wave:
-            mt = load_covid_data(pre_phesant_tsv_path, wave=args.add_covid_wave).checkpoint(
+            # hail load_phenotype_data --add_covid_wave 03 --overwrite
+            # python saige_pan_ancestry.py --phenos .*COVID.*03.*
+            ht = load_dob_ht(pre_phesant_tsv_path)
+            ht = ht.checkpoint(f'{bucket}/misc/covid_test/basic_dob.ht', _read_if_exists=True)
+            mt = load_covid_data(ht, get_covid_data_path(args.add_covid_wave), wave=args.add_covid_wave).checkpoint(
                 get_ukb_pheno_mt_path(f'covid_wave{args.add_covid_wave}'), args.overwrite)
         else:
             mt = load_custom_pheno(args.add_dataset).checkpoint(get_custom_pheno_path(args.add_dataset, extension='ht'), args.overwrite)
