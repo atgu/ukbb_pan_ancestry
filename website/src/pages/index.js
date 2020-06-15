@@ -17,7 +17,7 @@ function Home() {
       <header className={classnames('hero', styles.heroBanner)}>
         <div className="container">
           <div className="text--center">
-            <img className={styles.logo} src="img/pan_ukb_logo_v0.3-3.svg" alt={'pan ukbb title'} />
+            <img className={styles.logo} src="img/pan_ukb_logo_v0.4-2.svg" alt={'pan ukbb title'} />
           </div>
           <p className="hero__subtitle">{siteConfig.tagline}</p>
         </div>

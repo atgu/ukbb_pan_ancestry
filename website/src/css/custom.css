@@ -7,13 +7,13 @@
 
 /* You can override the default Infima variables here. */
 :root {
-  --ifm-color-primary: #006683;
-  --ifm-color-primary-dark: #005c76;
-  --ifm-color-primary-darker: #00576f;
-  --ifm-color-primary-darkest: #00475c;
-  --ifm-color-primary-light: #007090;
-  --ifm-color-primary-lighter: #007597;
-  --ifm-color-primary-lightest: #0085aa;
+  --ifm-color-primary: #005f6f;
+  --ifm-color-primary-dark: #005564;
+  --ifm-color-primary-darker: #00515e;
+  --ifm-color-primary-darkest: #00424e;
+  --ifm-color-primary-light: #00687a;
+  --ifm-color-primary-lighter: #007b90;
+  --ifm-color-primary-lightest: #008ea7;
   --ifm-hover-overlay: rgba(0, 100, 100, 0.2);
   --ifm-toc-padding-vertical: 15px 0 0 0;
 }
@@ -37,6 +37,18 @@
 .table-of-contents__link--active {
   background-color: rgba(0, 100, 100, 0.1);
   font-weight: 500;
+}
+
+.logo_src-pages- {
+  content: url(/img/pan_ukb_logo_v0.4-2.svg)
+}
+
+html[data-theme="dark"] .logo_src-pages- {
+  content: url(/img/pan_ukb_logo_v0.4-2-dark.svg)
+}
+
+html[data-theme="dark"] {
+  --ifm-color-primary: var(--ifm-color-primary-lightest);
 }
 
 html[data-theme="dark"] .admonition {
