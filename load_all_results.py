@@ -175,18 +175,25 @@ def main(args):
 
             mt = generate_sumstats_mt(all_variant_outputs, heritability_dict, pheno_dict, f'{temp_bucket}/{pop}/variant', inner_mode)
             mt.write(get_variant_results_path(pop, 'mt'), overwrite=args.overwrite)
-        if pops != POPS: return
 
     if args.run_additional_load:
         today = date.today().strftime("%y%m%d")
-        for pop in POPS:
+        for pop in pops:
             all_variant_outputs = get_all_valid_variant_results_ht_paths(pop)
             pheno_dict = get_pheno_dict()
             heritability_dict = get_heritability_dict(pop)
 
-            loaded_phenos = set(
-                [f'{x.trait_type}-{format_pheno_dir(x.pheno)}-{x.coding}' for x in hl.read_matrix_table(get_variant_results_path(pop, 'mt')).col_key.collect()]
-            )
+            all_keys = hl.read_matrix_table(get_variant_results_path(pop, 'mt')).col_key.collect()
+            loaded_phenos = {
+                recode_single_pheno_struct_to_legacy_path(x) for x in all_keys
+            }
+            loaded_phenos |= {f'{x.trait_type}-{format_pheno_dir(x.phenocode)}-{x.pheno_sex}-{x.coding}-{x.modifier}' for x in all_keys}
+
+            # Some phenotypes were manually modified later but had already made it in the release
+            loaded_phenos |= {
+                'categorical-41229-5N8', 'categorical-20004-1503', 'categorical-20004-1563',  # CSA
+                'continuous-5097-irnt', 'continuous-104550-104550',  # EAS
+            }
 
             def _matches_any_pheno(pheno_path, phenos_to_match):
                 return any(x for x in phenos_to_match if f'/{x}/variant_results.ht' in pheno_path)
