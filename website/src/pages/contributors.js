@@ -18,12 +18,53 @@ function Contributors() {
       </header>
       <main>
         <div className="container">
-          <p class="hero__description text--center">
-            Konrad J. Karczewski, Elizabeth G. Atkinson, Masahiro Kanai, Nikolas Baya, Patrick Turley,
-            Shawneequa Callier, Gopal Sarma, Raymond K. Walters, Duncan S. Palmer, Matthew Solomonson, Nathan
-            Cheng, Rahul Gupta, Sam Bryant, Claire Churchhouse, Caroline Cusick, Jacqueline I. Goldstein,
-            Daniel King, Wei Zhou, Cotton Seed, Mark J. Daly, Benjamin M. Neale, Hilary Finucane, Alicia R.
-            Martin.
+          <p>
+            Analysis team:
+            <ul>
+              <li>Konrad Karczewski</li>
+              <li>Elizabeth Atkinson</li>
+              <li>Nikolas Baya</li>
+              <li>Masahiro Kanai</li>
+              <li>Alicia Martin</li>
+              <li>Patrick Turley</li>
+              <li>Gopal Sarma</li>
+              <li>Raymond Walters</li>
+              <li>Duncan Palmer</li>
+              <li>Nathan Cheng</li>
+              <li>Wei Zhou</li>
+              <li>Rahul Gupta</li>
+            </ul>
+            Ethics team
+            <ul>
+              <li>Patrick Turley</li>
+              <li>Elizabeth Atkinson</li>
+              <li>Shawneequa Callier</li>
+              <li>Alicia Martin</li>
+            </ul>
+            Website team:
+            <ul>
+              <li>Matthew Solomonson</li>
+              <li>Konrad Karczewski</li>
+            </ul>
+            Data coordinators
+            <ul>
+              <li>Sam Bryant</li>
+              <li>Claire Churchhouse</li>
+              <li>Caroline Cusick</li>
+            </ul>
+            Hail
+            <ul>
+              <li>Jacqueline Goldstein</li>
+              <li>Daniel King</li>
+              <li>Cotton Seed</li>
+            </ul>
+            PIs
+            <ul>
+              <li>Alicia Martin</li>
+              <li>Hilary Finucane</li>
+              <li>Benjamin Neale</li>
+              <li>Mark Daly</li>
+            </ul>
           </p>
         </div>
       </main>

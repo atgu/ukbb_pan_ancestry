@@ -35,7 +35,7 @@ We are planning to release the summary statistics in two formats:
 
 ### Approach
 
-Analysis was done using [SAIGE](https://github.com/weizhouUMICH/SAIGE/wiki/Genetic-association-tests-using-SAIGE) implemented in [Hail batch](https://hail.is/docs/batch/index.html) to parallelize across populations, phenotypes, and regions of the genome. More details can be found below:
+Analysis was done using [SAIGE](https://github.com/weizhouUMICH/SAIGE/wiki/Genetic-association-tests-using-SAIGE) implemented in [Hail Batch](https://hail.is/docs/batch/index.html) to parallelize across populations, phenotypes, and regions of the genome. More details can be found below:
 
 - Details about the QC process can be found [here](https://github.com/atgu/ukbb_pan_ancestry/wiki/QC) including [determination of ancestry groups](https://github.com/atgu/ukbb_pan_ancestry/wiki/QC#ancestry-definitions).
 - Description of GWAS pipeline and implementation is [here](https://github.com/atgu/ukbb_pan_ancestry/wiki/Batch-pipeline).

@@ -20,15 +20,15 @@ module.exports = {
           position: 'right',
         },
         {to: 'blog', label: 'News', position: 'right'},
-        {to: 'contact', label: 'Contact', position: 'right'},
-        {to: 'contributors', label: 'Contributors', position: 'right'},
         {to: 'downloads', label: 'Downloads', position: 'right'},
-        {to: 'results', label: 'Results', position: 'right'},
-        {
-          href: 'https://github.com/atgu/ukbb_pan_ancestry',
-          label: 'GitHub',
-          position: 'right',
-        },
+        // {to: 'results', label: 'Results', position: 'right'},
+        {to: 'contributors', label: 'Team', position: 'right'},
+        {to: 'contact', label: 'Contact', position: 'right'},
+        // {
+        //   href: 'https://github.com/atgu/ukbb_pan_ancestry',
+        //   label: 'GitHub',
+        //   position: 'right',
+        // },
       ],
     },
     footer: {

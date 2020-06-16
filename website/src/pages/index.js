@@ -25,16 +25,14 @@ function Home() {
       <main>
         <div className="container">
           <p class="hero__description">
-            The goal of this project is to provide a resource to researchers that promotes more inclusive
-            research practices, accelerates scientific discoveries, and improves the health of all people
-            equitably. In genetics research, it is statistically necessary to study groups of individuals
-            together with similar ancestries. In practice, this has meant that most previous research has
-            excluded individuals with non-European ancestries. Here, we describe an effort to build a resource
-            using one of the most widely accessed sources of genetic data, the UK Biobank, in a manner that is
-            more inclusive than most previous efforts -- namely studying groups of individuals with diverse
-            ancestries. The results of this research have a number of important limitations which should be
-            carefully considered when researchers use this resource in their work and when they and others
-            interpret subsequent findings.
+            The UK Biobank is a collection of a half million individuals with paired genetic and phenotype information that has been enormously valuable in studies of genetic etiology for common diseases and traits. However, most genome-wide analyses of this dataset use only the European ancestry individuals. Analyzing a more inclusive and diverse dataset increases power and improves the potential for discovery.
+
+            Here, we present a multi-ancestry analysis of 7,221 phenotypes, across 6 continental ancestry groups, for a total of 16,119 genome-wide association studies. We release these summary statistics freely to the community ahead of publication.
+          </p>
+          <p class="hero__description">
+            We acknowledge that genetic studies in diverse-ancestry individuals are culturally sensitive. We therefore regularly engaged with and sought feedback from a local affinity group for the advancement of ethnic minorities, several scholars and clinicians with experience working with minority groups, and a bioethics expert. They helped direct and contextualize this research, discussed actions to maximize benefits and minimize risks, and provided feedback on an FAQ page describing our study, its risks, benefits, and limitations.
+
+            We intend for this resource to promote more inclusive research practices, accelerate novel scientific discoveries that are more generalizable, and improve the health of all people equitably. Together, these efforts vastly extend the available resources for interpretation of disease-associated variants across diverse populations and highlight the importance of increasing diversity in genetic studies.
           </p>
 
           <div className={styles.buttons}>

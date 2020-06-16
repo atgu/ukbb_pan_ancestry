@@ -8,7 +8,7 @@ module.exports = {
     {
       type: 'category',
       label: 'Technical details',
-      items: ['technical-overview', 'batch-pipeline', 'changelog', 'hail-format', 'per-phenotype-files', 'qc'],
+      items: ['technical-overview', 'per-phenotype-files', 'hail-format', 'qc', 'changelog'],
     },
   ]
   //   // Features: ['mdx'],

@@ -5,4 +5,4 @@ title: Changelog
 
 ### Version 0.1
 
-Coming soon!
+Initial version (released June 16, 2020).
