@@ -83,3 +83,9 @@ html[data-theme="dark"] .alert a {
 .menu > .menu__list > .menu__list-item > .menu__link {
   font-weight: bold;
 }
+
+.page-title {
+  font-size: 48px;
+  font-weight: 700;
+  margin-top: 30px;
+} 

@@ -11,9 +11,9 @@ function Contact() {
   const { siteConfig = {} } = context
   return (
     <Layout title={`${siteConfig.title}`} description="Contact">
-      <header className={classnames('hero', styles.heroBanner)}>
+      <header>
         <div className="container">
-          <h1>Contact</h1>
+          <h1 className="page-title">Contact</h1>
         </div>
       </header>
       <main>
