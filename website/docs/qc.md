@@ -14,14 +14,14 @@ title: Quality Control (QC)
 
 Pre-QC phenotype counts are broken down by ancestries as follows:
 
-| pop   | categorical | continuous | biomarkers | icd10 | phecode | prescriptions |
-|-------|-------------|------------|------------|-------|---------|---------------|
-| AFR |         972 |        725 |         30 |   197 |     337 |           223 |
-| AMR |         423 |        561 |         30 |    20 |      31 |            40 |
-| CSA |        1045 |        719 |         30 |   234 |     418 |           319 |
-| EAS |         618 |        714 |         29 |    55 |      91 |           105 |
-| EUR |        3657 |        800 |         30 |   929 |    1325 |           444 |
-| MID |         509 |        591 |         30 |    52 |      83 |           107 |
+| Population   | Total phenotypes | Categorical | Continuous | Phecode | ICD-10 | Biomarkers | Prescriptions |
+|-------|----------------|------------|---------|-------|-------------|------------|---------------|
+| AFR |          2493 |        981 |     337 |   197 |        725  |         30 |           223 |
+| AMR |          1105 |        423 |      31 |    20 |        561  |         30 |            40 |
+| CSA |          2771 |       1051 |     418 |   234 |        719  |         30 |           319 |
+| EAS |          1612 |        618 |      91 |    55 |        714  |         29 |           105 |
+| EUR |          7200 |       3672 |    1325 |   929 |        800  |         30 |           444 |
+| MID |          1372 |        509 |      83 |    52 |        591  |         30 |           107 |
 
 
 ## Sample QC
