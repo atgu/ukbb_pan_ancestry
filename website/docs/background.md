@@ -6,7 +6,7 @@ title: Background
 ## Who conducted this study?
 
 :::note
-[A team of researchers](https://pan.ukbb.broadinstitute.org/team) from the Analytic & Translational Genetics Unit (ATGU) at Massachusetts General Hospital and the Broad Institute of MIT and Harvard performed the analysis in this study.
+[A team of researchers](/team) from the Analytic & Translational Genetics Unit (ATGU) at Massachusetts General Hospital and the Broad Institute of MIT and Harvard performed the analysis in this study.
 :::note
 
 The data used in these analyses are from the [UK Biobank](https://www.ukbiobank.ac.uk/), a large-scale open database with hundreds of thousands of individuals’ genotype data paired to electronic health records and survey measures. The UK Biobank recruited 500,000 people aged between 40-69 years in 2006-2010 from across the country to take part in this project. They have undergone measures, provided blood, urine and saliva samples for future analysis, detailed information about themselves, and agreed to have their health followed. The researchers at ATGU and the Broad Institute were not involved in the design of the UK Biobank resource or recruitment of participants, but have analyzed the breadth of this powerful resource.
