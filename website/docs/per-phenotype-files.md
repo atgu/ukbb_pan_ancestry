@@ -7,7 +7,7 @@ title: Per-phenotype files
 
 The data are released in 7,221 flat files, one for each phenotype, and a corresponding tabix index file for each. These files are available on Dropbox (for large-scale analysis, we recommend using the [Hail format](Hail-format) files on Google Cloud).
 
-The files are named with respect to their `trait_type`, `phenocode`, and a combination of `pheno_sex`, `coding`, or `modifier`. To find a specific phenotype, we suggest looking in the [phenotype manifest](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit?usp=sharing) (available for download [here]()). Search for your phenotype(s) of interest and use the paths indicated to download the summary statistics. A description of fields in the manifest can be found [here](#phenotype-manifest-file).
+The files are named with respect to their `trait_type`, `phenocode`, and a combination of `pheno_sex`, `coding`, or `modifier`. To find a specific phenotype, we suggest looking in the [phenotype manifest (Google Sheets)](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit?usp=sharing) (available for download on [Dropbox](https://www.dropbox.com/s/18p4lj3finj11oh/phenotype_manifest.tsv.bgz?dl=0)). Search for your phenotype(s) of interest and use the paths indicated to download the summary statistics. A description of fields in the manifest can be found [here](#phenotype-manifest-file).
 
 The [per-phenotype files](#per-phenotype-files) are summary statistics files containing meta-analyzed and single-ancestry GWAS results. We especially highlight the `low_confidence` fields, which includes some (non-exhaustive) basic quality control filters (see below). These files each have 28,987,534 variants, but note that not all populations will have data for each variant.
 
@@ -15,7 +15,7 @@ Finally, the [variant manifest file](#variant-manifest-file) includes informatio
 
 ## Phenotype manifest file
 
-[Pan-UK Biobank phenotype manifest](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit?usp=sharing) (download [here]())
+[Pan-UK Biobank phenotype manifest (Google Sheets)](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit?usp=sharing) (download on [Dropbox](https://www.dropbox.com/s/18p4lj3finj11oh/phenotype_manifest.tsv.bgz?dl=0))
 
 ### Phenotype ID fields
 
