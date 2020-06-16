@@ -19,7 +19,7 @@ We also provide the following derived datasets for convenience:
 Note that the files in this bucket are "requester pays." In order to compute over these files or download them, you will need to specify a project which may be billed for access and download costs. The data are stored in a US multi-region bucket: thus, access to the dataset is free for use for Compute Engine instances started within US regions, as well as for full downloads within the US and Canada. When performing large analyses on the dataset, we suggest "bringing the compute to the data" and starting a VM or Dataproc cluster in a US region. You can browse the directory structure in a requester pays bucket with the `-u` flag:
 
 ```
-gsutil -u your_project_id gs://ukb-diverse-pops-public/sumstats_release
+gsutil -u your_project_id ls gs://ukb-diverse-pops-public/sumstats_release
 ```
 
 ## Using the libraries and files
