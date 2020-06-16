@@ -9,7 +9,7 @@ We are thrilled to announce the release of GWAS summary statistics from the Pan-
 
 A summary of the breakdown included in this release is:
 
-| Population   | Sample size | Total phenotypes | Categorical | Continuous | Phecode | ICD-10 | Biomarkers | Prescriptions |
+| Population   | Sample size | Total phenos | Categorical | Continuous | Phecode | ICD-10 | Biomarkers | Prescriptions |
 |-------|-----------|----------------|------------|---------|-------|-------------|------------|---------------|
 | AFR |      6636 |           2493 |        981 |     337 |   197 |        725  |         30 |           223 |
 | AMR |       980 |           1105 |        423 |      31 |    20 |        561  |         30 |            40 |
