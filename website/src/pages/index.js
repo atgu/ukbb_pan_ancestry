@@ -30,9 +30,12 @@ function Home() {
             Here, we present a multi-ancestry analysis of 7,221 phenotypes, across 6 continental ancestry groups, for a total of 16,119 genome-wide association studies. We release these summary statistics freely to the community ahead of publication.
           </p>
           <p class="hero__description">
-            We acknowledge that genetic studies in diverse-ancestry individuals are culturally sensitive. We therefore regularly engaged with and sought feedback from a local affinity group for the advancement of ethnic minorities, several scholars and clinicians with experience working with minority groups, and a bioethics expert. They helped direct and contextualize this research, discussed actions to maximize benefits and minimize risks, and provided feedback on an FAQ page describing our study, its risks, benefits, and limitations.
+            We acknowledge that genetic studies in diverse-ancestry individuals are culturally sensitive. We therefore regularly engaged with and sought feedback from a local affinity group for the advancement of ethnic minorities, several scholars and clinicians with experience working with minority groups, and a bioethics expert. They helped direct and contextualize this research, discussed actions to maximize benefits and minimize risks, and provided feedback on <Link to={useBaseUrl('docs/summary')}>an FAQ page</Link> describing our study, its risks, benefits, and limitations.
 
-            We intend for this resource to promote more inclusive research practices, accelerate novel scientific discoveries that are more generalizable, and improve the health of all people equitably. Together, these efforts vastly extend the available resources for interpretation of disease-associated variants across diverse populations and highlight the importance of increasing diversity in genetic studies.
+            We intend for this resource to promote more inclusive research practices, accelerate novel scientific discoveries that are more generalizable, and improve the health of all people equitably.
+          </p>
+          <p class="hero__description">
+            Together, these efforts vastly extend the available resources for interpretation of disease-associated variants across diverse populations and highlight the importance of increasing diversity in genetic studies.
           </p>
 
           <div className={styles.buttons}>
