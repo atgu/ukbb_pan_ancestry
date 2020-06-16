@@ -4,6 +4,7 @@ module.exports = {
   url: 'https://pan-dev.ukbb.broadinstitute.org',
   baseUrl: '/',
   favicon: 'img/favicon.ico',
+  plugins: [require.resolve('@docusaurus/plugin-google-analytics')],
   themeConfig: {
     sidebarCollapsible: false,
     navbar: {
@@ -34,6 +35,10 @@ module.exports = {
     footer: {
       style: 'dark',
       copyright: `Copyright © ${new Date().getFullYear()} Pan UKBB Team.`,
+    },
+    googleAnalytics: {
+      trackingID: 'UA-169641392-1',
+      anonymizeIP: true, // Should IPs be anonymized?
     },
   },
   presets: [
