@@ -34,8 +34,8 @@ function Downloads() {
                 </li>
                 <li>
                   The variant manifest contains detailed information on each variant
-                  (download on <a href="https://www.dropbox.com/s/vtt1h1qvuxltqb6/full_variant_qc_metrics.txt.bgz?dl=0">Dropbox</a>,
-                  <a href="https://www.dropbox.com/s/1823j5rn1ohic2p/full_variant_qc_metrics.txt.bgz.tbi?dl=0">tbi</a>).
+                  (download on <a href="https://www.dropbox.com/s/vtt1h1qvuxltqb6/full_variant_qc_metrics.txt.bgz?dl=0">Dropbox</a>
+                  , <a href="https://www.dropbox.com/s/1823j5rn1ohic2p/full_variant_qc_metrics.txt.bgz.tbi?dl=0">tbi</a>).
                 </li>
               </ul>
             </li>
