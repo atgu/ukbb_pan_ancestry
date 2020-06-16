@@ -18,7 +18,7 @@ def get_variant_results_qc_path(extension: str = 'ht'):
 
 
 def get_meta_analysis_results_path(extension: str = 'mt'):
-    return f'{public_bucket}/combined_results/meta_analysis.{extension}'
+    return f'{public_bucket}/sumstats_release/meta_analysis.{extension}'
 
 
 def get_phenotype_results_qc_path(extension: str = 'ht'):
