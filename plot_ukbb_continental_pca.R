@@ -200,7 +200,7 @@ read_pca <- function(pop_name, rel_unrel) {
   return(pca)
 }
 
-pops <- c('AFR', 'AMR', 'CSA', 'MID', 'EAS')
+pops <- c('AFR', 'AMR', 'CSA', 'MID', 'EAS', 'EUR')
 
 age_sex <- read.table(gzfile('uk_round2_allSamples_phenos_phesant.6148_5.tsv.gz'), header=T, sep='\t') %>%
   select(userId, age, sex)
@@ -216,17 +216,18 @@ amr <- bind_rels('AMR')
 csa <- bind_rels('CSA')
 mid <- bind_rels('MID')
 eas <- bind_rels('EAS')
-
+eur <- bind_rels('EUR')
 
 bind_pops <- afr %>%
   bind_rows(amr) %>%
   bind_rows(csa) %>%
   bind_rows(mid) %>%
   bind_rows(eas) %>%
+  bind_rows(eur) %>%
   left_join(age_sex, by=c('s'='userId')) %>%
   mutate(age2 = age^2, age_sex = age*sex, age2_sex = age^2 * sex)
 
-write.table(bind_pops, 'non_eur_within_pop_pc_covs.txt', quote=F, row.names=F, sep='\t')
+write.table(bind_pops, 'within_pop_pc_covs.txt', quote=F, row.names=F, sep='\t')
 
 plot_pca_density <- function(dataset, first_pc, second_pc) {
   pc_biplot <- ggplot(dataset, aes_string(x=first_pc, y=second_pc)) +
@@ -281,22 +282,20 @@ save_filt_plots <- function(pop_name, pop_dist, cutpoint0, cutpoint1) {
   ggsave(paste0(pop_name, '_within_pop_filt_pc5_6.png'), p8)
   my_plot=plot_grid(p_centroid0$p, p2, p3, p4, p_centroid1$p, p6, p7, p8, nrow=2)
   save_plot(paste0(pop_name, '_within_pop.pdf'), my_plot, base_height=10, base_width = 18)
-  return(p_centroid)
+  return(p_centroid1$pop_cut)
 }
 
-save_filt_plots('csa', csa_dist <- pop_ellipse(csa, 3), 1000, 3) #3, 3
-save_filt_plots('afr', afr_dist <- pop_ellipse(afr, 3), 1000, 2)
-save_filt_plots('eas', eas_dist <- pop_ellipse(eas, 3), 1000, 7.5)
-save_filt_plots('amr', amr_dist <- pop_ellipse(amr, 3), 1000, 4.8)
-save_filt_plots('mid', mid_dist <- pop_ellipse(mid, 5), 1000, 15)
+csa_cut <- save_filt_plots('csa', csa_dist <- pop_ellipse(csa, 3), 1000, 3) #3, 3
+afr_cut <- save_filt_plots('afr', afr_dist <- pop_ellipse(afr, 3), 1000, 2)
+eas_cut <- save_filt_plots('eas', eas_dist <- pop_ellipse(eas, 3), 1000, 7.5)
+amr_cut <- save_filt_plots('amr', amr_dist <- pop_ellipse(amr, 3), 1000, 4.8)
+mid_cut <- save_filt_plots('mid', mid_dist <- pop_ellipse(mid, 5), 1000, 15)
+eur_cut <- save_filt_plots('eur', eur_dist <- pop_ellipse(eur, 5), 1000, 10)
 
-ggplot(subset(ind_dist, centroid_dist < cutpoint), aes(x=centroid_dist)) + geom_histogram(bins=50) + labs(title=nrow(subset(ind_dist, centroid_dist < cutpoint)))
 
-pc1_2_dens + geom_smooth(method='lm')
+pop_cuts <- csa_cut %>%
+  bind_rows(afr_cut, eas_cut, amr_cut, mid_cut, eur_cut) %>%
+  select(s, pop)
 
-dim(subset(csa, PC2 < .36*PC1+.002))
-
-ggplot(csa, aes(x=PC1, y=PC2, color=rel)) +
-  geom_smooth(method='lm')
-
+write.table(pop_cuts, 'ukb_diverse_pops_pruned.tsv', row.names=F, sep='\t', quote=F)
 

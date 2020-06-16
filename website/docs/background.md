@@ -6,7 +6,7 @@ title: Background
 ## Who conducted this study? 
 
 :::note
-A team of researchers from the Analytic & Translational Genetics Unit (ATGU) at Massachusetts General Hospital and the Broad Institute of MIT and Harvard performed the analysis in this study.
+[A team of researchers](https://pan.ukbb.broadinstitute.org/team) from the Analytic & Translational Genetics Unit (ATGU) at Massachusetts General Hospital and the Broad Institute of MIT and Harvard performed the analysis in this study.
 :::note
 
 The data used in these analyses are from the [UK Biobank](https://www.ukbiobank.ac.uk/), a large-scale open database with hundreds of thousands of individuals’ genotype data paired to electronic health records and survey measures. The UK Biobank recruited 500,000 people aged between 40-69 years in 2006-2010 from across the country to take part in this project. They have undergone measures, provided blood, urine and saliva samples for future analysis, detailed information about themselves, and agreed to have their health followed. The researchers at ATGU and the Broad Institute were not involved in the design of the UK Biobank resource or recruitment of participants, but have analyzed the breadth of this powerful resource. 
@@ -14,7 +14,7 @@ The data used in these analyses are from the [UK Biobank](https://www.ukbiobank.
 Throughout this work, we regularly sought engagement and feedback from researchers and communities to help direct and contextualize this research and to discuss actions that will allow the substantial benefits of our analyses to outweigh the risks. Please see the section “[What has been done to reduce the potential harms of this research?](implications#how-are-risks-mitigated)” to learn more about the specific individuals and groups who have been a part of this effort and for information on what we have done to reduce risks to disadvantaged groups.
 
 
-## What are our goals?
+## What are the group's overarching goals?
 
 :::note
 Our fundamental goal was to build a resource that facilitates access to genetic association results (also known as summary statistics) for as many phenotypes in as many diverse populations as possible, particularly those that have traditionally been underrepresented in prior genetics work and excluded in most analyses of the widely-used UK Biobank resource.
@@ -75,7 +75,7 @@ For example, consider a case when the phenotype is a disease. It could be that t
 They do not not. It is important to keep in mind that human populations are more genetically alike than we are different.
 :::note
 
-Interpreting differences in genetic associations between groups is incredibly complicated. In the simplest cases, we learn about “Mendelian” traits where mutations in a single gene affect an outcome. Some examples of such traits include blood type, wet versus dry earwax, and some diseases like cystic fibrosis and sickle cell anemia. These kinds of traits are very atypical, but provide an intuition for how to interpret GWAS results. Importantly, f
+We don’t know whether there is a genetic basis for differences between groups because GWAS variants aren’t necessarily causal. Because of this, interpreting differences in genetic associations between groups is incredibly complicated, as associations can appear for a variety of reasons that don’t imply causality. Please see our explanation _[“What does it mean for a variant to be associated with a phenotype? Are the genetic variants discovered by GWAS “causal”?](summary#what-does-it-mean-for-a-variant-to-be-associated-with-a-phenotype-are-the-genetic-variants-discovered-by-gwas-causal)_.
 
 Additionally, for all of the phenotypes considered by this study,** there is not a single genetic variant that determines whether you will have a certain condition**. Instead, in most cases, there are many, many genetic variants that each have a small association with the phenotype, yielding on average very similar outcomes in different populations. Because these associations are so small, it takes substantial follow-up work and an enormous amount of data to determine whether a genetic variant has a population-specific effect -- often more data than are currently available to researchers. 
 

@@ -22,10 +22,7 @@ Last but not least, GWAS have become large enough that polygenic scores are now 
 This study includes results for all phenotypes which had sufficient sample size to run a well-powered GWAS, including many behavioral phenotypes that were collected by the UK Biobank.
 :::note
 
-Several researchers, including some involved in this project, have also conducted GWAS of behavioral phenotypes in populations with only European ancestries. Behavioral research on these topics is particularly sensitive. We recommend that interested readers should also read the FAQs for those papers, that go into much greater detail on the interpretation and social and ethical implications of studying the genetics of behavior. Those FAQ may be found here: 
-
-[https://www.thessgac.org/faqs]
-(https://www.thessgac.org/faqs).
+Several researchers, including some involved in this project, have also conducted GWAS of behavioral phenotypes in populations with only European ancestries. Behavioral research on these topics is particularly sensitive. We recommend that interested readers should also read the FAQs for those papers, that go into much greater detail on the interpretation and social and ethical implications of studying the genetics of behavior. Those FAQ may be found here: [https://www.thessgac.org/faqs](https://www.thessgac.org/faqs).
 
 
 ## Do genes determine the choices we make?
@@ -64,9 +61,12 @@ Acknowledging the harm done to certain groups in the past in the name of science
 ## Could this research be used to harm certain groups (e.g., through discrimination or stigmatization)?
 
 :::note
-As described above, genetics has [a long history](implications#how-has-genetics-been-misused) of being used to stigmatize certain groups, and it is likely that some will misuse these results in bad faith. We have carried out a number of activities in an effort to maximize benefits and minimize risks from this research. See our response in “[What has been done to reduce the potential harms of this research?](implications#how-are-risks-mitigated)” for more information.
+Yes, but excluding these groups from genetics research is also harmful. For this reason it is important to be aware of and mitigate potential harms.
 :::note
 
+As described above, genetics has [a long history](implications#how-has-genetics-been-misused) of being used to stigmatize certain groups. Although our results [do not imply that phenotypic differences between groups are due to genetic or biological differences](background#do-these-results-imply-that-genetics-are-responsible-for-the-phenotypic-differences-between-ancestry-groups), we do anticipate that some racist individuals may mistakenly or willfully misinterpret our study to advance their ideological agendas. **However, the exclusion of diverse groups from genetics research directly harms minority populations.** When research is based only on one group, subsequent treatments and policies that are tested and implemented will most greatly benefit that population, exacerbating disparities. Remember that human populations are more genetically alike than we are different. Including a broader and more inclusive set of individuals helps support biological understanding for all groups, and does not imply a meaningful difference between them.
+
+We have carried out a number of activities in an effort to maximize benefits and minimize risks from this research. See our response in [“What has been done to reduce the potential harms of this research?”](implications#what-has-been-done-to-reduce-the-potential-harms-of-this-research) for more information.
 
 ## What has been done to reduce the potential harms of this research?
 
