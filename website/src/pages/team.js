@@ -10,55 +10,55 @@ function Contributors() {
   const context = useDocusaurusContext()
   const { siteConfig = {} } = context
   return (
-    <Layout title={`${siteConfig.title}`} description="Contributors">
+    <Layout title={`${siteConfig.title}`} description="Team">
       <header className={classnames('hero', styles.heroBanner)}>
         <div className="container">
-          <h1>Contributors</h1>
+          <h1>Team</h1>
         </div>
       </header>
       <main>
         <div className="container">
           <p>
-            Analysis team:
+            <b>Analysis</b>
             <ul>
               <li>Konrad Karczewski</li>
               <li>Elizabeth Atkinson</li>
-              <li>Nikolas Baya</li>
               <li>Masahiro Kanai</li>
-              <li>Alicia Martin</li>
+              <li>Nikolas Baya</li>
               <li>Patrick Turley</li>
               <li>Gopal Sarma</li>
               <li>Raymond Walters</li>
               <li>Duncan Palmer</li>
               <li>Nathan Cheng</li>
-              <li>Wei Zhou</li>
               <li>Rahul Gupta</li>
-            </ul>
-            Ethics team
-            <ul>
-              <li>Patrick Turley</li>
-              <li>Elizabeth Atkinson</li>
-              <li>Shawneequa Callier</li>
+              <li>Wei Zhou</li>
               <li>Alicia Martin</li>
             </ul>
-            Website team:
+            <b>Ethics and communication</b>
+            <ul>
+              <li>Shawneequa Callier</li>
+              <li>Patrick Turley</li>
+              <li>Elizabeth Atkinson</li>
+              <li>Alicia Martin</li>
+            </ul>
+            <b>Website</b>
             <ul>
               <li>Matthew Solomonson</li>
               <li>Konrad Karczewski</li>
             </ul>
-            Data coordinators
+            <b>Data coordination</b>
             <ul>
               <li>Sam Bryant</li>
               <li>Claire Churchhouse</li>
               <li>Caroline Cusick</li>
             </ul>
-            Hail
+            <b>Hail</b>
             <ul>
               <li>Jacqueline Goldstein</li>
               <li>Daniel King</li>
               <li>Cotton Seed</li>
             </ul>
-            PIs
+            <b>Coordination and Leadership</b>
             <ul>
               <li>Alicia Martin</li>
               <li>Hilary Finucane</li>
