@@ -39,12 +39,8 @@
   font-weight: 500;
 }
 
-.logo_src-pages- {
-  content: url(/img/pan_ukb_logo_v0.4-2.svg)
-}
-
-html[data-theme="dark"] .logo_src-pages- {
-  content: url(/img/pan_ukb_logo_v0.4-2-dark.svg)
+html[data-theme="dark"] img#pan_ukbb_logo {
+  content: url(/img/pan_ukbb_logo_v0.4-2-dark.svg)
 }
 
 html[data-theme="dark"] {
