@@ -26,9 +26,16 @@ function Downloads() {
               <b>Per-phenotype flat files</b>: for most analyses of one or a few phenotypes, we suggest using the
               per-phenotype flat files, available freely on Dropbox. More information on the file formats is
               available in the <Link to={useBaseUrl('docs/per-phenotype-files')}>Technical Details</Link>.
-              The phenotype manifest (browse on <a href="https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=30994804" target="_blank">Google Sheets</a> or
-              download on <a href="https://www.dropbox.com/s/18p4lj3finj11oh/phenotype_manifest.tsv.bgz?dl=0">Dropbox</a>) contains the location and
-              detailed information of all phenotypes for which GWAS were run.
+              <ul>
+                <li>
+                  The phenotype manifest (browse on <a href="https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=30994804" target="_blank">Google Sheets</a> or
+                  download on <a href="https://www.dropbox.com/s/18p4lj3finj11oh/phenotype_manifest.tsv.bgz?dl=0">Dropbox</a>) contains the location and
+                  detailed information of all per-phenotype files for those phenotypes for which GWAS was run.
+                </li>
+                <li>
+                  The variant manifest contains detailed information on each variant (download on <a href="">Dropbox</a>).
+                </li>
+              </ul>
             </li>
             <li>
               <b>Hail format</b>: For large-scale analyses of many phenotypes, we provide the full dataset
