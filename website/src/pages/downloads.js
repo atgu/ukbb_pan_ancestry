@@ -11,14 +11,14 @@ function Downloads() {
   const { siteConfig = {} } = context
   return (
     <Layout title={`${siteConfig.title}`} description="Downloads">
-      <header className={classnames('hero', styles.heroBanner)}>
+      <header>
         <div className="container">
-          <h1>Downloads</h1>
+          <h1 className="page-title">Downloads</h1>
         </div>
       </header>
       <main>
         <div className="container">
-          <p class="">
+          <p className="">
             The dataset is available for download in two main formats:
           </p>
           <ul>

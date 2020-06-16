@@ -11,15 +11,15 @@ function Contributors() {
   const { siteConfig = {} } = context
   return (
     <Layout title={`${siteConfig.title}`} description="Team">
-      <header className={classnames('hero', styles.heroBanner)}>
+      <header>
         <div className="container">
-          <h1>Team</h1>
+          <h1 className="page-title">Team</h1>
         </div>
       </header>
       <main>
         <div className="container">
-          <div class="row">
-            <div class="col col--4">
+          <div className="row">
+            <div className="col col--4">
               <b>Analysis</b>
               <ul>
                 <li>Konrad Karczewski</li>
@@ -41,7 +41,7 @@ function Contributors() {
                 <li>Konrad Karczewski</li>
               </ul>
             </div>
-            <div class="col col--4">
+            <div className="col col--4">
               <b>Ethics and communication</b>
               <ul>
                 <li>Shawneequa Callier</li>
@@ -62,7 +62,7 @@ function Contributors() {
                 <li>Cotton Seed</li>
               </ul>
             </div>
-            <div class="col col--4">
+            <div className="col col--4">
               <b>Coordination and Leadership</b>
               <ul>
                 <li>Alicia Martin</li>

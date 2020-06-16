@@ -11,14 +11,14 @@ function Results() {
   const { siteConfig = {} } = context
   return (
     <Layout title={`${siteConfig.title}`} description="Results">
-      <header className={classnames('hero', styles.heroBanner)}>
+      <header>
         <div className="container">
-          <h1>Results</h1>
+          <h1 className="page-title">Results</h1>
         </div>
       </header>
       <main>
         <div className="container">
-          <p class="hero__description text--center">
+          <p className="hero__description text--center">
             Coming soon.
           </p>
         </div>
