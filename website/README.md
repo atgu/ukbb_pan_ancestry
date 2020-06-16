@@ -32,4 +32,4 @@ Fix a bug in `@docusaurus/core@^2.0.0-alpha.56`.
 
 Build and upload build to storage bucket.
 
-`npm run deploy`
+`npm run deploy-dev`

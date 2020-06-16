@@ -6,10 +6,12 @@
     "start": "docusaurus start",
     "build": "docusaurus build",
     "swizzle": "docusaurus swizzle",
-    "clean": "rm -rf build && npm run build && gsutil -m rm -r \"gs://pan-dev.ukbb.broadinstitute.org/*\"",
-    "rsync": "gsutil -m rsync -R build gs://pan-dev.ukbb.broadinstitute.org",
+    "clean": "rm -rf build && npm run build",
     "patch-route-bug": "cp PendingNavigationPatch.js node_modules/@docusaurus/core/lib/client/PendingNavigation.js",
-    "deploy": "npm run clean && npm run rsync"
+    "rsync-dev": "gsutil -m rsync -R build gs://pan-dev.ukbb.broadinstitute.org",
+    "rsync-prod": "gsutil -m rsync -R build gs://pan.ukbb.broadinstitute.org",
+    "deploy-dev": "npm run patch-route-bug && npm run clean && npm run rsync-dev",
+    "deploy-prod": "npm run patch-route-bug && npm run clean && npm run rsync-prod"
   },
   "dependencies": {
     "@docusaurus/core": "^2.0.0-alpha.56",
