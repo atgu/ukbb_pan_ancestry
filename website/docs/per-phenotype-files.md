@@ -146,6 +146,8 @@ An ancestry-specific column is only included in the file if a GWAS was run for t
 
 ## Variant manifest file
 
+Variant manifest (download on [Dropbox](https://www.dropbox.com/s/vtt1h1qvuxltqb6/full_variant_qc_metrics.txt.bgz?dl=0), [tbi](https://www.dropbox.com/s/1823j5rn1ohic2p/full_variant_qc_metrics.txt.bgz.tbi?dl=0))
+
 ### Variant fields
 
 As in [per-phenotype files](#Per-phenotype-files).
