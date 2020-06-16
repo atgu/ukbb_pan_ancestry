@@ -15,7 +15,7 @@ module.exports = {
       // },
       links: [
         {
-          to: 'docs/background',
+          to: 'docs/summary',
           activeBasePath: 'docs',
           label: 'About',
           position: 'right',

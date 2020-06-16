@@ -3,7 +3,7 @@ module.exports = {
     {
       type: 'category',
       label: 'FAQ',
-      items: ['background', 'study-design', 'implications'],
+      items: ['summary', 'background', 'study-design', 'implications'],
     },
     {
       type: 'category',

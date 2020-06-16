@@ -8,7 +8,7 @@ title: Hail Format
 The results of this analysis are released in two main files on Google Cloud Storage (file format compatible with Hail >= 0.2.42):
 
 - Summary statistics MatrixTable: `gs://ukb-diverse-pops-public/sumstats_release/results_full.mt` (12.78 T)
-- Meta-analysis MatrixTable: `gs://ukb-diverse-pops-public/sumstats_release/meta_analysis.mt` (12.52 T)
+- Meta-analysis MatrixTable: `gs://ukb-diverse-pops-public/sumstats_release/meta_analysis.mt` (12.54 T)
 
 We also provide the following derived datasets for convenience:
 
