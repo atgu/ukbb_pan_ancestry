@@ -3,6 +3,8 @@ id: background
 title: Background
 ---
 
+This FAQ is meant to accompany our public release of the results of a large genome-wide analysis for a wide range of outcomes in a diverse group of individuals from the UK. It is intended to provide context around and describe some of the limitations of our analyses to a lay audience. It does not go into comprehensive detail around every phenotype, but instead wishes to highlight the overarching goals of the project, how analyses were conducted, and describe some potential confounders that could affect our results. The practice of producing these public-facing FAQ documents was first adopted by the Social Science Genetics Association Consortium (https://www.thessgac.org/faqs) and has become a common practice among several genomics researchers. In this FAQ, we have followed a similar structure to that of others that have been previously released. For a more detailed description of the analyses and technical details, please refer to the wiki on our github page: https://github.com/atgu/ukbb_pan_ancestry/wiki. We consider this a living document that we will update as the need arises. If you have questions or concerns about this FAQ, please reach out to us at [ukb.diverse.gwas@gmail.com](mailto:ukb.diverse.gwas@gmail.com).
+
 ## Who conducted this study?
 
 :::note
