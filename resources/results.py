@@ -14,7 +14,7 @@ def get_variant_results_path(pop: str, extension: str = 'mt'):
 
 
 def get_variant_results_qc_path(extension: str = 'ht'):
-    return f'{public_bucket}/sumstats_qc_analysis/full_variant_qc_metrics.{extension}'
+    return f'{public_bucket_free}/sumstats_qc_analysis/full_variant_qc_metrics.{extension}'
 
 
 def get_meta_analysis_results_path(extension: str = 'mt'):
@@ -26,7 +26,7 @@ def get_phenotype_results_qc_path(extension: str = 'ht'):
 
 
 def get_analysis_data_path(subdir: str, dataset: str, pop: str, extension: str = 'txt.bgz'):
-    return f'{public_bucket}/sumstats_qc_analysis/{subdir}/{dataset}_{pop}.{extension}'
+    return f'{public_bucket_free}/sumstats_qc_analysis/{subdir}/{dataset}_{pop}.{extension}'
 
 
 def get_final_lambdas_path():
