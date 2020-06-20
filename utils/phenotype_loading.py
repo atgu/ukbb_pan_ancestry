@@ -116,12 +116,14 @@ def load_hesin_data(overwrite: bool = False):
     delivery_ht.write(get_hesin_delivery_ht_path(), overwrite)
 
 
-def load_custom_pheno(traittype_source: str, sex: str = 'both_sexes'):
+def load_custom_pheno(traittype_source: str, sex: str = 'both_sexes', extension: str = 'txt'):
     trait_type, source = traittype_source.split('-')
-    print(f'Loading {get_custom_pheno_path(traittype_source, extension="txt")}')
-    ht = hl.import_table(get_custom_pheno_path(traittype_source, extension='txt'), impute=True)
+    print(f'Loading {get_custom_pheno_path(traittype_source, extension=extension)}')
+    ht = hl.import_table(get_custom_pheno_path(traittype_source, extension=extension), impute=True)
     inferred_sample_column = list(ht.row)[0]
-    ht = ht.key_by(userId=ht[inferred_sample_column]).drop(inferred_sample_column)
+    ht = ht.key_by(userId=ht[inferred_sample_column])
+    if inferred_sample_column != 'userId':
+        ht = ht.drop(inferred_sample_column)
     if trait_type == 'categorical':
         ht = ht.annotate(**{x: hl.bool(ht[x]) for x in list(ht.row_value)})
 
