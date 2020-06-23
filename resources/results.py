@@ -56,5 +56,5 @@ def get_pheno_manifest_path():
 
 def get_clumping_results_path(pop: str = 'full', high_quality_only: bool = False, 
                               not_pop: bool = True):
-    mt_name = f'{"not_" if not_pop else ""}{pop}.mt' if pop != 'all' else 'full_clump_results.mt'
+    mt_name = f'{"not_" if not_pop else ""}{pop}.mt' if pop != 'full' else 'full_clump_results.mt'
     return f'{bucket}/ld_prune/clump_results{"_high_quality" if high_quality_only else ""}/{mt_name}'
