@@ -304,25 +304,29 @@ def export_subset(num_pops=None, phenocode=None):
                        export_path_str=phenocode)
                 
     
-def export_loo(batch_size=256, update=True):
+def export_loo(batch_size=256, update=False):
     r'''
     For exporting p-values of meta-analysis of leave-one-out population sets
     '''
     meta_mt0 = hl.read_matrix_table(get_meta_analysis_results_path())
+    
+    meta_mt0 = meta_mt0.select_rows()
 
     meta_mt0 = meta_mt0.annotate_cols(pheno_id = get_pheno_id(tb=meta_mt0))
     
     meta_mt0 = meta_mt0.filter_cols(hl.len(meta_mt0.pheno_data.pop)==6)
     
     if update:    
-        current_dir = f'{ldprune_dir}/loo/sumstats/batch1'
+        current_dir = f'{ldprune_dir}/loo/sumstats/batch1' # directory of current results to update
         
         ss_list = hl.hadoop_ls(current_dir)
-        pheno_id_list = [x['path'].replace('.tsv.bgz','') for x in ss_list if 'bgz' in x['path']]
+        pheno_id_list = [x['path'].replace('.tsv.bgz','').replace(f'{current_dir}/','') for x in ss_list if 'bgz' in x['path']]
     
         meta_mt0 = meta_mt0.filter_cols(~hl.literal(pheno_id_list).contains(meta_mt0.pheno_id))
                 
-    meta_mt0 = meta_mt0.annotate_rows(SNP = (meta_mt0.locus.contig+':'+
+    meta_mt0 = meta_mt0.annotate_rows(chr = meta_mt0.locus.contig,
+                                      pos = meta_mt0.locus.position,
+                                      SNP = (meta_mt0.locus.contig+':'+
                                              hl.str(meta_mt0.locus.position)+':'+
                                              meta_mt0.alleles[0]+':'+
                                              meta_mt0.alleles[1]))
@@ -340,7 +344,7 @@ def export_loo(batch_size=256, update=True):
     meta_mt1 = meta_mt0.annotate_entries(**annotate_dict)
     
     meta_mt1 = meta_mt1.key_cols_by('pheno_id')
-    meta_mt1 = meta_mt1.key_rows_by().drop('locus','alleles','gene','annotation','meta_analysis')
+    meta_mt1 = meta_mt1.key_rows_by().drop('locus','alleles','meta_analysis')
     
     meta_mt1.describe()
     
@@ -350,12 +354,12 @@ def export_loo(batch_size=256, update=True):
         batch_idx += 1
     print(f'\nExporting to: {get_export_path(batch_idx)}\n')
     print(meta_mt1.count_cols())
-#    hl.experimental.export_entries_by_col(mt = meta_mt1,
-#                                          path = get_export_path(batch_idx),
-#                                          bgzip = True,
-#                                          batch_size = batch_size,
-#                                          use_string_key_as_file_name = True,
-#                                          header_json_in_file = False)
+    hl.experimental.export_entries_by_col(mt = meta_mt1,
+                                          path = get_export_path(batch_idx),
+                                          bgzip = True,
+                                          batch_size = batch_size,
+                                          use_string_key_as_file_name = True,
+                                          header_json_in_file = False)
     
 def export_updated_phenos(num_pops=None):
     old_manifest = hl.import_table(get_pheno_manifest_path(),
