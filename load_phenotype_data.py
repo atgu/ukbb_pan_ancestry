@@ -69,7 +69,7 @@ def main(args):
 
     if args.add_dataset or args.add_covid_wave:
         if args.add_covid_wave:
-            # hail load_phenotype_data --add_covid_wave 03 --overwrite
+            # hail load_phenotype_data.py --add_covid_wave 03 --overwrite
             # python saige_pan_ancestry.py --phenos .*COVID.*03.*
             ht = load_dob_ht(pre_phesant_tsv_path)
             ht = ht.checkpoint(f'{bucket}/misc/covid_test/basic_dob.ht', _read_if_exists=True)
