@@ -52,3 +52,8 @@ def get_heritability_txt_path(from_date: str = None):
 
 def get_pheno_manifest_path():
     return f'{public_bucket}/sumstats_release/phenotype_manifest.tsv.bgz'
+
+
+def get_clumping_results_path(pop: str = 'all', high_quality_only: bool = True, not_pop: bool = True):
+    mt_name = f'{"not_" if not_pop else ""}{pop}.mt' if pop != 'all' else 'full_clump_results.mt'
+    return f'{bucket}/ld_prune/clump_results{"_high_quality" if high_quality_only else ""}/{mt_name}'
