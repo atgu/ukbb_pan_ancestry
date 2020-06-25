@@ -11,6 +11,7 @@ import uuid
 from hail.linalg import BlockMatrix
 from hail.utils import new_temp_file, hadoop_open, timestamp_path
 from ukbb_pan_ancestry.resources import get_filtered_mt, get_variant_results_qc_path, POPS, temp_bucket
+from ukbb_pan_ancestry.resources.ld import *
 
 
 def new_gs_temp_path():
@@ -77,7 +78,7 @@ def write_ldsc_hm3_snplist(info_threshold=0.9, maf_threshold=0.01, overwrite=Fal
                 (hl.is_missing(y.gnomad_genomes_af) | (get_maf(y.gnomad_genomes_af) > maf_threshold)) &
                 (hl.is_missing(y.gnomad_exomes_af) | (get_maf(y.gnomad_exomes_af) > maf_threshold))))
         snplist = snplist.select('rsid')
-        snplist.write(f'gs://ukb-diverse-pops/ld/{pop}/HM3.UKBB.{pop}.qc.snplist.ht', overwrite=overwrite)
+        snplist.write(get_hm3_snplist_path(pop), overwrite=overwrite)
 
 
 # cf: https://github.com/broadinstitute/gnomad_qc/blob/master/gnomad_qc/v2/annotations/generate_ld_data.py
@@ -112,7 +113,7 @@ def copmute_ldscore(ht, bm_ld, n, radius, out_name, overwrite):
 
 
 def export_ldscore(ht, pop):
-    hm3_snps = hl.read_table(f'gs://ukb-diverse-pops/ld/{pop}/HM3.UKBB.{pop}.qc.snplist.ht')
+    hm3_snps = hl.read_table(get_hm3_snplist_path(pop))
 
     ht = ht.select(CHR=ht.locus.contig,
                    SNP=hl.variant_str(ht.locus, ht.alleles),
@@ -124,16 +125,15 @@ def export_ldscore(ht, pop):
     ht = ht.filter(hl.is_defined(hm3_snps[ht.locus, ht.alleles]))
     ht = ht.key_by().drop('locus', 'alleles', 'MAF')
 
-    out_name_prefix = f'gs://ukb-diverse-pops/ld/{pop}/UKBB.{pop}'
-    with hadoop_open(f'{out_name_prefix}.l2.M', 'w') as f:
+    with hadoop_open(get_ld_score_flat_file_path(pop, extension='M'), 'w') as f:
         f.write(f'{count.M}\n')
-    with hadoop_open(f'{out_name_prefix}.l2.M_5_50', 'w') as f:
+    with hadoop_open(get_ld_score_flat_file_path(pop, extension='M_5_50'), 'w') as f:
         f.write(f'{count.M_5_50}\n')
 
     # LD score with variant ids
-    ht.drop('RSID').export(f'{out_name_prefix}.l2.ldscore.gz')
+    ht.drop('RSID').export(get_ld_score_flat_file_path(pop))
     # with rsids
-    ht.transmute(SNP=ht.RSID).export(f'{out_name_prefix}.rsid.l2.ldscore.gz')
+    ht.transmute(SNP=ht.RSID).export(get_ld_score_flat_file_path(pop, rsid=True))
 
 
 def main(args):
@@ -154,7 +154,7 @@ def main(args):
         # write variant indexes
         ht = mt.rows().select().add_index()
         ht = ht.annotate_globals(n_samples=n, pop=pop)
-        ht.write(f'gs://ukb-diverse-pops/ld/{pop}/UKBB.{pop}.ldadj.variant.ht', overwrite=args.overwrite)
+        ht.write(get_ld_variant_index_path(pop), overwrite=args.overwrite)
     else:
         mt = hl.read_matrix_table(tmp_mt_path)
         n = mt.count()[1]
@@ -197,11 +197,9 @@ def main(args):
 
         # sparcify to a triangle matrix
         bm_ldadj = bm_ldadj.sparsify_triangle()
-        bm_ldadj = bm_ldadj.checkpoint(f'gs://ukb-diverse-pops/ld/{pop}/UKBB.{pop}.ldadj.bm',
-                                       overwrite=args.overwrite,
-                                       force_row_major=True)
+        bm_ldadj = bm_ldadj.checkpoint(get_ld_matrix_path(pop), overwrite=args.overwrite, force_row_major=True)
     else:
-        bm_ldadj = BlockMatrix.read(f'gs://ukb-diverse-pops/ld/{pop}/UKBB.{pop}.ldadj.bm')
+        bm_ldadj = BlockMatrix.read(get_ld_matrix_path(pop))
 
     if args.write_ldsc_hm3_snplist:
         # Note: currently, this writes snplists for all the populations at once
@@ -212,7 +210,7 @@ def main(args):
                                      bm_ldadj,
                                      n,
                                      radius=args.ld_score_radius,
-                                     out_name=f'gs://ukb-diverse-pops/ld/{pop}/UKBB.{pop}.ldscore.ht',
+                                     out_name=get_ld_score_ht_path(pop),
                                      overwrite=args.overwrite)
         export_ldscore(ht_ldscore, pop)
 
