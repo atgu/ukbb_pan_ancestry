@@ -74,7 +74,7 @@ For example, consider a case when the phenotype is a disease. It could be that t
 ## Do these results imply that genetics are responsible for the phenotypic differences between ancestry groups?
 
 :::note
-They do not not. It is important to keep in mind that human populations are more genetically alike than we are different.
+They do not. It is important to keep in mind that human populations are more genetically alike than we are different.
 :::note
 
 We don’t know whether there is a genetic basis for differences between groups because GWAS variants aren’t necessarily causal. Because of this, interpreting differences in genetic associations between groups is incredibly complicated, as associations can appear for a variety of reasons that don’t imply causality. Please see our explanation _[“What does it mean for a variant to be associated with a phenotype? Are the genetic variants discovered by GWAS “causal”?](background#what-does-it-mean-for-a-variant-to-be-associated-with-a-phenotype-are-the-genetic-variants-discovered-by-gwas-causal)_.
