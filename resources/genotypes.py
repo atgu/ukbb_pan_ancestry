@@ -58,6 +58,14 @@ def get_filtered_mt(chrom: str = 'all',
     return mt
 
 
+def get_filtered_mt_with_x(pop: str = 'all'):
+    mt = get_filtered_mt(pop=pop, entry_fields=('dosage',))
+    mt_x = get_filtered_mt('X', pop=pop, entry_fields=('dosage',))
+    # assert mt.s.collect() == mt_x.s.collect()
+    mt = mt.union_rows(mt_x)
+    return mt
+
+
 def get_ukb_af_ht_path(with_x = True, repart=False):
     return f'{bucket}/imputed/ukb_frequencies{"_with_x" if with_x else ""}{".repart" if repart else ""}.ht'
 
