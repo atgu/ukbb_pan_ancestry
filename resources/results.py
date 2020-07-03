@@ -58,3 +58,27 @@ def get_clumping_results_path(pop: str = 'full', high_quality_only: bool = False
                               not_pop: bool = True):
     mt_name = f'{"not_" if not_pop else ""}{pop}.mt' if pop != 'full' else 'full_clump_results.mt'
     return f'{bucket}/ld_prune/clump_results{"_high_quality" if high_quality_only else ""}/{mt_name}'
+
+
+def get_prs_mt_path(high_quality: bool = True):
+    return f'{bucket}/prs/all_combos_prs{"" if high_quality else "_raw"}.mt'
+
+
+def get_clump_sumstats_bm_path(high_quality: bool = True):
+    return f'{temp_bucket}/prs/clumped_sumstats{"" if high_quality else "_raw"}.bm'
+
+
+def get_clump_sumstats_col_ht_path(high_quality: bool = True):
+    return f'{temp_bucket}/prs/clumped_sumstats{"" if high_quality else "_raw"}.cols.ht'
+
+
+genotype_bm_path = f'{temp_bucket}/prs/genotypes.bm'
+genotype_samples_ht_path = f'{temp_bucket}/prs/genotype_samples.ht'
+
+
+def get_prs_bm_path(high_quality: bool = True):
+    return f'{temp_bucket}/prs/prs{"" if high_quality else "_raw"}.bm'
+
+
+def get_prs_assess_ht_path(high_quality: bool = True):
+    return f'{temp_bucket}/prs/assess_prs{"" if high_quality else "_raw"}.ht'
