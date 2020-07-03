@@ -34,7 +34,8 @@ def get_filtered_mt(chrom: str = 'all',
     # get ac or mac based on filter_mac_instead_of_ac
     def get_ac(af, an):
         if filter_mac_instead_of_ac:
-            return (0.5 - hl.abs(0.5 - af)) * an
+            # Note that the underlying file behind get_ukb_af_ht_path() accidentally double af and halve an
+            return (1.0 - hl.abs(1.0 - af)) * an
         else:
             return af * an
 
