@@ -24,7 +24,7 @@ def main(args):
         mt = mt.filter_cols(mt.meta_analysis_data.pop == mt.clump_pops)
         mt = explode_by_p_threshold(mt).unfilter_entries()
         # Write pheno data for later use
-        mt.cols().add_index().write(get_clump_sumstats_col_ht_path(args.high_quality), args.overwrite)
+        mt.add_col_index('idx').key_cols_by('idx').cols().write(get_clump_sumstats_col_ht_path(args.high_quality), args.overwrite)
         BlockMatrix.write_from_entry_expr(
             hl.or_else(mt.meta_analysis.BETA * hl.is_defined(mt.plink_clump.TOTAL) * hl.int(mt.meta_analysis.Pvalue < mt.p_threshold), 0.0),
             get_clump_sumstats_bm_path(args.high_quality), args.overwrite)
