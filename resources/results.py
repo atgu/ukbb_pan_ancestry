@@ -54,10 +54,10 @@ def get_pheno_manifest_path():
     return f'{public_bucket}/sumstats_release/phenotype_manifest.tsv.bgz'
 
 
-def get_clumping_results_path(pop: str = 'full', high_quality_only: bool = False, 
+def get_clumping_results_path(pop: str = 'full', high_quality: bool = False, 
                               not_pop: bool = True):
     mt_name = f'{"not_" if not_pop else ""}{pop}.mt' if pop != 'full' else 'full_clump_results.mt'
-    return f'{bucket}/ld_prune/clump_results{"_high_quality" if high_quality_only else ""}/{mt_name}'
+    return f'{bucket}/ld_prune/clump_results{"_high_quality" if high_quality else ""}/{mt_name}'
 
 
 def get_prs_mt_path(high_quality: bool = True):
