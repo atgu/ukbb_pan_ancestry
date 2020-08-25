@@ -26,8 +26,9 @@ function Downloads() {
               <b>Per-phenotype flat files</b>: for most analyses of <b>one or a few phenotypes</b>, we suggest using the
               per-phenotype flat files, available freely on Dropbox. More information on the file formats is
               available in the <Link to={useBaseUrl('docs/per-phenotype-files')}>Technical Details</Link>.
-              <br>
-              <p style="color:red;">Note: due to high traffic, our Dropbox account is currently unavailable. We are working on a cloud-based solution for downloads that will be available soon.</p>
+              <p className="user-warning">
+                Note: due to high traffic, our Dropbox account is currently unavailable. We are working on a cloud-based solution for downloads that will be available soon.
+              </p>
               <ul>
                 <li>
                   The phenotype manifest (browse on <a href="https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=30994804" target="_blank">Google Sheets</a> or
