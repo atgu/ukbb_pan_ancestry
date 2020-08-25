@@ -51,3 +51,12 @@ def get_heritability_dict(pop):
     heritability_ht = heritability_ht.filter(heritability_ht.pop == pop)
     heritability_dict = create_broadcast_dict(heritability_ht.key)
     return heritability_dict
+
+
+def get_modified_key(mt):
+    key = mt.col_key.annotate(phenocode=format_pheno_dir(mt.phenocode),
+                              modifier=hl.case(missing_false=True)
+                              .when(mt.trait_type == "biomarkers", "")
+                              .when((mt.pop == 'EAS') & (mt.phenocode == '104550'), '104550')
+                              .default(mt.modifier))
+    return key

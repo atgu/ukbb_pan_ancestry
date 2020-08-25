@@ -134,15 +134,6 @@ def reannotate_cols(mt, pop):
     return check_and_annotate_with_dict(mt, heritability_dict, key)
 
 
-def get_modified_key(mt):
-    key = mt.col_key.annotate(phenocode=format_pheno_dir(mt.phenocode),
-                              modifier=hl.case(missing_false=True)
-                              .when(mt.trait_type == "biomarkers", "")
-                              .when((mt.pop == 'EAS') & (mt.phenocode == '104550'), '104550')
-                              .default(mt.modifier))
-    return key
-
-
 def recode_single_pheno_struct_to_legacy_path(pheno_struct):
     trait_type = pheno_struct.trait_type
     phenocode = pheno_struct.phenocode
