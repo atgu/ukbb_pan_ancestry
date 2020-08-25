@@ -3,7 +3,6 @@
 __author__ = 'konradk'
 
 import argparse
-from collections import defaultdict, Counter
 from pprint import pprint
 
 import gnomad.resources.grch37.gnomad as gnomad
@@ -48,14 +47,6 @@ def generate_final_lambdas(overwrite):
     ).cols()
     ht = ht.checkpoint(get_analysis_data_path('lambda', 'lambdas', 'full', 'ht'), overwrite=overwrite, _read_if_exists=not overwrite)
     ht.explode('pheno_data').flatten().export(get_analysis_data_path('lambda', 'lambdas', 'full', 'txt.bgz'))
-
-
-def explode_lambda_ht(ht, by='ac'):
-    ac_ht = ht.annotate(sumstats_qc=ht.sumstats_qc.select(*[x for x in ht.sumstats_qc.keys() if f'_{by}' in x]))
-    ac_ht = ac_ht.annotate(index_ac=hl.zip_with_index(ac_ht[f'{by}_cutoffs'])).explode('index_ac')
-    ac_ht = ac_ht.transmute(**{by: ac_ht.index_ac[1]},
-                            **{x: ac_ht.sumstats_qc[x][ac_ht.index_ac[0]] for x in ac_ht.sumstats_qc})
-    return ac_ht
 
 
 def prepare_gnomad_stats(overwrite):
