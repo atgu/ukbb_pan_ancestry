@@ -24,21 +24,18 @@ function Downloads() {
           <ul>
             <li>
               <b>Per-phenotype flat files</b>: for most analyses of <b>one or a few phenotypes</b>, we suggest using the
-              per-phenotype flat files, available freely on Dropbox. More information on the file formats is
+              per-phenotype flat files, available freely on Amazon AWS. More information on the file formats is
               available in the <Link to={useBaseUrl('docs/per-phenotype-files')}>Technical Details</Link>.
-              <p className="user-warning">
-                Note: due to high traffic, our Dropbox account is currently unavailable. We are working on a cloud-based solution for downloads that will be available soon.
-              </p>
               <ul>
                 <li>
                   The phenotype manifest (browse on <a href="https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=30994804" target="_blank">Google Sheets</a> or
-                  download on <a href="https://www.dropbox.com/s/18p4lj3finj11oh/phenotype_manifest.tsv.bgz?dl=0">Dropbox</a>) contains the location and
+                  download on <a href="https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_release/phenotype_manifest.tsv.bgz">Amazon AWS</a>) contains the location and
                   detailed information of all per-phenotype files for those phenotypes for which GWAS was run.
                 </li>
                 <li>
                   The variant manifest contains detailed information on each variant
-                  (download on <a href="https://www.dropbox.com/s/vtt1h1qvuxltqb6/full_variant_qc_metrics.txt.bgz?dl=0">Dropbox</a>
-                  , <a href="https://www.dropbox.com/s/1823j5rn1ohic2p/full_variant_qc_metrics.txt.bgz.tbi?dl=0">tbi</a>).
+                  (download on <a href="https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_release/full_variant_qc_metrics.txt.bgz">Amazon AWS</a>
+                  , <a href="https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_release/full_variant_qc_metrics.txt.bgz.tbi">tbi</a>).
                 </li>
               </ul>
             </li>

@@ -5,9 +5,9 @@ title: Per-phenotype files
 
 ## Overview
 
-The data are released in 7,221 flat files, one for each phenotype, and a corresponding tabix index file for each. These files are available on Dropbox (for large-scale analysis, we recommend using the [Hail format](Hail-format) files on Google Cloud).
+The data are released in 7,221 flat files, one for each phenotype, and a corresponding tabix index file for each. These files are available on Amazon AWS (for large-scale analysis, we recommend using the [Hail format](Hail-format) files on Google Cloud).
 
-The files are named with respect to their `trait_type`, `phenocode`, and a combination of `pheno_sex`, `coding`, or `modifier`. To find a specific phenotype, we suggest looking in the [phenotype manifest (Google Sheets)](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit?usp=sharing) (available for download on [Dropbox](https://www.dropbox.com/s/18p4lj3finj11oh/phenotype_manifest.tsv.bgz?dl=0)). Search for your phenotype(s) of interest and use the paths indicated to download the summary statistics. A description of fields in the manifest can be found [here](#phenotype-manifest-file).
+The files are named with respect to their `trait_type`, `phenocode`, and a combination of `pheno_sex`, `coding`, or `modifier`. To find a specific phenotype, we suggest looking in the [phenotype manifest (Google Sheets)](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit?usp=sharing) (available for download on [Amazon](https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_release/phenotype_manifest.tsv.bgz)). Search for your phenotype(s) of interest and use the paths indicated to download the summary statistics. A description of fields in the manifest can be found [here](#phenotype-manifest-file).
 
 The [per-phenotype files](#per-phenotype-files) are summary statistics files containing meta-analyzed and single-ancestry GWAS results. We especially highlight the `low_confidence` fields, which includes some (non-exhaustive) basic quality control filters (see below). These files each have 28,987,534 variants, but note that not all populations will have data for each variant.
 
@@ -15,7 +15,7 @@ Finally, the [variant manifest file](#variant-manifest-file) includes informatio
 
 ## Phenotype manifest file
 
-[Pan-UK Biobank phenotype manifest (Google Sheets)](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit?usp=sharing) (download on [Dropbox](https://www.dropbox.com/s/18p4lj3finj11oh/phenotype_manifest.tsv.bgz?dl=0))
+[Pan-UK Biobank phenotype manifest (Google Sheets)](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit?usp=sharing) (download on [Amazon](https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_release/phenotype_manifest.tsv.bgz))
 
 ### Phenotype ID fields
 
@@ -77,7 +77,7 @@ For each field in this section there also exists a field with the suffix `_tabix
 
 `filename`: Name of summary statistics file.
 
-`dropbox_link`: Dropbox link to download summary statistics file.
+`aws_link`: Link to download summary statistics file from Amazon AWS.
 
 `wget`: wget command to download summary statistics file.
 
@@ -146,7 +146,7 @@ An ancestry-specific column is only included in the file if a GWAS was run for t
 
 ## Variant manifest file
 
-Variant manifest (download on [Dropbox](https://www.dropbox.com/s/vtt1h1qvuxltqb6/full_variant_qc_metrics.txt.bgz?dl=0), [tbi](https://www.dropbox.com/s/1823j5rn1ohic2p/full_variant_qc_metrics.txt.bgz.tbi?dl=0))
+Variant manifest (download from [Amazon AWS](https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_release/full_variant_qc_metrics.txt.bgz))
 
 ### Variant fields
 

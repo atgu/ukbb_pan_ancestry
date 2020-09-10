@@ -10,13 +10,14 @@ The results of this analysis are released in two main files on Google Cloud Stor
 - Summary statistics MatrixTable: `gs://ukb-diverse-pops-public/sumstats_release/results_full.mt` (12.78 T)
 - Meta-analysis MatrixTable: `gs://ukb-diverse-pops-public/sumstats_release/meta_analysis.mt` (12.54 T)
 
-We also provide the following derived datasets for convenience:
+These are also available on Amazon S3:
 
-- Lambda GC per phenotype Table: `gs://ukb-diverse-pops-public/sumstats_qc_analysis/lambda/lambdas_full.ht` (878 K)
+- Summary statistics MatrixTable: `s3://pan-ukb-us-east-1/sumstats_release/results_full.mt` (12.78 T)
+- Meta-analysis MatrixTable: `s3://pan-ukb-us-east-1/sumstats_release/meta_analysis.mt` (12.54 T)
 
 ### Requester pays
 
-Note that the files in this bucket are "requester pays." In order to compute over these files or download them, you will need to specify a project which may be billed for access and download costs. The data are stored in a US multi-region bucket: thus, access to the dataset is free for use for Compute Engine instances started within US regions, as well as for full downloads within the US and Canada. When performing large analyses on the dataset, we suggest "bringing the compute to the data" and starting a VM or Dataproc cluster in a US region. You can browse the directory structure in a requester pays bucket with the `-u` flag (and note the `hl.init` call below to access the data using Hail):
+Note that the files in the Google Cloud Storage bucket are "requester pays." In order to compute over these files or download them, you will need to specify a project which may be billed for access and download costs. The data are stored in a US multi-region bucket: thus, access to the dataset is free for use for Compute Engine instances started within US regions, as well as for full downloads within the US and Canada. When performing large analyses on the dataset, we suggest "bringing the compute to the data" and starting a VM or Dataproc cluster in a US region. You can browse the directory structure in a requester pays bucket with the `-u` flag (and note the `hl.init` call below to access the data using Hail):
 
 ```
 gsutil -u your_project_id ls gs://ukb-diverse-pops-public/sumstats_release
@@ -24,7 +25,7 @@ gsutil -u your_project_id ls gs://ukb-diverse-pops-public/sumstats_release
 
 ## Using the libraries and files
 
-These files can be accessed by cloning this and the [ukb_common](https://github.com/Nealelab/ukb_common) repo and accessing them programmatically. We recommend using these functions, as they apply our QC metrics (e.g. the raw file contains 7,271 phenotypes, but use of this function will return 7,221 phenotypes after removing low-quality ones) and include convenience metrics such as lambda GC.
+The files on Google Cloud Platform can be accessed by cloning the [ukbb_pan_ancestry](https://github.com/atgu/ukbb_pan_ancestry) and the [ukb_common](https://github.com/Nealelab/ukb_common) repos and accessing them programmatically. We recommend using these functions, as they apply our QC metrics (e.g. the raw file contains 7,271 phenotypes, but use of this function will return 7,221 phenotypes after removing low-quality ones) and include convenience metrics such as lambda GC.
 
 ```
 %%bash
