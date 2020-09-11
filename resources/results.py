@@ -66,11 +66,11 @@ def get_prs_mt_path(high_quality: bool = True):
 
 
 def get_clump_sumstats_bm_path(high_quality: bool = True):
-    return f'{temp_bucket}/prs/clumped_sumstats{"" if high_quality else "_raw"}.bm'
+    return f'{public_bucket}/misc/prs/clumped_sumstats{"" if high_quality else "_raw"}.bm'
 
 
 def get_clump_sumstats_col_ht_path(high_quality: bool = True):
-    return f'{temp_bucket}/prs/clumped_sumstats{"" if high_quality else "_raw"}.cols.ht'
+    return f'{public_bucket}/misc/prs/clumped_sumstats{"" if high_quality else "_raw"}.cols.ht'
 
 
 genotype_bm_path = f'{temp_bucket}/prs/genotypes.bm'
@@ -82,4 +82,4 @@ def get_prs_bm_path(high_quality: bool = True):
 
 
 def get_prs_assess_ht_path(high_quality: bool = True):
-    return f'{temp_bucket}/prs/assess_prs{"" if high_quality else "_raw"}.ht'
+    return f'{bucket}/prs/assess_prs{"" if high_quality else "_raw"}.ht'
