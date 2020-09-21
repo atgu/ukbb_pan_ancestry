@@ -58,7 +58,10 @@ def get_clumping_results_path(pop: str = 'full', high_quality: bool = False,
                               not_pop: bool = True):
     all_pops = ['AFR','AMR','CSA','EAS','EUR','MID']
     mt_name = f'{"not_" if not_pop else ""}{pop}.mt' if pop in all_pops else f'{pop}_clump_results.mt'
-    return f'{bucket}/ld_prune/clump_results{"_high_quality" if high_quality else ""}/{mt_name}'
+    if high_quality:
+        return f'{public_bucket}/clump_results_high_quality/{mt_name}'
+    else:
+        return f'{bucket}/ld_prune/clump_results/{mt_name}'
 
 
 def get_prs_mt_path(high_quality: bool = True):
