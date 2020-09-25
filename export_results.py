@@ -460,10 +460,10 @@ def make_pheno_manifest(export=True):
     ht = ht.drop('pheno_data')
     ht.describe()
     ht.show()
-#    if export:
-#        ht.export(get_pheno_manifest_path())
-#    else:
-#        return ht
+    if export:
+        ht.export(get_pheno_manifest_path())
+    else:
+        return ht
     
 
 if __name__=="__main__":
