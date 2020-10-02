@@ -1,10 +1,22 @@
+const math = require('remark-math');
+const katex = require('rehype-katex');
+
 module.exports = {
   title: 'Pan UKBB',
   tagline: 'Pan-ancestry genetic analysis of the UK Biobank',
   url: 'https://pan-dev.ukbb.broadinstitute.org',
   baseUrl: '/',
   favicon: 'img/favicon.ico',
-  plugins: [require.resolve('@docusaurus/plugin-google-analytics')],
+  plugins: [require.resolve('@docusaurus/plugin-google-analytics'),
+            ['remark-math', {
+              id: 'remark-1'
+            }], 
+            ['rehype-katex', {
+              id: 'katex-1'
+            }]], 
+  stylesheets: [
+    'https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css'
+  ],
   themeConfig: {
     sidebarCollapsible: false,
     navbar: {
@@ -13,7 +25,7 @@ module.exports = {
       //   alt: 'My Site Logo',
       //   src: 'img/logo.svg',
       // },
-      links: [
+      items: [
         {
           to: 'docs/summary',
           activeBasePath: 'docs',
@@ -52,6 +64,8 @@ module.exports = {
         },
         blog: {
           showReadingTime: true,
+          remarkPlugins: [math],
+          rehypePlugins: [katex],
           // Please change this to your repo.
         },
         theme: {
