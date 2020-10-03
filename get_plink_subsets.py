@@ -19,7 +19,7 @@ from ukbb_pan_ancestry import POPS, bucket
 # MIN_CASES_ALL = 100
 # MIN_CASES_EUR = 100
 
-pop_dict = {
+POP_DICT = {
     'AFR': 6637, # dict with sample counts for each population 
     'AMR': 982,
     'CSA': 8876,
@@ -31,20 +31,21 @@ pop_dict = {
 chroms = list(range(1,23))+['X']
 
 
-def get_pops_list(args):
+def get_pops_list(pops: str):
     r'''
     Generates list of population combinations. If `pops`=None, this will read 
-    the phenotype manifest to get all population combinations.
+    the phenotype manifest to get all population combinations. `pops` should be 
+    a string in the format "POP1-POP2-POP3" (for instance, "AFR-EUR-MID")
     '''
-    if args.pops is None:
+    if pops is None:
         pheno_manifest = hl.import_table(get_pheno_manifest_path())
         pops_list_all = pheno_manifest.pops.collect()
-        pops_list_all = sorted(list(set(pops_list_all)))
+        pops_list_all = sorted(set(pops_list_all))
         pops_list_all = [p.split(',') for p in pops_list_all] # list of lists of strings
         idx = range(args.paridx, len(pops_list_all), args.parsplit)
         pops_list = [pops for i, pops in enumerate(pops_list_all) if i in idx]
     else:
-        pops = sorted(args.pops.upper().split('-'))
+        pops = sorted(set(pops.upper().split('-')))
         assert set(pops).issubset(POPS), f'Invalid populations: {set(pops).difference(POPS)}'
         pops_list = [pops] # list of list of strings
     print(f'''\n\npops: {'-'.join(pops) if len(pops_list)==1 else f"{len(pops_list)} of {len(pops_list_all)} combinations"}\n''')
@@ -65,7 +66,7 @@ def get_mt_filtered_by_pops(pops: list,
     Wraps `get_filtered_mt()` from ukbb_pan_ancestry.resources.genotypes
     This filters to samples from populations listed in `pops`.
 
-    NOTE: If chrom='all', this loads all autosomes AND chrX.
+    NOTE: If chrom='all', this loads all autosomes and chrX.
     
     '''
     assert len(pops)>0 and set(pops).issubset(POPS)
@@ -98,6 +99,7 @@ def get_pop_prop_dict(pop_dict: dict, pops: list) -> (dict, int):
     pop_prop_dict = {k: v/n_total for k,v in tmp_pop_dict.items()}
     return pop_prop_dict, n_total
 
+
 def get_subset(mt_pop, pop_dict: dict, pops: list, n_max: int):
     r'''
     Get Hail table sample of max size = `n_max` for list of populations `pops`.
@@ -109,7 +111,7 @@ def get_subset(mt_pop, pop_dict: dict, pops: list, n_max: int):
     n_sample = int(min(pop_dict[limiting_pop]/pop_prop_dict[limiting_pop], n_max))
     if n_sample != n_max:
         print(f'Using sample size of {n_sample} instead of {n_max} due to limiting population size in {limiting_pop}')
-    print({k:v*n_sample for k,v in pop_prop_dict.items()})
+    print({k:v*n_sample for k,v in pop_prop_dict.items()}) # prints expectation for number of samples per population
         
     cols = mt_pop.cols()
     if len(pops)==1 and n_sample == pop_dict[pops[0]]: # if sampling a single population `pop` and n_sample is the same as the population's size. 
@@ -125,20 +127,19 @@ def get_subset(mt_pop, pop_dict: dict, pops: list, n_max: int):
     
     return ht_sample
     
+
 def to_plink(pops: list, 
              subsets_dir, 
              mt, 
              ht_sample, 
              bfile_path,
-             export_varid: bool = True,
              overwrite=False):
     r'''
     Exports matrix table to PLINK2 files
     NOTE: These files will need to split up by chromosome before plink_clump.py
     can be run. 
     '''
-    assert 'GT' in mt.entry, "mt must have 'GT' as an entry field"
-    assert mt.GT.dtype==hl.tcall, "entry field 'GT' must be of type `Call`"
+    assert 'GT' in mt.entry and mt.GT.dtype==hl.tcall, "mt must have 'GT' as an entry field and be of type `Call`"
     
     if not overwrite and all([hl.hadoop_exists(f'{bfile_path}.{suffix}') for suffix in ['bed','bim']]):
         print(f'\nPLINK .bed and .bim files already exist for {bfile_path}')
@@ -151,6 +152,7 @@ def to_plink(pops: list,
                         output = bfile_path, 
                         ind_id = mt_sample.s,
                         varid = mt_sample.varid) # varid used to be rsid
+
 
 def export_varid(args):
     r'''
@@ -167,10 +169,8 @@ def export_varid(args):
                                  pos = mt.locus.position,
                                  varid = hl.str(mt.locus)+':'+mt.alleles[0]+':'+mt.alleles[1])
     
-    rows = mt_sample.rows()
-    rows = rows.key_by()
-    rows = rows.select('chrom','pos','varid')
-    rows.export(f'{subsets_dir}/varid.txt',delimiter=' ')
+    mt_sample.rows().key_by().select('chrom','pos','varid').export(f'{subsets_dir}/varid.txt',delimiter=' ')
+    
     
 def batch_split_by_chrom(args):
     r'''
@@ -182,7 +182,7 @@ def batch_split_by_chrom(args):
             spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'AUTO', 
                         'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
     
-    pops_list = get_pops_list(args)
+    pops_list = get_pops_list(args.pops)
     
     n_max = 5000 # maximum number of samples in subset (equal to final sample size if there are sufficient samples for each population)
     subsets_dir = f'{bucket}/ld_prune/subsets_{round(n_max/1e3)}k'
@@ -201,8 +201,8 @@ def batch_split_by_chrom(args):
         master_bfile_paths = [f'{bfile_prefix}.{suffix}' for suffix in ['bed','bim','fam']]
         master_fam_path = f'{bfile_prefix}.fam'
         bfile_chr_paths = [f'{get_bfile_chr_path(bfile_prefix, chrom)}.{suffix}' for chrom in chroms for suffix in ['bed','bim']]
-        if not args.overwrite_plink and all(list(map(hl.hadoop_is_file, 
-                                                      [master_fam_path]+bfile_chr_paths))):
+        if not args.overwrite_plink and all(map(hl.hadoop_is_file, 
+                                                [master_fam_path]+bfile_chr_paths)):
             print(f'\nAll per-chrom PLINK files created for {pops_str}')
         else:
             if not all(map(hl.hadoop_is_file, master_bfile_paths)):
@@ -235,7 +235,7 @@ def batch_split_by_chrom(args):
     backend.close()
 
         
-def main(args):
+def get_plink_subsets(args):
     
     hl.init(log='/tmp/hail.log')
     
@@ -270,13 +270,13 @@ def main(args):
                 print(f'\n\n... Getting sample subset ({pops_str}) ...\n')
                 
                 ht_sample = get_subset(mt_pop = mt_pop,
-                                        pop_dict = pop_dict, 
+                                        pop_dict = POP_DICT, 
                                         pops = pops, 
                                         n_max = n_max)
                 
                 ht_sample_ct = ht_sample.count()
                 print(f'\n\nht_sample_ct: {ht_sample_ct}\n\n')
-                ht_sample = ht_sample.checkpoint(ht_sample_path)
+                ht_sample = ht_sample.checkpoint(ht_sample_path, overwrite=args.overwrite)
             
             print(f'... Exporting to PLINK ({pops_str}) ...')
             to_plink(pops = pops,
@@ -285,22 +285,26 @@ def main(args):
                       ht_sample = ht_sample,
                       bfile_path = bfile_prefix,
                       overwrite=args.overwrite_plink)
-        
 
-if __name__=='__main__':
-    
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--pops', default=None, type=str, help='population to use')
-    parser.add_argument('--overwrite_plink', default=False, action='store_true', help='whether to overwrite existing PLINK files')
-    parser.add_argument('--export_varid', default=False, action='store_true', help='export varids')
-    parser.add_argument('--batch_split_by_chrom', default=False, action='store_true', help='Whether to split PLINK files into per-chrom files')
-    parser.add_argument('--parsplit', type=int, default=1, help="number of parallel batches to split pop combinations into")
-    parser.add_argument('--paridx', type=int, default=0, help="which of the parallel batches to run (zero-indexed)")
-    args = parser.parse_args()
-    
+
+def main(args):        
     if args.export_varid:
         export_varid(args=args)
     if args.batch_split_by_chrom:
         batch_split_by_chrom(args)
     else:
-        main(args=args)
+        get_plink_subsets(args=args)
+
+
+if __name__=='__main__':
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--pops', type=str, help='population to use')
+    parser.add_argument('--overwrite_plink', action='store_true', help='whether to overwrite existing PLINK files')
+    parser.add_argument('--export_varid', action='store_true', help='export varids')
+    parser.add_argument('--batch_split_by_chrom', action='store_true', help='Whether to split PLINK files into per-chrom files')
+    parser.add_argument('--parsplit', type=int, default=1, help="number of parallel batches to split pop combinations into")
+    parser.add_argument('--paridx', type=int, default=0, help="which of the parallel batches to run (zero-indexed)")
+    args = parser.parse_args()
+    
+    main(args)
