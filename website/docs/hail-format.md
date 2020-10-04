@@ -15,6 +15,12 @@ These are also available on Amazon S3:
 - Summary statistics MatrixTable: `s3://pan-ukb-us-east-1/sumstats_release/results_full.mt` (12.78 T)
 - Meta-analysis MatrixTable: `s3://pan-ukb-us-east-1/sumstats_release/meta_analysis.mt` (12.54 T)
 
+In addition, in-sample full LD matrices are available on Amazon S3:
+- LD BlockMatrix `s3://pan-ukb-us-east-1/ld_release/UKBB.{pop}.ldadj.bm` (XXX T in total)
+- Variant index HailTable `s3://pan-ukb-us-east-1/ld_release/UKBB.{pop}.ldadj.variant.ht` (XXX T in total)
+
+where `{pop}` represents one of the population abbreviations (i.e., AFR, AMR, CSA, EAS, EUR, or MID).
+
 ### Requester pays
 
 Note that the files in the Google Cloud Storage bucket are "requester pays." In order to compute over these files or download them, you will need to specify a project which may be billed for access and download costs. The data are stored in a US multi-region bucket: thus, access to the dataset is free for use for Compute Engine instances started within US regions, as well as for full downloads within the US and Canada. When performing large analyses on the dataset, we suggest "bringing the compute to the data" and starting a VM or Dataproc cluster in a US region. You can browse the directory structure in a requester pays bucket with the `-u` flag (and note the `hl.init` call below to access the data using Hail):
@@ -57,14 +63,14 @@ Column fields:
     'coding': str
     'modifier': str
     'pheno_data': struct {
-        n_cases: int32, 
-        n_controls: int32, 
-        heritability: float64, 
-        saige_version: str, 
-        inv_normalized: bool, 
-        pop: str, 
-        lambda_gc: float64, 
-        n_variants: int64, 
+        n_cases: int32,
+        n_controls: int32,
+        heritability: float64,
+        saige_version: str,
+        inv_normalized: bool,
+        pop: str,
+        lambda_gc: float64,
+        n_variants: int64,
         n_sig_variants: int64
     }
     'description': str
@@ -84,15 +90,15 @@ Row fields:
         ...
     }
     'freq': array<struct {
-        pop: str, 
-        ac: float64, 
-        af: float64, 
-        an: int64, 
-        gnomad_exomes_ac: int32, 
-        gnomad_exomes_af: float64, 
-        gnomad_exomes_an: int32, 
-        gnomad_genomes_ac: int32, 
-        gnomad_genomes_af: float64, 
+        pop: str,
+        ac: float64,
+        af: float64,
+        an: int64,
+        gnomad_exomes_ac: int32,
+        gnomad_exomes_af: float64,
+        gnomad_exomes_an: int32,
+        gnomad_genomes_ac: int32,
+        gnomad_genomes_af: float64,
         gnomad_genomes_an: int32
     }>
     'pass_gnomad_exomes': bool
@@ -100,22 +106,22 @@ Row fields:
     'n_passing_populations': int32
     'high_quality': bool
     'nearest_genes': array<struct {
-        gene_id: str, 
-        gene_name: str, 
+        gene_id: str,
+        gene_name: str,
         within_gene: bool
     }>
     'info': float64
 ----------------------------------------
 Entry fields:
     'summary_stats': struct {
-        AF_Allele2: float64, 
-        imputationInfo: float64, 
-        BETA: float64, 
-        SE: float64, 
-        `p.value.NA`: float64, 
-        `AF.Cases`: float64, 
-        `AF.Controls`: float64, 
-        Pvalue: float64, 
+        AF_Allele2: float64,
+        imputationInfo: float64,
+        BETA: float64,
+        SE: float64,
+        `p.value.NA`: float64,
+        `AF.Cases`: float64,
+        `AF.Controls`: float64,
+        Pvalue: float64,
         low_confidence: bool
     }
 ----------------------------------------
@@ -287,15 +293,15 @@ Here, the results are provided in an array, which includes the all-available-pop
 ```
 Entry fields:
     'meta_analysis': array<struct {
-        BETA: float64, 
-        SE: float64, 
-        Pvalue: float64, 
-        Q: float64, 
-        Pvalue_het: float64, 
-        N: int32, 
-        N_pops: int32, 
-        AF_Allele2: float64, 
-        AF_Cases: float64, 
+        BETA: float64,
+        SE: float64,
+        Pvalue: float64,
+        Q: float64,
+        Pvalue_het: float64,
+        N: int32,
+        N_pops: int32,
+        AF_Allele2: float64,
+        AF_Cases: float64,
         AF_Controls: float64
     }>
 ```
@@ -307,3 +313,57 @@ mt = load_final_sumstats_mt()
 mt = annotate_mt_with_largest_meta_analysis(mt)
 ```
 If your analysis requires the simultaneous analysis of summary statistics from multiple populations (and not the meta-analysis), you can load the data with a similar structure to the meta-analysis MatrixTable (one column per phenotype, with population information packed into an array of entries and columns) using `load_final_sumstats_mt(separate_columns_by_pop=False)`.
+
+## LD matrices
+
+The LD matrices are in [`BlockMatrix`](https://hail.is/docs/0.2/linalg/hail.linalg.BlockMatrix.html) format.
+```
+from hail.linalg import BlockMatrix
+bm = BlockMatrix.read(get_ld_matrix_path(pop='AFR'))
+```
+
+Please refer to [Hail's documentation](https://hail.is/docs/0.2/linalg/hail.linalg.BlockMatrix.html) for available operations on `BlockMatrix`.
+
+### Variant indices
+
+To determine which row/column corresponds to which variant, we provide variant indices for `BlockMatrix` in `HailTable` format.
+```
+ht_idx = hl.read_table(get_ld_variant_index_path(pop='AFR'))
+```
+
+The variant indices has the following schema and `idx` corresponds to a row/column index in `BlockMatrix`.
+```
+----------------------------------------
+Global fields:
+    'n_samples': int32
+    'pop': str
+----------------------------------------
+Row fields:
+    'locus': locus<GRCh37>
+    'alleles': array<str>
+    'idx': int64
+----------------------------------------
+Key: ['locus', 'alleles']
+----------------------------------------
+```
+
+### Extracting a subset of LD matrix
+
+To extract a subset of LD matrix, you first need to identify indices of your variants of interest. Here, we provide two examples:
+
+```
+# filter by interval
+interval = hl.parse_locus_interval('1:51572000-52857000')
+ht_idx = ht_idx.filter(interval.contains(ht_idx.locus))
+
+# or filter by a list of variant IDs (e.g., 1:51572412:A:G)
+ht = hl.import_table('/path/to/your/list')
+ht = ht.transmute(**hl.parse_variant(ht.variant)).key_by('locus', 'alleles')
+ht_idx = ht_idx.join(ht, 'inner')
+```
+
+Then, you can filter the LD matrix into a subset using [`BlockMatrix.filter`](https://hail.is/docs/0.2/linalg/hail.linalg.BlockMatrix.html#hail.linalg.BlockMatrix.filter):
+```
+idx = ht_idx.idx.collect()
+bm = bm.filter(idx, idx)
+```

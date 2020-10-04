@@ -18,6 +18,7 @@ A summary of the breakdown included in this release is:
 | EUR |    420531 |           7200 |       3672 |    1325 |   929 |        800  |         30 |           444 |
 | MID |      1599 |           1372 |        509 |      83 |    52 |        591  |         30 |           107 |
 
+<!--truncate-->
 
 Rapidly developing this resource required a massively scalable computational framework, and we are thankful to the [Hail team](https://hail.is) for building and supporting the system that enabled this work. We developed a pipeline for these analyses using [Hail Batch](https://hail.is/docs/batch/index.html) and provide our [analytical code](https://github.com/atgu/ukbb_pan_ancestry) for reference to the community. We ran this pipeline in the Batch Service, a multi-tenant compute cluster in Google Cloud managed by the Hail team, which at the time of use, enabled the simultaneous use of up to 100,000 CPUs. Across all traits and phenotypes, the association tests required 3.8 million CPU-hours, which Hail Batch enabled to be completed in approximately 6 days (wall-clock).
 
