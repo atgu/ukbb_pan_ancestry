@@ -10,21 +10,11 @@ Clumping GWAS results with PLINK
 
 import hail as hl
 import hailtop.batch as hb
-import random 
-#from ukbb_pan_ancestry.utils.results import get_pheno_manifest_path
+from ukb_pan_ancestry import bucket, POPS, PHENO_KEY_FIELDS
 
-bucket = 'gs://ukb-diverse-pops'
-temp_bucket = 'gs://ukbb-diverse-temp-30day'
 ldprune_dir = f'{bucket}/ld_prune'
 
-all_pops = ['AFR', 'AMR', 'CSA', 'EAS', 'EUR', 'MID']
 all_chromosomes = list(range(1,23))+['X']
-
-
-def declare_rg(t, name):
-    t.declare_resource_group(**{name: {'bed': '{root}.bed',
-                                       'bim': '{root}.bim',
-                                       'fam': '{root}.fam'}})
 
 def read_plink_input_group_chrom(p, method, subset, chrom):
     r'''
@@ -64,10 +54,9 @@ def get_pheno_list(pheno_manifest, pop: str, not_pop: bool = False):
 
 #    pheno_manifest = pheno_manifest.drop_duplicates(subset='num_pops') # FOR TESTING PURPOSES (to test single pheno for each num_pops)
     
-    pheno_list = pheno_manifest[['trait_type','phenocode','pheno_sex','coding',
-                                 'modifier','pops']].values
+    pheno_list = pheno_manifest[PHENO_KEY_FIELDS+['pops']].values
 
-#    seed = all_pops.index(pop)#1
+#    seed = POPS.index(pop)#1
 #    random.seed(a=seed)
 #    random.shuffle(pheno_list)
 #    
@@ -105,10 +94,8 @@ def get_sumstats(p, pop, not_pop, pops, high_quality, pheno_id, method, chromoso
     trait_type = pheno_id.split('-')[0]
     trait_category = 'quant' if trait_type in ['continuous','biomarkers'] else 'binary'
     
-    variant_manifest_fname = f'{ldprune_dir}/variant_qc/full_variant_qc_metrics.txt.bgz'
-    variant_manifest_tabix_fname = f'{ldprune_dir}/variant_qc_tabix/full_variant_qc_metrics.txt.bgz.tbi'
-    variant_manifest = p.read_input(variant_manifest_fname)
-    variant_manifest_tabix = p.read_input(variant_manifest_tabix_fname)
+    variant_manifest = p.read_input(f'{ldprune_dir}/variant_qc/full_variant_qc_metrics.txt.bgz')
+    variant_manifest_tabix = p.read_input(f'{ldprune_dir}/variant_qc_tabix/full_variant_qc_metrics.txt.bgz.tbi')
 
     loo_6pop_dir = f'{ldprune_dir}/loo/sumstats/batch2'
     loo_6pop_ss_fname = f'{loo_6pop_dir}/{filename}'
@@ -124,7 +111,7 @@ def get_sumstats(p, pop, not_pop, pops, high_quality, pheno_id, method, chromoso
     get_ss.cpu(1)
     bgz_fname = f'{get_ss.ofile}.bgz'
     tbi_fname = f'{get_ss.ofile}.bgz.tbi'
-    get_ss.command(' '.join(['set','-ex']))
+    get_ss.command('set -ex')
     variant_manifest_bgz = f'{get_ss.ofile}.variants.bgz'
     variant_manifest_tbi = f'{get_ss.ofile}.variants.bgz.tbi'
     get_ss.command(' '.join(['mv',variant_manifest, variant_manifest_bgz]))
@@ -141,7 +128,7 @@ def get_sumstats(p, pop, not_pop, pops, high_quality, pheno_id, method, chromoso
         get_ss.command('\n'.join(
                 f'''
                 tabix -h {bgz_fname} {chrom} | \\
-                cut -f5,{6+all_pops.index(pop)} | \\
+                cut -f5,{6+POPS.index(pop)} | \\
                 sed 's/pval_not_{pop}/P/g' | \\
                 awk '$2!="NA" {{print}}' > {get_ss[f'ofile_{chrom}']}
                 '''
@@ -207,7 +194,8 @@ def get_sumstats(p, pop, not_pop, pops, high_quality, pheno_id, method, chromoso
         
     return ss_dict
     
-def get_adj_betas(p, pop, not_pop, pheno_key_dict, pheno_id, high_quality, hail_script):
+def get_adj_betas(p, pop, not_pop, pheno_key_dict, pheno_id, high_quality, 
+                  hail_script):
     r'''
     wrapper method for both PLINK clumping and SBayesR
     '''
@@ -289,7 +277,7 @@ def run_method(p, pop, not_pop, pheno_key_dict, pheno_id, hail_script, output_tx
         # TODO: change image to include GCTB if running SBayesR?
         get_betas.cpu(1) # plink clump cannot multithread
         
-        get_betas.command(' '.join(['set','-ex']))
+        get_betas.command('set -ex')
         
         if method == 'clump':
             get_betas.storage('5G') # default: 5G
@@ -366,7 +354,7 @@ def run_method(p, pop, not_pop, pheno_key_dict, pheno_id, hail_script, output_tx
                                         '--ldm', str(ldm),
                                         '--pi 0.95,0.02,0.02,0.01',
                                         '--gamma 0.0,0.01,0.1,1',
-                                        '--gwas-summary', f' <( gunzip -c {ss} | grep -v "NA" )',
+                                        '--gwas-summary', f' <( gunzip -c {ss_chrom} | grep -v "NA" )',
                                         '--chain-length 10000',
                                         '--burn-in 2000',
                                         '--out-freq 10',
@@ -388,7 +376,7 @@ def run_method(p, pop, not_pop, pheno_key_dict, pheno_id, hail_script, output_tx
     tsv_to_ht.memory('100M')
     tsv_to_ht.cpu(n_threads)
     tsv_to_ht.depends_on(get_betas_sink)
-    tsv_to_ht.command(' '.join(['set','-ex']))
+    tsv_to_ht.command('set -ex')
     tsv_to_ht.command(' '.join(['PYTHONPATH=$PYTHONPATH:/',
                         'PYSPARK_SUBMIT_ARGS="--conf spark.driver.memory=4g --conf spark.executor.memory=24g pyspark-shell"']))
     tsv_to_ht.command(' '.join(['python3', str(hail_script),
@@ -425,7 +413,7 @@ def main():
     
 
     for not_pop in [True, False]:
-        for pop in all_pops:
+        for pop in POPS:
 
             pheno_list = get_pheno_list(pheno_manifest=pheno_manifest,
                                         pop=pop,
@@ -459,5 +447,3 @@ if __name__=="__main__":
             spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'AUTO', 
                         'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
     main()
-    
-    
