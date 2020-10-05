@@ -12,13 +12,10 @@ import argparse
 import hail as hl
 import sys
 import ukb_common
-from ukbb_pan_ancestry import get_clumping_results_path #get_pheno_manifest_path
+from ukbb_pan_ancestry import POPS, PHENO_KEY_FIELDS, bucket, get_clumping_results_path, get_meta_analysis_results_path #get_pheno_manifest_path
 #from ukb_common import mwzj_hts_by_tree
 
-bucket = 'gs://ukb-diverse-pops'
 ldprune_dir = f'{bucket}/ld_prune'
-
-all_pops = ['AFR', 'AMR', 'CSA', 'EAS', 'EUR', 'MID']
 
 def ht_to_tsv(args):
     r'''
@@ -74,14 +71,8 @@ def tsv_to_ht(args):
     ht = ht.key_by(locus = hl.locus(contig=ht.contig, 
                                     pos=ht.pos,
                                     reference_genome='GRCh37'),
-                   alleles = hl.array([ht.varid.split(':')[2],
-                                       ht.varid.split(':')[3]])
-    )
-    ht = ht.annotate_globals(trait_type = args.trait_type,
-                             phenocode = args.phenocode,
-                             pheno_sex = args.pheno_sex,
-                             coding = args.coding,
-                             modifier = args.modifier)
+                   alleles = ht.varid.split(':')[2:4])
+    ht = ht.annotate_globals(**{k: getattr(args, k) for k in PHENO_KEY_FIELDS})
     ht = ht.drop('contig','varid','pos')
     ht.describe()
 #    ht.select().show()
@@ -92,7 +83,7 @@ def export_ma_format(batch_size=256):
     r'''
     Export columns for .ma format (A1, A2, freq, beta, se, N) for select phenotypes
     '''
-    meta_mt0 = hl.read_matrix_table('gs://ukb-diverse-pops/combined_results/meta_analysis.mt')
+    meta_mt0 = hl.read_matrix_table(get_meta_analysis_results_path())
     
     highprev = hl.import_table(f'{ldprune_dir}/joined_ukbb_lancet_age_high_prev.tsv', impute=True)
     highprev = highprev.annotate(pheno = highprev.code.replace('_irnt',''))
@@ -116,20 +107,16 @@ def export_ma_format(batch_size=256):
                           'Pvalue':'p',
                           'AF_Allele2':'freq',
                           'N':'N'}
-    
-    all_pops = ['AFR', 'AMR', 'CSA', 'EAS', 'EUR', 'MID']
 
     for pop in ['AFR','EUR']: #['AFR','AMR','CSA','EAS','EUR','MID']:
         print(f'not_{pop}')
 
-        req_pop_list = [p for p in all_pops if p is not pop]
+        req_pop_list = [p for p in POPS if p is not pop]
 
         loo_pop = meta_mt0.annotate_cols(idx = meta_mt0.meta_analysis_data.pop.index(hl.literal(req_pop_list))) # get index of which meta-analysis is the leave-on-out for current pop
         loo_pop = loo_pop.filter_cols(hl.is_defined(loo_pop.idx))
         
-        annotate_dict = {}
-        for field in ['AF_Allele2','BETA','SE','Pvalue','N']:
-            annotate_dict.update({meta_field_rename_dict[field]: loo_pop.meta_analysis[field][loo_pop.idx]}) 
+        annotate_dict = {meta_field_rename_dict[field]: loo_pop.meta_analysis[field][loo_pop.idx] for field in  ['AF_Allele2','BETA','SE','Pvalue','N']} 
         batch_idx = 1
 
     export_out = f'{ldprune_dir}/loo/not_{pop}/batch{batch_idx}'
@@ -163,7 +150,7 @@ def mwzj_hts_by_tree(all_hts, temp_dir, globals_for_col_key,
     
     if read_if_exists: print('\n\nWARNING: Intermediate tables will not be overwritten if they already exist\n\n')
     
-    checkpoint_kwargs = {inner_mode: True if not read_if_exists else False,
+    checkpoint_kwargs = {inner_mode: not read_if_exists,
                          '_read_if_exists': read_if_exists} #
     if repartition_final is not None:
         intervals = ukb_common.get_n_even_intervals(repartition_final)
@@ -179,15 +166,6 @@ def mwzj_hts_by_tree(all_hts, temp_dir, globals_for_col_key,
                 def read_clump_ht(f):
                     ht = hl.read_table(f)
                     ht = ht.drop('idx')
-#                    ht = ht.select(F=ht.F,
-#                                   P=ht.P,
-#                                   TOTAL=ht.TOTAL,
-#                                   NSIG=ht.NSIG,
-#                                   S05=ht.S05,
-#                                   S01=ht.S01,
-#                                   S001=ht.S001,
-#                                   S0001=ht.S0001,
-#                                   SP2=ht.SP2)
                     return ht
                 hts = list(map(read_clump_ht, hts))
             ht = hl.Table.multi_way_zip_join(hts, 'row_field_name', 'global_field_name')
@@ -209,6 +187,9 @@ def mwzj_hts_by_tree(all_hts, temp_dir, globals_for_col_key,
     return mt
 
 def resume_mwzj(temp_dir, globals_for_col_key):
+    r'''
+    For resuming multiway zip join if intermediate tables have already been written
+    '''
     ls = hl.hadoop_ls(temp_dir)
     paths = [x['path'] for x in ls if 'temp_output' in x['path'] ]
     chunk_size = len(paths)
@@ -228,7 +209,7 @@ def resume_mwzj(temp_dir, globals_for_col_key):
 
 def join_clump_hts(pop, not_pop, high_quality=False, overwrite=False):
     r'''
-    Wrapper for mwzj
+    Wrapper for mwzj_hts_by_tree()
     '''
     pop = pop.upper()
     pheno_manifest = hl.import_table(
@@ -260,7 +241,7 @@ def munge_mt(pop, not_pop, high_quality, parts=None):
     r'''
     For processing MTs before joining into the full clump mt
     '''
-    pop_array = [p for p in all_pops if p!=pop] if not_pop else [pop]
+    pop_array = [p for p in POPS if p!=pop] if not_pop else [pop]
     mt = hl.read_matrix_table(path=get_clumping_results_path(pop=pop,not_pop=not_pop,high_quality=high_quality),
                               _intervals=parts) # alternative path for results that are filtered to high quality variants before clumping
     print(f'{"not_" if not_pop else ""}{pop}: {mt.count_cols()}')
@@ -280,7 +261,7 @@ def make_single_pop_clump_mt(high_quality=False, overwrite=False):
     parts = hl.read_matrix_table(get_clumping_results_path(pop='EUR',not_pop=not_pop,high_quality=high_quality))._calculate_new_partitions(n_partitions)
     
     # for all single-pop clumping results
-    for pop in all_pops:
+    for pop in POPS:
         mts.append(munge_mt(pop=pop,
                             not_pop=not_pop,
                             high_quality=high_quality,
@@ -297,14 +278,14 @@ def make_single_pop_clump_mt(high_quality=False, overwrite=False):
     # 2020-08-06 17:51:23 Hail: INFO: wrote matrix table with 24870911 rows and 7221 columns in 5000 partitions
     # Time: 2hr 48 min (ran with 2 workers, 150 preemptibles for first ~1hr, then removed all preemptibles)
     
-def make_full_clump_mt(high_quality=False, overwrite=False):
+def make_full_clump_mt(high_quality=False, overwrite=False, single_pop_only=False):
     mts = []
     
     n_partitions = 5000 
     parts = hl.read_matrix_table(get_clumping_results_path(pop='EUR',not_pop=False,high_quality=high_quality))._calculate_new_partitions(n_partitions)
 
-    for not_pop in [True, False]:
-        for pop in all_pops:
+    for not_pop in [True]+([] if single_pop_only else [False]):
+        for pop in POPS:
             mts.append(munge_mt(pop=pop,
                                 not_pop=not_pop,
                                 high_quality=high_quality,
@@ -358,8 +339,9 @@ if __name__ == '__main__':
         make_full_clump_mt(high_quality=args.high_quality,
                            overwrite=args.overwrite)
     elif args.make_single_pop_clump_mt:
-        make_single_pop_clump_mt(high_quality=args.high_quality, 
-                                 overwrite=args.overwrite)
+        make_full_clump_mt(high_quality=args.high_quality, 
+                           overwrite=args.overwrite,
+                           single_pop_only=True)
 
 #    except:
 #        hl.copy_log('gs://ukbb-diverse-temp-30day/nb_hail.log')
