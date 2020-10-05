@@ -31,18 +31,24 @@ POP_DICT = {
 chroms = list(range(1,23))+['X']
 
 
-def get_pops_list(pops: str):
+def get_pops_list(pops: str, paridx: int = 0, parsplit: int = 1):
     r'''
     Generates list of population combinations. If `pops`=None, this will read 
     the phenotype manifest to get all population combinations. `pops` should be 
     a string in the format "POP1-POP2-POP3" (for instance, "AFR-EUR-MID")
+    `paridx` and `parsplit` are parameters to run this command across separate 
+    batches of phenotyeps. Batches are zero-indexed, such that `paridx`=0 
+    corresponds to the first batch. `parsplit` indicates the number of batches. 
+    `paridx` should generally be less than `parsplit`. `parsplit` should be less 
+    than the total number of phenotypes to run across all batches. The default 
+    values for `paridx` and `parsplit` will run all phenotypes in a single batch.
     '''
     if pops is None:
         pheno_manifest = hl.import_table(get_pheno_manifest_path())
         pops_list_all = pheno_manifest.pops.collect()
         pops_list_all = sorted(set(pops_list_all))
         pops_list_all = [p.split(',') for p in pops_list_all] # list of lists of strings
-        idx = range(args.paridx, len(pops_list_all), args.parsplit)
+        idx = range(paridx, len(pops_list_all), parsplit)
         pops_list = [pops for i, pops in enumerate(pops_list_all) if i in idx]
     else:
         pops = sorted(set(pops.upper().split('-')))
