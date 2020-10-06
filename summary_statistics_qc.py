@@ -194,7 +194,7 @@ def approx_cdf_as_table(ht, field):
 def filter_by_chisq(freq, or_cutoff: float = 2.0, p_cutoff: float = 1e-6):
     csq = hl.chi_squared_test(hl.int(freq.ac), hl.int(freq.an - freq.ac), freq.gnomad_genomes_ac,
                         freq.gnomad_genomes_an - freq.gnomad_genomes_ac)
-    return (csq.odds_ratio > or_cutoff) & (csq.p_value < p_cutoff)
+    return ((csq.odds_ratio > or_cutoff) | (csq.odds_ratio < 1 / or_cutoff)) & (csq.p_value < p_cutoff)
 
 
 def generate_variant_qc_file(overwrite: bool = False):

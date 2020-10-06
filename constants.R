@@ -44,7 +44,7 @@ gwas_loglog_trans = function() {
 }
 
 get_ukb_data_url = function() {
-  return(paste0('https://storage.googleapis.com/ukb-diverse-pops-public/sumstats_qc_analysis/'))
+  return(paste0('https://storage.googleapis.com/ukb-diverse-pops-public-free/sumstats_qc_analysis/'))
 }
 
 check_size = function(local_fname, url) {
