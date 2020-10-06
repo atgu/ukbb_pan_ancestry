@@ -4,7 +4,8 @@ from ukbb_pan_ancestry.resources import *
 
 
 def get_phenos_to_run(pop: str, limit: int = None, pilot: bool = False, single_sex_only: bool = False,
-                      specific_phenos: str = '', skip_case_count_filter: bool = False, first_round_phenos: bool = False):
+                      specific_phenos: str = '', skip_case_count_filter: bool = False, first_round_phenos: bool = False,
+                      sex_stratified: str = None):
     ht = hl.read_table(get_phenotype_summary_path('full'))
     ht = ht.filter(ht.pop == pop)
     min_cases = MIN_CASES_EUR if pop == 'EUR' else MIN_CASES
@@ -23,9 +24,16 @@ def get_phenos_to_run(pop: str, limit: int = None, pilot: bool = False, single_s
         prop_female = ht.n_cases_females / (ht.n_cases_males + ht.n_cases_females)
         criteria &= ((prop_female <= 0.1) | (prop_female >= 0.9))
 
-    ht = ht.filter(criteria)
+    ht = ht.filter(criteria).key_by()
 
-    output = set([tuple(x[field] for field in PHENO_KEY_FIELDS) for x in ht.key_by().select(*PHENO_KEY_FIELDS).collect()])
+    if sex_stratified:
+        ht_sex_specific = ht.annotate(pheno_sex='males').union(ht.annotate(pheno_sex='females'))
+        if sex_stratified == 'all':
+            ht = ht.union(ht_sex_specific)
+        else:
+            ht = ht_sex_specific
+
+    output = set([tuple(x[field] for field in PHENO_KEY_FIELDS) for x in ht.select(*PHENO_KEY_FIELDS).collect()])
     if pilot:
         output = output.intersection(PILOT_PHENOTYPES)
     if specific_phenos:
