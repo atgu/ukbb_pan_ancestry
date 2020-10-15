@@ -55,8 +55,7 @@ def get_pheno_manifest_path():
 
 
 def get_clumping_results_path(pop: str = 'full', high_quality: bool = False, 
-                              not_pop: bool = True):
-    all_pops = ['AFR','AMR','CSA','EAS','EUR','MID']
+                              not_pop: bool = True, max_pops: bool = False):
     mt_name = 'max_pops' if max_pops else (f'{"not_" if not_pop else ""}{pop}' if pop in POPS else 'full_clump_results')
     if high_quality:
         return f'{public_bucket}/clump_results_high_quality/{mt_name}'
