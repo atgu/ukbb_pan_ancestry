@@ -19,7 +19,7 @@ function Downloads() {
       <main>
         <div className="container">
           <p className="">
-            The dataset is available for download in two main formats:
+            The GWAS results are available for download in two main formats:
           </p>
           <ul>
             <li>
@@ -42,6 +42,20 @@ function Downloads() {
             <li>
               <b>Hail format</b>: For large-scale analyses of many phenotypes, we provide the full dataset
               in <Link to={useBaseUrl('docs/hail-format')}>Hail MatrixTable format</Link> on Google Cloud.
+            </li>
+          </ul>
+          <p className="">
+            In addition, the LD matrices and scores are available in the following formats:
+          </p>
+          <ul>
+            <li>
+              <b>LDSC-compatible flat files</b>: for running LD score regression, we suggest using the
+              LD score flat files available on Amazon AWS (download the tarball file <a href="">here</a>). More information on the file formats is
+              available on <a href="https://github.com/bulik/ldsc/wiki" target="_blank">the LDSC website</a>.
+            </li>
+            <li>
+              <b>Hail format</b>: For large-scale analyses, we provide the full LD matrices and scores
+              in <Link to={useBaseUrl('docs/hail-format')}>Hail format</Link> on Amazon AWS.
             </li>
           </ul>
           <h3>Terms</h3>

@@ -15,9 +15,10 @@ These are also available on Amazon S3:
 - Summary statistics MatrixTable: `s3://pan-ukb-us-east-1/sumstats_release/results_full.mt` (12.78 T)
 - Meta-analysis MatrixTable: `s3://pan-ukb-us-east-1/sumstats_release/meta_analysis.mt` (12.54 T)
 
-In addition, in-sample full LD matrices are available on Amazon S3:
+In addition, in-sample full LD matrices and scores are available on Amazon S3:
 - LD BlockMatrix `s3://pan-ukb-us-east-1/ld_release/UKBB.{pop}.ldadj.bm` (XXX T in total)
 - Variant index HailTable `s3://pan-ukb-us-east-1/ld_release/UKBB.{pop}.ldadj.variant.ht` (XXX T in total)
+- LD score HailTable `s3://pan-ukb-us-east-1/ld_release/UKBB.{pop}.ldscore.ht` (XXX T in total)
 
 where `{pop}` represents one of the population abbreviations (i.e., AFR, AMR, CSA, EAS, EUR, or MID).
 
@@ -316,13 +317,12 @@ If your analysis requires the simultaneous analysis of summary statistics from m
 
 ## LD matrices
 
-The LD matrices are in [`BlockMatrix`](https://hail.is/docs/0.2/linalg/hail.linalg.BlockMatrix.html) format.
+The LD matrices are in [`BlockMatrix`](https://hail.is/docs/0.2/linalg/hail.linalg.BlockMatrix.html) format. Please refer to [Hail's documentation](https://hail.is/docs/0.2/linalg/hail.linalg.BlockMatrix.html) for available operations on `BlockMatrix`.
 ```
 from hail.linalg import BlockMatrix
 bm = BlockMatrix.read(get_ld_matrix_path(pop='AFR'))
 ```
-
-Please refer to [Hail's documentation](https://hail.is/docs/0.2/linalg/hail.linalg.BlockMatrix.html) for available operations on `BlockMatrix`.
+We note that the LD matrices were sparsified to a upper triangle (all elements of the lower triangle were zeroed out using [`BlockMatrix.sparsify_triangle`](https://hail.is/docs/0.2/linalg/hail.linalg.BlockMatrix.html#hail.linalg.BlockMatrix.sparsify_triangle)).
 
 ### Variant indices
 
@@ -331,7 +331,7 @@ To determine which row/column corresponds to which variant, we provide variant i
 ht_idx = hl.read_table(get_ld_variant_index_path(pop='AFR'))
 ```
 
-The variant indices has the following schema and `idx` corresponds to a row/column index in `BlockMatrix`.
+The variant indices table has the following schema and `idx` corresponds to a row/column index in `BlockMatrix`.
 ```
 ----------------------------------------
 Global fields:
@@ -366,4 +366,29 @@ Then, you can filter the LD matrix into a subset using [`BlockMatrix.filter`](ht
 ```
 idx = ht_idx.idx.collect()
 bm = bm.filter(idx, idx)
+```
+
+## LD scores
+
+The LD scores are in [HailTable](https://hail.is/docs/0.2/hail.Table.html) format. For LDSC-compatible flat files, you can find them [here](https://example.com).
+```
+ht = hl.read_table(get_ld_score_ht_path(pop='AFR'))
+```
+
+The LD score table has the following schema.
+```
+----------------------------------------
+Global fields:
+    None
+----------------------------------------
+Row fields:
+    'locus': locus<GRCh37>
+    'alleles': array<str>
+    'rsid': str
+    'varid': str
+    'AF': float64
+    'ld_score': float64
+----------------------------------------
+Key: ['locus', 'alleles']
+----------------------------------------
 ```
