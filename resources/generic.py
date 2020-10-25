@@ -2,6 +2,7 @@ import hail as hl
 
 bucket = 'gs://ukb-diverse-pops'
 temp_bucket = 'gs://ukbb-diverse-temp-30day'
+temp_bucket_7day = 'gs://ukbb-diverse-temp-7day'
 public_bucket = 'gs://ukb-diverse-pops-public'
 public_bucket_free = 'gs://ukb-diverse-pops-public-free'
 
@@ -60,4 +61,3 @@ def get_ukb_pheno_mt(pop: str = 'all'):
     if pop != 'all':
         mt = mt.filter_rows(mt.pop == pop)
     return mt
-

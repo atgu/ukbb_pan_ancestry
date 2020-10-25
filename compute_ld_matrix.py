@@ -10,15 +10,15 @@ import hail as hl
 import uuid
 from hail.linalg import BlockMatrix
 from hail.utils import new_temp_file, hadoop_open, timestamp_path
-from ukbb_pan_ancestry.resources import get_filtered_mt, get_variant_results_qc_path, POPS, temp_bucket
+from ukbb_pan_ancestry.resources import get_filtered_mt, get_variant_results_qc_path, POPS, temp_bucket_7day
 from ukbb_pan_ancestry.resources.ld import *
 
 
 def new_gs_temp_path():
-    return f'{temp_bucket}/{str(uuid.uuid4())}'
+    return f'{temp_bucket_7day}/{str(uuid.uuid4())}'
 
 
-def checkpoint_tmp(hail_obj, path=None, overwrite=False, force_row_major=False):
+def checkpoint_tmp(hail_obj, path=None, overwrite=False, force_row_major=True):
     if path is None:
         path = new_gs_temp_path()
 
@@ -142,11 +142,13 @@ def main(args):
     basic_covars = ['sex', 'age', 'age2', 'age_sex', 'age2_sex']
     covariates = basic_covars + [f'PC{x}' for x in range(1, num_pcs + 1)]
 
-    tmp_mt_path = f'{temp_bucket}/{pop}.mt'
-    tmp_bm_path = f'{temp_bucket}/{pop}.bm'
+    tmp_mt_path = f'{temp_bucket_7day}/{pop}.mt'
+    tmp_bm_path = f'{temp_bucket_7day}/{pop}.bm'
 
     if args.write_mt:
-        mt = get_filtered_mt(chrom='all', pop=pop, entry_fields=['dosage'], filter_mac_instead_of_ac=True)
+        mt = get_filtered_mt(chrom='all', pop=pop, entry_fields=['dosage'], min_mac=19, filter_mac_instead_of_ac=True)
+        mt_x = get_filtered_mt(chrom='X', pop=pop, entry_fields=['dosage'], min_mac=19, filter_mac_instead_of_ac=True)
+        mt = mt.union_rows(mt_x)
         mt = mt.annotate_rows(AF=hl.agg.mean(mt.dosage) / 2)
         mt = mt.checkpoint(tmp_mt_path, overwrite=args.overwrite)
         n = mt.count()[1]
@@ -167,8 +169,7 @@ def main(args):
                                           center=False,
                                           normalize=False,
                                           overwrite=args.overwrite)
-    else:
-        bm = BlockMatrix.read(tmp_bm_path)
+    bm = BlockMatrix.read(tmp_bm_path)
 
     if args.compute_ld_matrix:
         print(f'BlockMatrix shape: {bm.shape}')
@@ -197,7 +198,9 @@ def main(args):
 
         # sparcify to a triangle matrix
         bm_ldadj = bm_ldadj.sparsify_triangle()
-        bm_ldadj = bm_ldadj.checkpoint(get_ld_matrix_path(pop), overwrite=args.overwrite, force_row_major=True)
+        bm_ldadj = bm_ldadj.checkpoint(get_ld_matrix_path(pop),
+                                       overwrite=args.overwrite,
+                                       force_row_major=True)
     else:
         bm_ldadj = BlockMatrix.read(get_ld_matrix_path(pop))
 
