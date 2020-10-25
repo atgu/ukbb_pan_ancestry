@@ -368,6 +368,27 @@ idx = ht_idx.idx.collect()
 bm = bm.filter(idx, idx)
 ```
 
+### Exporting a LD matrix to a flat file
+
+Finally, to export a LD matrix to a flat file (txt file), you can use [`BlockMatrix.export`](https://hail.is/docs/0.2/linalg/hail.linalg.BlockMatrix.html#hail.linalg.BlockMatrix.export):
+
+```
+# Note: when you apply any operation on BlockMatrix,
+# you need to write it to storage before export
+bm = bm.write('/path/to/tmp/bm', force_row_major=True)
+bm.export(
+    '/path/to/tmp/bm',
+    '/path/to/flat_file.bgz',
+    delimiter=' '
+)
+```
+
+If your matrix is small enough to fit on memory, you can also directly export it to numpy via [`BlockMatrix.to_numpy`](https://hail.is/docs/0.2/linalg/hail.linalg.BlockMatrix.html#hail.linalg.BlockMatrix.to_numpy).
+
+```
+np_mat = bm.to_numpy()
+```
+
 ## LD scores
 
 The LD scores are in [HailTable](https://hail.is/docs/0.2/hail.Table.html) format. For LDSC-compatible flat files, you can find them [here](https://example.com).
