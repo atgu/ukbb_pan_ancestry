@@ -16,9 +16,9 @@ These are also available on Amazon S3:
 - Meta-analysis MatrixTable: `s3://pan-ukb-us-east-1/sumstats_release/meta_analysis.mt` (12.54 T)
 
 In addition, in-sample full LD matrices and scores are available on Amazon S3:
-- LD BlockMatrix `s3://pan-ukb-us-east-1/ld_release/UKBB.{pop}.ldadj.bm` (XXX T in total)
-- Variant index HailTable `s3://pan-ukb-us-east-1/ld_release/UKBB.{pop}.ldadj.variant.ht` (XXX T in total)
-- LD score HailTable `s3://pan-ukb-us-east-1/ld_release/UKBB.{pop}.ldscore.ht` (XXX T in total)
+- LD BlockMatrix `s3://pan-ukb-us-east-1/ld_release/UKBB.{pop}.ldadj.bm` (43.3 T in total)
+- Variant index HailTable `s3://pan-ukb-us-east-1/ld_release/UKBB.{pop}.ldadj.variant.ht` (1.7 G in total)
+- LD score HailTable `s3://pan-ukb-us-east-1/ld_release/UKBB.{pop}.ldscore.ht` (4.0 G in total)
 
 where `{pop}` represents one of the population abbreviations (i.e., AFR, AMR, CSA, EAS, EUR, or MID).
 

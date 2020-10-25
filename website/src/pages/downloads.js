@@ -50,7 +50,7 @@ function Downloads() {
           <ul>
             <li>
               <b>LDSC-compatible flat files</b>: for running LD score regression, we suggest using the
-              LD score flat files available on Amazon AWS (download the tarball file <a href="">here</a>). More information on the file formats is
+              LD score flat files available on Amazon AWS (download the tarball file <a href="https://pan-ukb-us-east-1.s3.amazonaws.com/ld_release/UKBB.ALL.ldscore.tar.gz">here</a>). More information on the file formats is
               available on <a href="https://github.com/bulik/ldsc/wiki" target="_blank">the LDSC website</a>.
             </li>
             <li>
