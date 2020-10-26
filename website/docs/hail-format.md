@@ -377,7 +377,7 @@ Finally, to export a LD matrix to a flat file (txt file), you can use [`BlockMat
 # Note: when you apply any operation on BlockMatrix,
 # you need to write it first to storage before export
 bm.write('/path/to/tmp/bm', force_row_major=True)
-bm.export(
+BlockMatrix.export(
     '/path/to/tmp/bm',
     '/path/to/flat_file.bgz',
     delimiter=' '
