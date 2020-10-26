@@ -17,8 +17,9 @@ These are also available on Amazon S3:
 
 In addition, in-sample full LD matrices and scores are available on Amazon S3:
 - LD BlockMatrix `s3://pan-ukb-us-east-1/ld_release/UKBB.{pop}.ldadj.bm` (43.3 T in total)
-- Variant index HailTable `s3://pan-ukb-us-east-1/ld_release/UKBB.{pop}.ldadj.variant.ht` (1.7 G in total)
-- LD score HailTable `s3://pan-ukb-us-east-1/ld_release/UKBB.{pop}.ldscore.ht` (4.0 G in total)
+    - Size by population: AFR: 12.0 T, AMR: 3.3 T, CSA: 6.4T, EAS: 2.6T, EUR: 14.1T, MID: 4.9T
+- Variant index Hail Table `s3://pan-ukb-us-east-1/ld_release/UKBB.{pop}.ldadj.variant.ht` (1.7 G in total)
+- LD score Hail Table `s3://pan-ukb-us-east-1/ld_release/UKBB.{pop}.ldscore.ht` (4.0 G in total)
 
 where `{pop}` represents one of the population abbreviations (i.e., AFR, AMR, CSA, EAS, EUR, or MID).
 
@@ -326,7 +327,7 @@ We note that the LD matrices were sparsified to a upper triangle (all elements o
 
 ### Variant indices
 
-To determine which row/column corresponds to which variant, we provide variant indices for `BlockMatrix` in `HailTable` format.
+To determine which row/column corresponds to which variant, we provide variant indices for `BlockMatrix` in Hail `Table` format.
 ```
 ht_idx = hl.read_table(get_ld_variant_index_path(pop='AFR'))
 ```
@@ -374,8 +375,8 @@ Finally, to export a LD matrix to a flat file (txt file), you can use [`BlockMat
 
 ```
 # Note: when you apply any operation on BlockMatrix,
-# you need to write it to storage before export
-bm = bm.write('/path/to/tmp/bm', force_row_major=True)
+# you need to write it first to storage before export
+bm.write('/path/to/tmp/bm', force_row_major=True)
 bm.export(
     '/path/to/tmp/bm',
     '/path/to/flat_file.bgz',
@@ -391,7 +392,7 @@ np_mat = bm.to_numpy()
 
 ## LD scores
 
-The LD scores are in [HailTable](https://hail.is/docs/0.2/hail.Table.html) format. For LDSC-compatible flat files, you can find them [here](https://example.com).
+The LD scores are in Hail [Table](https://hail.is/docs/0.2/hail.Table.html) format. For LDSC-compatible flat files, you can find them [here](https://pan-ukb-us-east-1.s3.amazonaws.com/ld_release/UKBB.ALL.ldscore.tar.gz).
 ```
 ht = hl.read_table(get_ld_score_ht_path(pop='AFR'))
 ```

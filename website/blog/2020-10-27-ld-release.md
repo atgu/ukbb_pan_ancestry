@@ -19,4 +19,4 @@ With these LD resources, we will continue to further analyze our GWAS results, i
 - LD score regression analysis to estimate heritabilities
 - Fine-mapping analysis to identity causal variants of well-powered complex traits
 
-We hope this additional release will encourage researchers to analyze diverse ancestry groups and/or develop a statistical method using population-matched in-sample LD.
+We hope this additional release will encourage researchers to analyze diverse ancestry groups and/or develop statistical methods using population-matched in-sample LD.
