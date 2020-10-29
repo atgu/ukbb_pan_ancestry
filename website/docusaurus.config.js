@@ -10,10 +10,10 @@ module.exports = {
   plugins: [require.resolve('@docusaurus/plugin-google-analytics'),
             ['remark-math', {
               id: 'remark-1'
-            }], 
+            }],
             ['rehype-katex', {
               id: 'katex-1'
-            }]], 
+            }]],
   stylesheets: [
     'https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css'
   ],
@@ -61,6 +61,8 @@ module.exports = {
           // It is recommended to set document id as docs home page (`docs/` path).
           homePageId: 'background',
           sidebarPath: require.resolve('./sidebars.js'),
+          remarkPlugins: [math],
+          rehypePlugins: [katex],
         },
         blog: {
           showReadingTime: true,
