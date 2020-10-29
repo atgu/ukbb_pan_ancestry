@@ -1,30 +1,36 @@
-const math = require('remark-math');
-const katex = require('rehype-katex');
+const math = require('remark-math')
+const katex = require('rehype-katex')
 
 module.exports = {
   title: 'Pan UKBB',
   tagline: 'Pan-ancestry genetic analysis of the UK Biobank',
+  projectName: 'pan-ukbb',
   url: 'https://pan-dev.ukbb.broadinstitute.org',
   baseUrl: '/',
   favicon: 'img/favicon.ico',
-  plugins: [require.resolve('@docusaurus/plugin-google-analytics'),
-            ['remark-math', {
-              id: 'remark-1'
-            }],
-            ['rehype-katex', {
-              id: 'katex-1'
-            }]],
-  stylesheets: [
-    'https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css'
+  plugins: [
+    [
+      'remark-math',
+      {
+        id: 'remark-1',
+      },
+    ],
+    [
+      'rehype-katex',
+      {
+        id: 'katex-1',
+      },
+    ],
   ],
+  stylesheets: ['https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css'],
   themeConfig: {
     sidebarCollapsible: false,
     navbar: {
-      title: 'Pan UKBB',
-      // logo: {
-      //   alt: 'My Site Logo',
-      //   src: 'img/logo.svg',
-      // },
+      // title: 'Pan UKBB',
+      logo: {
+        alt: 'My Site Logo',
+        src: 'img/pan_ukbb_logo_v0.4-2.svg',
+      },
       items: [
         {
           to: 'docs/summary',
@@ -32,11 +38,11 @@ module.exports = {
           label: 'About',
           position: 'right',
         },
-        {to: 'blog', label: 'News', position: 'right'},
-        {to: 'downloads', label: 'Downloads', position: 'right'},
+        { to: 'blog', label: 'News', position: 'right' },
+        { to: 'downloads', label: 'Downloads', position: 'right' },
         // {to: 'results', label: 'Results', position: 'right'},
-        {to: 'team', label: 'Team', position: 'right'},
-        {to: 'contact', label: 'Contact', position: 'right'},
+        { to: 'team', label: 'Team', position: 'right' },
+        { to: 'contact', label: 'Contact', position: 'right' },
         // {
         //   href: 'https://github.com/atgu/ukbb_pan_ancestry',
         //   label: 'GitHub',
@@ -59,7 +65,6 @@ module.exports = {
       {
         docs: {
           // It is recommended to set document id as docs home page (`docs/` path).
-          homePageId: 'background',
           sidebarPath: require.resolve('./sidebars.js'),
           remarkPlugins: [math],
           rehypePlugins: [katex],
@@ -76,4 +81,4 @@ module.exports = {
       },
     ],
   ],
-};
+}
