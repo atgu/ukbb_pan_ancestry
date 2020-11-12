@@ -44,11 +44,11 @@ The first 5 fields are guaranteed to be unique.
 If a trait is quantitative (`trait_type` is "continuous" or "biomarkers"), all samples are considered to be "cases". Thus, the number of cases is equivalent to the number of samples.
 :::note
 
-`n_cases_full_cohort_both_sexes`: Number of cases across all ancestry groups, females and males combined. 
+`n_cases_full_cohort_both_sexes`: Number of cases (or individuals phenotyped for quantitative traits) across all ancestry groups, females and males combined. May include ancestry outliers and samples that failed QC.
 
-`n_cases_full_cohort_females`: Number of female cases across all ancestry groups.
+`n_cases_full_cohort_females`: Number of female cases (or individuals phenotyped for quantitative traits) across all ancestry groups. May include ancestry outliers and samples that failed QC.
 
-`n_cases_full_cohort_males`: Number of male cases across all ancestry groups.
+`n_cases_full_cohort_males`: Number of male cases (or individuals phenotyped for quantitative traits) across all ancestry groups. May include ancestry outliers and samples that failed QC.
 
 `pops`: Comma-delimited list of ancestry codes for which this phenotypes was GWASed.
 
@@ -62,9 +62,9 @@ The variable `pop` is a placeholder for a 3-letter ancestry code. For example, `
 If a trait is quantitative (`trait_type` is "continuous" or "biomarkers"), all samples are considered to be "cases". Thus, the number of cases is equivalent to the number of samples.
 :::note
 
-`n_cases_{pop}`: Number of cases with `pop` ancestry.
+`n_cases_{pop}`: Number of cases (or individuals phenotyped for quantitative traits) with `pop` ancestry in the GWAS analysis. Excludes ancestry outliers and samples that failed QC.
 
-`n_controls_{pop}`: Number of controls with `pop` ancestry.
+`n_controls_{pop}`: Number of controls with `pop` ancestry in the GWAS analysis. Excludes ancestry outliers and samples that failed QC.
 
 `saige_heritability_{pop}`: The heritability as estimated by SAIGE: note that this is likely not well-calibrated for binary traits, or traits with high heritabilities. A second estimate of heritability from LD score regression is coming soon.
 

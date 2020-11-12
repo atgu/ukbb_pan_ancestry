@@ -58,6 +58,13 @@ function Downloads() {
               in <Link to={useBaseUrl('docs/hail-format')}>Hail format</Link> on Amazon AWS.
             </li>
           </ul>
+          <p className="">
+            The ancestry assignments (as well as corresponding principal components and covariates used in our analyses)
+            are available for download through the UK Biobank portal
+            as <a href="https://biobank.ctsu.ox.ac.uk/showcase/dset.cgi?id=2442">Return 2442</a>.
+            These are available to researchers registered with the UK Biobank:
+            refer to instructions within the AMS portal to download these results.
+          </p>
           <h3>Terms</h3>
           <p>
             All data here are released openly and publicly for the benefit of the wider biomedical community.
