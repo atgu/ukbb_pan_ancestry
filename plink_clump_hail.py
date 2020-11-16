@@ -12,7 +12,7 @@ import argparse
 import hail as hl
 import sys
 import ukb_common
-from ukbb_pan_ancestry import POPS, PHENO_KEY_FIELDS, bucket, get_clumping_results_path, get_meta_analysis_results_path #get_pheno_manifest_path
+from ukbb_pan_ancestry import POPS, bucket, get_clumping_results_path, get_meta_analysis_results_path #get_pheno_manifest_path
 #from ukb_common import mwzj_hts_by_tree
 
 ldprune_dir = f'{bucket}/ld_prune'
@@ -72,7 +72,7 @@ def tsv_to_ht(args):
                                     pos=ht.pos,
                                     reference_genome='GRCh37'),
                    alleles = ht.varid.split(':')[2:4])
-    ht = ht.annotate_globals(**{k: getattr(args, k) for k in PHENO_KEY_FIELDS})
+    ht = ht.annotate_globals(**{k: getattr(args, k) for k in ukb_common.PHENO_KEY_FIELDS})
     ht = ht.drop('contig','varid','pos')
     ht.describe()
 #    ht.select().show()
@@ -207,24 +207,30 @@ def resume_mwzj(temp_dir, globals_for_col_key):
     mt = ht._unlocalize_entries('inner_row', 'inner_global', globals_for_col_key)
     return mt
 
-def join_clump_hts(pop, not_pop, high_quality=False, overwrite=False):
+def join_clump_hts(pop, not_pop, max_pops, high_quality=False, overwrite=False):
     r'''
     Wrapper for mwzj_hts_by_tree()
     '''
-    pop = pop.upper()
-    pheno_manifest = hl.import_table(
-    #            get_pheno_manifest_path(), 
-            'gs://ukb-diverse-pops/ld_prune/phenotype_manifest.tsv.bgz', # hardcoded path to avoid having to change user-pays
-            impute=True, 
-            key=ukb_common.PHENO_KEY_FIELDS
-            )
-    pheno_manifest = pheno_manifest.annotate(pheno_id = pheno_manifest.filename.replace('.tsv.bgz',''))
+    assert not (not_pop and max_pops), '`not_pop` and `max_pops` cannot both be True'
+    mt_path = get_clumping_results_path(pop=pop,
+                                        not_pop=not_pop,
+                                        max_pops=max_pops,
+                                        high_quality=high_quality)
+    if hl.hadoop_is_file(f'{mt_path}/_SUCCESS') and ~overwrite:
+        print(f'\nMT already written to {mt_path}! To overwrite, use overwrite=True')
+        return
+    else:
+        print(f'Writing MT to {mt_path}')
+    pop = pop.upper() if pop is not None else None
     
-    clump_results_dir = f'{ldprune_dir}/results{"_high_quality" if high_quality else ""}/{"not_" if not_pop else ""}{pop}'
+    clump_results_dir = (f'{ldprune_dir}/results{"_high_quality" if high_quality else ""}/'+
+                         ('max_pops' if max_pops else '{"not_" if not_pop else ""}{pop}'))
     ls = hl.hadoop_ls(f'{clump_results_dir}/*')
     all_hts = [x['path'] for x in ls if 'clump_results.ht' in x['path']]
     
-    temp_dir = f'gs://ukbb-diverse-temp-30day/nb-temp/{"not_" if not_pop else ""}{pop}{"-hq" if high_quality else ""}'
+    temp_dir = ('gs://ukbb-diverse-temp-30day/nb-temp/'+
+                'max_pops' if max_pops else f'{"not_" if not_pop else ""}{pop}'+
+                f'{"-hq" if high_quality else ""}')
     globals_for_col_key = ukb_common.PHENO_KEY_FIELDS
     mt = mwzj_hts_by_tree(all_hts=all_hts,
                          temp_dir=temp_dir,
@@ -232,10 +238,7 @@ def join_clump_hts(pop, not_pop, high_quality=False, overwrite=False):
 #    mt = resume_mwzj(temp_dir=temp_dir, # NOTE: only use if all the temp hts have been created
 #                     globals_for_col_key=globals_for_col_key)
 
-    mt.write(get_clumping_results_path(pop=pop,
-                                       not_pop=not_pop,
-                                       high_quality=high_quality), 
-             overwrite=overwrite)
+    mt.write(mt_path, overwrite=overwrite)
 
 def munge_mt(pop, not_pop, high_quality, parts=None):
     r'''
@@ -317,6 +320,7 @@ if __name__ == '__main__':
     parser.add_argument('--ht_to_tsv', action='store_true')
     parser.add_argument('--tsv_to_ht', action='store_true')
     parser.add_argument('--not_pop', action='store_true', help='whether pop set is a not_{pop}')
+    parser.add_argument('--max_pops', action='store_true', help='whether to use "max_pops" clumping results')
     parser.add_argument('--join_clump_hts', default=False, action='store_true')    
     parser.add_argument('--make_full_clump_mt', action='store_true')    
     parser.add_argument('--make_single_pop_clump_mt', action='store_true')    
@@ -333,6 +337,7 @@ if __name__ == '__main__':
     elif args.join_clump_hts:
         join_clump_hts(pop=args.pop, 
                        not_pop=args.not_pop,
+                       max_pops=args.max_pops,
                        high_quality=args.high_quality,
                        overwrite=args.overwrite)
     elif args.make_full_clump_mt:

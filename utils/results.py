@@ -1,4 +1,5 @@
 from ukbb_pan_ancestry.resources.results import *
+P_THRESHOLDS = {'s1': 5e-8, 's2': 1e-6, 's3': 1e-4, 's4': 1e-3, 's5': 1e-2, 's6': .05, 's7': .1, 's8': .2, 's9': .5, 's10': 1.}
 
 
 def annotate_nearest_gene(t, add_contig: bool = False, add_only_gene_symbols_as_str: bool = False, loc: str = 'nearest_genes'):
@@ -59,8 +60,17 @@ def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = T
     return mt
 
 
-def separate_results_mt_by_pop(mt):
-    mt = mt.annotate_cols(pheno_data=hl.zip_with_index(mt.pheno_data)).explode_cols('pheno_data')
-    mt = mt.annotate_cols(pop_index=mt.pheno_data[0], pheno_data=mt.pheno_data[1])
-    mt = mt.annotate_entries(summary_stats=mt.summary_stats[mt.pop_index]).drop('pop_index')
+def separate_results_mt_by_pop(mt, col_field = 'pheno_data', entry_field = 'summary_stats', skip_drop: bool = False):
+    mt = mt.annotate_cols(col_array=hl.zip_with_index(mt[col_field])).explode_cols('col_array')
+    mt = mt.transmute_cols(pop_index=mt.col_array[0], **{col_field: mt.col_array[1]})
+    mt = mt.annotate_entries(**{entry_field: mt[entry_field][mt.pop_index]})
+    if not skip_drop:
+        mt = mt.drop('pop_index')
     return mt
+
+
+def explode_by_p_threshold(mt):
+    mt = mt.annotate_cols(p_threshold=hl.literal(list(P_THRESHOLDS.items()))).explode_cols('p_threshold')
+    mt = mt.transmute_cols(p_threshold_name=mt.p_threshold[0], p_threshold=mt.p_threshold[1])
+    return mt
+
