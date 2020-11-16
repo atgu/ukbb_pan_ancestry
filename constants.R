@@ -19,6 +19,9 @@ ukb_pop_colors = pop_colors[ukb_gnomad_pop_mapping]
 names(ukb_pop_colors) = pops
 ukb_pop_colors['MID'] = '#EEA9B8'
 
+ukb_pop_names = c('African', 'Admixed American', 'Central/South Asian', 'East Asian', 'European', 'Middle Eastern')
+names(ukb_pop_names) = pops
+
 pop_color_scale = scale_color_manual(values=ukb_pop_colors, name='Population')
 pop_fill_scale = scale_fill_manual(values=ukb_pop_colors, name='Population')
 xyline = geom_abline(slope = 1, intercept = 0, linetype='dashed')
@@ -31,6 +34,8 @@ names(trait_type_names) = trait_types
 trait_type_colors['hide'] = 'gray'
 trait_color_scale = scale_color_manual(breaks = trait_types, values=trait_type_colors, name='Trait type', labels=trait_type_names)
 trait_fill_scale = scale_fill_manual(breaks = trait_types, values=trait_type_colors, name='Trait type', labels=trait_type_names)
+
+key_fields = c('trait_type', 'phenocode', 'pheno_sex', 'coding', 'modifier')
 
 loglog_breaks = c(0:10, 20, 50, 100, 200, 400)
 ll_to_pvalue = function(yt) {
@@ -84,7 +89,9 @@ load_ukb_file = function(base_fname, subfolder='', local_name='', force_cols=col
   if (endsWith(fname, '.gz') | endsWith(fname, '.bgz')) {
     fname = gzfile(fname)
   }
-  data = read_delim(fname, delim='\t', col_types = force_cols)
+  all_cols = cols(phenocode=col_character(), coding=col_character(), chrom=col_character())
+  all_cols = c(all_cols$cols, force_cols$cols)
+  data = read_delim(fname, delim='\t', col_types = all_cols)
   return(data)
 }
 
