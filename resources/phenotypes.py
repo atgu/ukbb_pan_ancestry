@@ -56,8 +56,9 @@ first_exposure_and_activity_monitor_data_path = 'gs://ukb31063/ukb31063.41395.cs
 brain_mri_data_path = 'gs://ukb31063/ukb31063.2006691.brainmri.csv'
 
 
-def get_covid_data_path(wave: str = '01'):
-    return f'gs://ukb31063/ukb31063.covid19_test_results.wave{wave}.txt'
+def get_covid_data_path(wave: str = '20200724'):
+    return f'gs://ukb31063/ukb31063.covid19_test_results.{wave}.txt'
+    # return f'gs://ukb31063/ukb31063.covid19_test_results.wave{wave}.txt'
 
 
 def get_hesin_mt_path(data_type: str):

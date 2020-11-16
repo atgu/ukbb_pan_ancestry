@@ -21,7 +21,7 @@ logger.addHandler(logging.StreamHandler(sys.stderr))
 bucket = 'gs://ukb-diverse-pops'
 root = f'{bucket}/results'
 
-HAIL_DOCKER_IMAGE = 'gcr.io/ukbb-diversepops-neale/hail_utils:5.2'
+HAIL_DOCKER_IMAGE = 'gcr.io/ukbb-diversepops-neale/hail_utils:5.7'
 SAIGE_DOCKER_IMAGE = 'wzhou88/saige:0.36.6'
 QQ_DOCKER_IMAGE = 'konradjk/saige_qq:0.2'
 
@@ -34,7 +34,7 @@ def main(args):
     start_time = time.time()
     basic_covars = ['sex', 'age', 'age2', 'age_sex', 'age2_sex']
     covariates = ','.join(basic_covars + [f'PC{x}' for x in range(1, num_pcs + 1)])
-    n_threads = 16
+    n_threads = 8
     analysis_type = "variant"
     chromosomes = list(map(str, range(1, 23))) + ['X']
     reference = 'GRCh37'
@@ -46,7 +46,8 @@ def main(args):
     #     backend = hb.LocalBackend(gsa_key_file='/Users/konradk/.hail/ukb-diverse-pops.json')
     # else:
 
-    backend = hb.ServiceBackend(billing_project='ukb_diverse_pops')
+    backend = hb.ServiceBackend(billing_project='ukb_diverse_pops',
+                                bucket=temp_bucket.split('gs://', 1)[-1])
     for pop in pops:
         p = hb.Batch(name=f'saige_pan_ancestry_{pop}', backend=backend, default_image=SAIGE_DOCKER_IMAGE,
                      default_storage='500Mi', default_cpu=n_threads)
@@ -57,7 +58,8 @@ def main(args):
                                           pilot=args.pilot,
                                           single_sex_only=args.single_sex_only, specific_phenos=args.phenos,
                                           skip_case_count_filter=args.skip_case_count_filter,
-                                          first_round_phenos=args.run_first_round_phenos)
+                                          first_round_phenos=args.run_first_round_phenos,
+                                          sex_stratified=args.sex_stratified)
         logger.info(f'Got {len(phenos_to_run)} phenotypes...')
         if len(phenos_to_run) <= 20:
             logger.info(phenos_to_run)
@@ -226,6 +228,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--overwrite_pheno_data', help='Run single variant SAIGE', action='store_true')
     parser.add_argument('--single_sex_only', help='Run only single sex phenotypes (experimental)', action='store_true')
+    parser.add_argument('--sex_stratified', help='Run these phenotypes in a sex-stratified fashion (experimental)', choices=(None, 'all', 'only'))
     parser.add_argument('--skip_any_null_models', help='Skip running SAIGE null models', action='store_true')
     parser.add_argument('--skip_saige', help='Skip running SAIGE tests', action='store_true')
     parser.add_argument('--create_null_models', help='Force creation of null models', action='store_true')

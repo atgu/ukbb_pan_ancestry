@@ -14,12 +14,14 @@
     "deploy-prod": "npm run patch-route-bug && npm run clean && npm run rsync-prod"
   },
   "dependencies": {
-    "@docusaurus/core": "^2.0.0-alpha.56",
+    "@docusaurus/core": "^2.0.0-alpha.66",
     "@docusaurus/plugin-google-analytics": "^2.0.0-alpha.37",
-    "@docusaurus/preset-classic": "^2.0.0-alpha.56",
+    "@docusaurus/preset-classic": "^2.0.0-alpha.66",
     "classnames": "^2.2.6",
     "react": "^16.8.4",
-    "react-dom": "^16.8.4"
+    "react-dom": "^16.8.4",
+    "rehype-katex": "^4.0.0",
+    "remark-math": "^3.0.1"
   },
   "browserslist": {
     "production": [

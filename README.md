@@ -1,4 +1,4 @@
 # UKBB-Diverse-pops
-Analyses conducting GWAS across the UKBB diverse superpopulations
+GWAS across all analyzable phenotypes and diverse ancestry groups in the UK Biobank.
 
-A full description of how these summary statistics were generated and how to manipuate them can be found on the Wiki tab: https://github.com/atgu/ukbb_pan_ancestry/wiki. 
+A full description of how these summary statistics were generated and how to work with them can be found here: http://pan.ukbb.broadinstitute.org/. 
