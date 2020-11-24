@@ -73,7 +73,8 @@ def main(args):
             # python saige_pan_ancestry.py --phenos .*COVID.*03.*
             ht = load_dob_ht(pre_phesant_tsv_path)
             ht = ht.checkpoint(f'{bucket}/misc/covid_test/basic_dob.ht', _read_if_exists=True)
-            mt = load_covid_data(ht, get_covid_data_path(args.add_covid_wave), wave=args.add_covid_wave).checkpoint(
+            mt = load_covid_data(ht, get_covid_data_path(args.add_covid_wave), get_hesin_data_path(), get_hesin_data_path('diag'), 
+		get_death_data_path(), wave=args.add_covid_wave).checkpoint(
                 get_ukb_pheno_mt_path(f'covid_wave{args.add_covid_wave}'), args.overwrite)
         else:
             mt = load_custom_pheno(args.add_dataset).checkpoint(get_custom_pheno_path(args.add_dataset, extension='ht'), args.overwrite)
