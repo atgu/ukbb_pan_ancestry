@@ -20,14 +20,36 @@ def annotate_mt_with_largest_meta_analysis(mt):
 
 
 def get_sig_pops(mt):
-    return (hl.zip_with_index(mt.summary_stats)
+    return (hl.enumerate(mt.summary_stats)
             .filter(lambda x: x[1].Pvalue < 5e-8)
             .map(lambda x: mt.pheno_data[x[0]].pop))
+
+
+def get_sig_pops_clumped(mt):
+    return (hl.enumerate(mt.plink_clump)
+            .filter(lambda x: (x[1].P < 5e-8) & (hl.len(mt.clump_pops[x[0]]) == 1))
+            .map(lambda x: mt.clump_pops[x[0]][0]))
 
 
 def partial_log_log(p):
     neglog_p = -hl.log10(p)
     return hl.if_else(neglog_p > 10, 10 * hl.log10(neglog_p), neglog_p)
+
+
+def compute_sig_pops_by_pheno(overwrite):
+    mt = load_final_sumstats_mt(separate_columns_by_pop=False)
+    clump_mt = hl.read_matrix_table(get_clumping_results_path(high_quality=True, not_pop=False))
+    mt = all_axis_join(mt, clump_mt)
+    mt = mt.annotate_entries(
+        sig_pops=get_sig_pops(mt),
+        sig_pops_clumped=get_sig_pops_clumped(mt)
+    )
+    mt = mt.annotate_cols(
+        sig_pops_by_pheno_grouped=hl.agg.counter(hl.delimit(hl.sorted(mt.sig_pops))),
+        sig_pops_by_pheno_total=hl.agg.explode(lambda x: hl.agg.counter(x), mt.sig_pops),
+        sig_pops_by_pheno_clumped=hl.agg.explode(lambda x: hl.agg.counter(x), mt.sig_pops_clumped)
+    )
+    mt.cols().write(get_analysis_data_path('sig_hits', 'sig_hits_pops_by_pheno', 'full', 'ht'), overwrite=overwrite)
 
 
 def compute_top_p(overwrite):
@@ -55,7 +77,7 @@ def compute_top_p(overwrite):
         **mt.col_key, **{x: mt[x] for x in PHENO_DESCRIPTION_FIELDS})
 
     def agg_top_p(ss_pop, significant_only: bool = False):
-        p = -hl.abs(ss_pop.BETA / ss_pop.SE)  # ss_pop.Pvalue
+        p = -hl.abs(ss_pop.BETA / ss_pop.SE)
         top_ss = hl.agg.take(ss_pop, 1, ordering=p)
         p_filter = hl.is_defined(p) & ~hl.is_nan(p)
         if significant_only:
@@ -64,7 +86,9 @@ def compute_top_p(overwrite):
 
     ht = mt.annotate_rows(
         top_p=[agg_top_p(ss_pop) for ss_pop in sumstats_with_pheno_meta_by_pop],
-        top_meta_p=agg_top_p(meta_with_pheno_and_per_pop)
+        top_meta_p=agg_top_p(meta_with_pheno_and_per_pop),
+        top_p_6pop_phenos=[hl.agg.filter(hl.len(mt.pheno_data) == 6, agg_top_p(ss_pop)) for ss_pop in sumstats_with_pheno_meta_by_pop],
+        top_meta_p_6pop_phenos=hl.agg.filter(hl.len(mt.pheno_data) == 6, agg_top_p(meta_with_pheno_and_per_pop))
     ).rows().naive_coalesce(1000).drop('vep', 'freq')
     ht.write(get_analysis_data_path('sig_hits', 'top_p_by_variant', 'full', 'ht'), overwrite=overwrite)
 
@@ -85,11 +109,13 @@ def main(args):
         ht_full = hl.read_table(get_analysis_data_path('sig_hits', 'top_p_by_variant', 'full', 'ht'))
 
         ht = locus_alleles_to_chr_pos_ref_alt(ht_full.annotate(global_position=ht_full.locus.global_position()), True)
-        ht = ht.transmute(**ht.top_meta_p).drop('top_p')
-        ht = ht.filter((hl.len(ht.pop_data) > 0) & (ht.Pvalue < 0.001))
+        ht = ht.select('chrom', 'pos', 'ref', 'alt', 'nearest_genes', **ht.top_meta_p_6pop_phenos.drop(*PHENO_DESCRIPTION_FIELDS))
+        ht = ht.filter((hl.len(ht.pop_data) > 0) & (ht.Pvalue < 0.01))
         ht = ht.transmute(top_pop=hl.sorted(ht.pop_data, key=lambda x: x.Pvalue)[0])
-        ht.flatten().export(get_analysis_data_path('sig_hits', 'top_pop_by_variant', 'full'))
+        ht = ht.filter(~ht.top_pop.low_confidence)
+        ht.flatten().export(get_analysis_data_path('sig_hits', 'top_meta_with_top_pop_by_variant', 'full'))
 
+    # TODO: add clumping and re-compute top p meta vs top p EUR
     if args.export_top_p_eur:
         ht_full = hl.read_table(get_analysis_data_path('sig_hits', 'top_p_by_variant', 'full', 'ht'))
 
@@ -136,34 +162,6 @@ def main(args):
                      **{f'meta_{k}': v for k, v in ht.top_meta_p.items() if k != 'description_more'}).flatten().export(
             get_analysis_data_path('sig_hits', 'top_p_by_variant_by_pop', 'full'))
 
-    if args.compute_sig_pops:
-        mt = load_final_sumstats_mt(separate_columns_by_pop=False)
-        mt = mt.annotate_entries(
-            sig_pops=get_sig_pops(mt)
-        )
-        mt = mt.annotate_cols(
-            sig_pops_by_pheno=hl.agg.counter(hl.delimit(hl.sorted(mt.sig_pops)))
-        )
-        ht = mt.cols().checkpoint(get_analysis_data_path('sig_hits', 'sig_hits_pops_by_pheno', 'full', 'ht'), overwrite=True)
-        ht = ht.transmute(output=hl.zip(ht.sig_pops_by_pheno.keys(), ht.sig_pops_by_pheno.values())).explode('output')
-        ht.transmute(pop_group=ht.output[0], count=ht.output[1]).drop('pheno_data', 'pheno_indices').export(get_analysis_data_path('sig_hits', 'sig_hits_pops_by_pheno', 'full'))
-
-    if args.hits_by_pheno:
-        mt = load_final_sumstats_mt(separate_columns_by_pop=False, add_only_gene_symbols_as_str=True)
-        mt = mt.annotate_entries(
-            sig_pops=get_sig_pops(mt)
-        )
-        mt = mt.group_rows_by(
-            contig=mt.locus.contig,
-            genes=mt.nearest_genes,
-        ).partition_hint(100).aggregate(
-            sig_pops=hl.agg.explode(lambda x: hl.agg.collect_as_set(x), mt.sig_pops)
-        )
-        ht = mt.filter_entries(hl.len(mt.sig_pops) > 0).drop('pheno_data', 'pheno_indices').entries()
-        ht = ht.checkpoint(get_analysis_data_path('sig_hits', 'sig_hits_by_pheno', 'full', 'ht'), overwrite=True)
-        ht.annotate(sig_pops=hl.delimit(hl.sorted(hl.array(ht.sig_pops)))).export(
-            get_analysis_data_path('sig_hits', 'sig_hits_by_pheno', 'full')
-        )
 
     if args.meta_analysis_hits:
         mt = load_final_sumstats_mt(separate_columns_by_pop=False, add_only_gene_symbols_as_str=True)#, load_contig='22')
@@ -230,6 +228,24 @@ def main(args):
         ht.flatten().export(get_analysis_data_path('effect_size', 'pairwise_beta_corr', 'full'))
 
 
+    # if args.hits_by_pheno:
+    #     mt = load_final_sumstats_mt(separate_columns_by_pop=False, add_only_gene_symbols_as_str=True)
+    #     mt = mt.annotate_entries(
+    #         sig_pops=get_sig_pops(mt)
+    #     )
+    #     mt = mt.group_rows_by(
+    #         contig=mt.locus.contig,
+    #         genes=mt.nearest_genes,
+    #     ).partition_hint(100).aggregate(
+    #         sig_pops=hl.agg.explode(lambda x: hl.agg.collect_as_set(x), mt.sig_pops)
+    #     )
+    #     ht = mt.filter_entries(hl.len(mt.sig_pops) > 0).drop('pheno_data', 'pheno_indices').entries()
+    #     ht = ht.checkpoint(get_analysis_data_path('sig_hits', 'sig_hits_by_pheno', 'full', 'ht'), overwrite=True)
+    #     ht.annotate(sig_pops=hl.delimit(hl.sorted(hl.array(ht.sig_pops)))).export(
+    #         get_analysis_data_path('sig_hits', 'sig_hits_by_pheno', 'full')
+    #     )
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
@@ -238,7 +254,7 @@ if __name__ == '__main__':
     parser.add_argument('--compute_top_p', help='Overwrite everything', action='store_true')
     parser.add_argument('--export_top_p_eur', help='Overwrite everything', action='store_true')
     parser.add_argument('--export_top_p', help='Overwrite everything', action='store_true')
-    parser.add_argument('--compute_sig_pops', help='Overwrite everything', action='store_true')
+    parser.add_argument('--compute_sig_pops_by_pheno', help='Overwrite everything', action='store_true')
     parser.add_argument('--meta_analysis_hits', help='Overwrite everything', action='store_true')
     parser.add_argument('--beta_correlations', help='Overwrite everything', action='store_true')
     parser.add_argument('--hits_by_pheno', help='Overwrite everything', action='store_true')

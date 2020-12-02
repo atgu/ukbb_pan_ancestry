@@ -57,11 +57,14 @@ brain_mri_data_path = 'gs://ukb31063/ukb31063.2006691.brainmri.csv'
 
 
 def get_covid_data_path(wave: str = '20200724'):
-    return f'gs://ukb31063/ukb31063.covid19_test_results.{wave}.txt'
+    return f'gs://ukb31063/ukb31063.covid19_test_result.{wave}.txt'
+    # return f'gs://ukb31063/ukb31063.covid19_test_results.{wave}.txt'
     # return f'gs://ukb31063/ukb31063.covid19_test_results.wave{wave}.txt'
+
 
 def get_death_data_path(wave: str = '20201012'):
     return f'gs://ukb31063/ukb31063.death.{wave}.txt'
+
 
 def get_hesin_data_path(data_type: str = 'main', wave: str = '20200909'):
     if data_type == 'main':
@@ -69,6 +72,7 @@ def get_hesin_data_path(data_type: str = 'main', wave: str = '20200909'):
     else:
         hesin_type = f'_{data_type}'
     return f'gs://ukb31063/ukb31063.hesin{hesin_type}.{wave}.txt'
+
 
 def get_hesin_mt_path(data_type: str):
     assert data_type in ('diag', 'oper')

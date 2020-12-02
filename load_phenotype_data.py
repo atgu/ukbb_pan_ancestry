@@ -87,7 +87,6 @@ def main(args):
         ).entries().drop(*[x for x in PHENO_COLUMN_FIELDS if x != 'description']).show(100, width=180)
 
         original_mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
-        original_mt = original_mt.filter_cols(~original_mt.phenocode.contains('covid'))
         original_mt = original_mt.checkpoint(get_ukb_pheno_mt_path(f'full_before_{curdate}', sex='full'), args.overwrite)
         original_mt.cols().export(f'{pheno_folder}/all_pheno_summary_before_{curdate}.txt.bgz')
         original_mt.union_cols(mt, row_join_type='outer').write(get_ukb_pheno_mt_path(), args.overwrite)
