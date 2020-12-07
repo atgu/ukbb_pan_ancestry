@@ -92,7 +92,29 @@ def compute_top_p(overwrite):
     ).rows().naive_coalesce(1000).drop('vep', 'freq')
     ht.write(get_analysis_data_path('sig_hits', 'top_p_by_variant', 'full', 'ht'), overwrite=overwrite)
 
+def compute_variances():
+    mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
 
+    # compute across all individuals
+    mt_all = mt.annotate_cols(stats_all_indiv = hl.agg.stats(mt.both_sexes)) 
+    ht_all = mt_all.select_cols(var_all = mt_all.stats_all_indiv.stdev ** 2).cols()
+
+    # compute per population
+    ht_pop = mt.group_rows_by('pop').aggregate(stats_per_pop=hl.agg.stats(mt.both_sexes)).entries() 
+    ht_pop = ht_pop.annotate(var_pop = ht_pop.stats_per_pop.stdev ** 2)
+    ht_pop = ht_pop.key_by('trait_type', 'phenocode', 'pheno_sex', 'coding', 'modifier')
+    ht_pop = ht_pop.select(ht_pop.pop, ht_pop.var_pop).collect_by_key(name = "var_pop")
+
+    # compute per leave-one-out population groupings
+    mt_loo = mt.annotate_rows(membership=[mt.pop != pop for pop in POPS])
+    mt_loo = mt_loo.annotate_cols(loo_stats_array=[hl.agg.filter(mt_loo.membership[i], hl.agg.stats(mt_loo.both_sexes)) for i, pop in enumerate(POPS)]) 
+    mt_loo = mt_loo.annotate_cols(var_loo = mt_loo.loo_stats_array.stdev ** 2, loo_pop = [hl.agg.filter(mt_loo.membership[i] == False, hl.agg.take(mt_loo.pop, 1)) for i, pop in enumerate(POPS)])
+    ht_loo = mt_loo.select_cols(var_loo_pop = hl.zip(mt_loo.loo_pop, mt_loo.var_loo).map(lambda x: hl.struct(loo_pop=x[0], var=x[1]))).cols()
+
+    # join 
+    ht_var = ht_all.join(ht_pop).join(ht_loo)
+
+    return ht_var
 
 def main(args):
     hl.init(default_reference='GRCh37')
