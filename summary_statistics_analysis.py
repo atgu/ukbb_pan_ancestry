@@ -116,6 +116,27 @@ def compute_variances():
 
     return ht_var
 
+def compute_neff():
+    mt = load_final_sumstats_mt()
+    mt2 = hl.read_matrix_table(get_ukb_pheno_mt_path())
+
+    # calculate per-population variances
+    ht_pop = mt2.group_rows_by('pop').aggregate(stats_per_pop=hl.agg.stats(mt2.both_sexes)).entries() 
+    ht_pop = ht_pop.annotate(var = ht_pop.stats_per_pop.stdev ** 2)
+    ht_pop = ht_pop.key_by('trait_type', 'phenocode', 'pheno_sex', 'coding', 'modifier')
+    ht_pop = ht_pop.select(ht_pop.pop, ht_pop.var).collect_by_key(name = "var_pop") 
+
+    # add variances to sumstats mt
+    mt_w_var = mt.annotate_cols(**ht_pop[mt.col_key])
+
+    # compute Neff
+    mt_w_var = mt_w_var.explode_cols(mt_w_var.var_pop)
+    mt_w_var = mt_w_var.filter_cols(mt_w_var.var_pop.pop == mt_w_var.pheno_data.pop)
+    mt_w_var = mt_w_var.annotate_entries(N = mt_w_var.var_pop.var / ((mt_w_var.summary_stats.SE**2) * 2 * mt_w_var.summary_stats.AF_Allele2 * (1 - mt_w_var.summary_stats.AF_Allele2))) 
+    mt_w_var = mt_w_var.annotate_cols(neff = hl.agg.mean(mt_w_var.N))
+
+    return mt_w_var
+
 def main(args):
     hl.init(default_reference='GRCh37')
 
