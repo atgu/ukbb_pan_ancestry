@@ -73,8 +73,10 @@ def main(args):
             # python saige_pan_ancestry.py --phenos .*COVID.*03.*
             ht = load_dob_ht(pre_phesant_tsv_path)
             ht = ht.checkpoint(f'{bucket}/misc/covid_test/basic_dob.ht', _read_if_exists=True)
-            mt = load_covid_data(ht, get_covid_data_path(args.add_covid_wave), get_hesin_data_path(), get_hesin_data_path('diag'), 
-		get_death_data_path(), wave=args.add_covid_wave).checkpoint(
+            mt = load_covid_data(ht, get_covid_data_path(args.add_covid_wave),
+                                 get_hesin_data_path(wave=args.add_hesin_wave),
+                                 get_hesin_data_path(data_type='diag',wave=args.add_hesin_wave),
+                                 get_death_data_path(wave=args.add_death_wave), wave=args.add_covid_wave).checkpoint(
                 get_ukb_pheno_mt_path(f'covid_wave{args.add_covid_wave}'), args.overwrite)
         else:
             mt = load_custom_pheno(args.add_dataset).checkpoint(get_custom_pheno_path(args.add_dataset, extension='ht'), args.overwrite)
@@ -136,6 +138,8 @@ if __name__ == '__main__':
     parser.add_argument('--summarize_data', help='Load data', action='store_true')
     parser.add_argument('--add_dataset', help='Load data')
     parser.add_argument('--add_covid_wave', help='Load data')
+    parser.add_argument('--add_hesin_wave', help='Load data')
+    parser.add_argument('--add_death_wave', help='Load data')
     parser.add_argument('--pairwise_correlations', help='Load data', action='store_true')
     parser.add_argument('--slack_channel', help='Send message to Slack channel/user', default='@konradjk')
     args = parser.parse_args()
