@@ -23,11 +23,13 @@ ukb_pop_names = c('African', 'Admixed American', 'Central/South Asian', 'East As
 names(ukb_pop_names) = pops
 
 pop_color_scale = scale_color_manual(values=ukb_pop_colors, name='Population')
+pop_color_scale_named = scale_color_manual(values=ukb_pop_colors, name='Population', labels=ukb_pop_names)
 pop_fill_scale = scale_fill_manual(values=ukb_pop_colors, name='Population')
+pop_fill_scale_named = scale_fill_manual(values=ukb_pop_colors, name='Population', labels=ukb_pop_names)
 xyline = geom_abline(slope = 1, intercept = 0, linetype='dashed')
 
 trait_types = c("biomarkers", "continuous", "categorical", "phecode", "icd10", "prescriptions")
-trait_type_colors = few_pal('Dark')(6)
+trait_type_colors = c('#334195', '#d56f3e', '#43aa8b', '#4f345a', '#b594b6', '#880d1e')
 names(trait_type_colors) = trait_types
 trait_type_names = c('Biomarkers', 'Continuous', 'Categorical', 'Disease (phecode)', 'Disease (ICD)', 'Prescriptions')
 names(trait_type_names) = trait_types
@@ -36,6 +38,7 @@ trait_color_scale = scale_color_manual(breaks = trait_types, values=trait_type_c
 trait_fill_scale = scale_fill_manual(breaks = trait_types, values=trait_type_colors, name='Trait type', labels=trait_type_names)
 
 key_fields = c('trait_type', 'phenocode', 'pheno_sex', 'coding', 'modifier')
+chrom_order = c(1:22, "X")
 
 loglog_breaks = c(0:10, 20, 50, 100, 200, 400)
 ll_to_pvalue = function(yt) {
@@ -89,7 +92,9 @@ load_ukb_file = function(base_fname, subfolder='', local_name='', force_cols=col
   if (endsWith(fname, '.gz') | endsWith(fname, '.bgz')) {
     fname = gzfile(fname)
   }
-  all_cols = cols(phenocode=col_character(), coding=col_character(), chrom=col_character())
+  all_cols = cols(phenocode=col_character(), coding=col_character(),
+                  coding_description=col_character(), description_more=col_character(),
+                  chrom=col_character())
   all_cols = c(all_cols$cols, force_cols$cols)
   data = read_delim(fname, delim='\t', col_types = all_cols)
   return(data)
