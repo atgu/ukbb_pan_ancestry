@@ -6,16 +6,19 @@ import {  SelectColumnFilter } from "../components/SelectColumnFilter";
 import {  FixedSizeList } from "react-window";
 import { Datum } from '../components/types';
 import { scrollbarWidth } from '../components/scrollbarWidth';
-import { FormGroup, FormControlLabel, Checkbox } from '@material-ui/core';
+import { FormGroup, FormControlLabel, Checkbox, Table, TableHead, TableRow, TableCell, TableBody, } from '@material-ui/core';
 import {  DownloadLinkCell, downloadLinkCellMaxWidth } from "../components/DownloadLinkCell";
 import {  CopyLinkCell, copyLinkCellMaxWidth } from "../components/CopyLinkCell";
 import {  customIncludesFilterFn } from "../components/customIncludesFilterFn";
 import { fuzzyTextFilterFunction } from '../components/fuzzyTextFilterFunction';
-import { DefaultColumnFilter } from '../components/DefaultColumnFilter';
+import { TextColumnFilter } from '../components/TextColumnFilter';
 
 import data from "../data.json"
 import { SliderColumnFilter } from '../components/SliderColumnFilter';
 import { rangeFilterFunction } from '../components/rangeFilterFunction';
+import phenotypesStyles from "./phenotypes.module.css"
+import { TruncatedTextCell } from '../components/TruncatedTextCell';
+
 
 const pops = ['AFR', 'AMR', 'CSA', 'EAS', 'EUR', 'MID']
 
@@ -35,8 +38,8 @@ const Phenotypes = () => {
 
   const [columnVisibilities, setColumnVisibilities] = useState({
     downloads: false,
-    description: false,
-    nCases: true,
+    description: true,
+    nCases: false,
     nControls: false,
     saigeHeritability: false,
     lambdaGc: false,
@@ -52,21 +55,30 @@ const Phenotypes = () => {
     () => {
       let columns = [
         {
+          Header: "Description",
+          accessor: "description",
+          filter: fuzzyTextFilterFunction,
+          Filter: TextColumnFilter,
+          disableFilters: false,
+          width: 400,
+          Cell: TruncatedTextCell
+        },
+        {
           Header: "Analysis",
           columns: [
             {
               Header: "Coding", accessor: "coding",
             },
             {
-              Header: "Phenocode", accessor: "phenocode",
-              filter: fuzzyTextFilterFunction,
-              Filter: DefaultColumnFilter,
-              disableFilters: false,
-            },
-            {
               Header: "Trait type", accessor: "trait_type",
               Filter: SelectColumnFilter,
               filter: customIncludesFilterFn,
+              disableFilters: false,
+            },
+            {
+              Header: "Phenocode", accessor: "phenocode",
+              filter: fuzzyTextFilterFunction,
+              Filter: TextColumnFilter,
               disableFilters: false,
             },
             {
@@ -88,18 +100,13 @@ const Phenotypes = () => {
             Header: "Description",
             columns: [
               {
-                Header: "Description",
-                accessor: "description",
-                filter: fuzzyTextFilterFunction,
-                Filter: DefaultColumnFilter,
-                disableFilters: false,
-              },
-              {
                 Header: "Category",
                 accessor: "category",
                 filter: fuzzyTextFilterFunction,
-                Filter: DefaultColumnFilter,
+                Filter: TextColumnFilter,
                 disableFilters: false,
+                width: 400,
+                Cell: TruncatedTextCell
               },
               {
                 Header: "N Pops",
@@ -109,7 +116,7 @@ const Phenotypes = () => {
                 Header: "Populations",
                 accessor: "pops",
                 filter: fuzzyTextFilterFunction,
-                Filter: DefaultColumnFilter,
+                Filter: TextColumnFilter,
                 disableFilters: false,
               }
             ]
@@ -248,12 +255,13 @@ const Phenotypes = () => {
     }
   , [columnVisibilities])
   const initialState = useMemo(() => ({
-    // filters: [
-    //   {id: "trait_type", value: undefined},
-    //   {id: "n_cases_full_cohort_both_sexes", value: undefined},
-    //   {id: "n_cases_full_cohort_females", value: undefined},
-    //   {id: "n_cases_full_cohort_males", value: undefined},
-    // ]
+    filters: [
+      {id: "trait_type", value: ""},
+      {id: "pheno_sex", value: ""},
+      // {id: "n_cases_full_cohort_both_sexes", value: undefined},
+      // {id: "n_cases_full_cohort_females", value: undefined},
+      // {id: "n_cases_full_cohort_males", value: undefined},
+    ]
   }), [])
 
   const defaultColumn = React.useMemo(
@@ -278,16 +286,16 @@ const Phenotypes = () => {
         <div>{column.render("Filter")}</div>
        ) : null
       return (
-        <th {...column.getHeaderProps()}>
+        <TableCell align="center" {...column.getHeaderProps()}>
           {column.render("Header")}
           {filterElem}
-        </th>
+        </TableCell>
       )
     })
     return (
-      <tr {...headerGroup.getHeaderGroupProps()}>
+      <TableRow {...headerGroup.getHeaderGroupProps()}>
         {headerElems}
-      </tr>
+      </TableRow>
     )
   })
 
@@ -299,17 +307,17 @@ const Phenotypes = () => {
     prepareRow(row)
     const cellElems = row.cells.map(cell => {
       return (
-        <div {...cell.getCellProps()}>
+        <TableCell {...cell.getCellProps()}>
           {cell.render("Cell")}
-        </div>
+        </TableCell>
       )
     })
     return (
-      <div
+      <TableRow
         {...row.getRowProps({style})}
       >
         {cellElems}
-      </div>
+      </TableRow>
     )
   }, [prepareRow, rows])
 
@@ -378,33 +386,32 @@ const Phenotypes = () => {
   return (
     <Layout title={`${siteConfig.title}`} description="Phenotypes">
       <header>
-        <div className="container">
-          <h1 className="page-title">Results</h1>
+        <div className={`container ${phenotypesStyles.titleContainer}`}>
+          <h1 className="page-title">Phenotypes</h1>
         </div>
       </header>
       <main>
-        <div className="container">
-          <div className="row">
-            <div className="col col--3">
-              {columnFilters}
-            </div>
-            <div className="col col--9" style={{overflowX: "auto"}}>
-              <table {...getTableProps()}>
-                <thead>
-                  {headerGroupElems}
-                </thead>
-                <div {...getTableBodyProps()}>
-                  <FixedSizeList
-                    height={700}
-                    itemCount={rows.length}
-                    itemSize={100}
-                    width={totalColumnsWidth + scrollBarSize}
-                  >
-                    {RenderRow}
-                  </FixedSizeList>
-                </div>
-              </table>
-            </div>
+        <div className={`container ${phenotypesStyles.container}`}>
+          <div>
+            {columnFilters}
+          </div>
+          <div style={{overflowX: "auto"}}>
+            <Table size="small" {...getTableProps()}>
+              <TableHead>
+                {headerGroupElems}
+              </TableHead>
+              <div {...getTableBodyProps()}>
+                <FixedSizeList
+                  height={700}
+                  itemCount={rows.length}
+                  itemSize={50}
+                  width={totalColumnsWidth + scrollBarSize}
+                  innerElementType={TableBody}
+                >
+                  {RenderRow}
+                </FixedSizeList>
+              </div>
+            </Table>
           </div>
         </div>
       </main>

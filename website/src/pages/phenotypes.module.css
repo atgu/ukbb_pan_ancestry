@@ -1,0 +1,15 @@
+.titleContainer {
+  max-width: 95%;
+}
+.container {
+  max-width: 95%;
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) 4fr;
+}
+
+.longTextCell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
