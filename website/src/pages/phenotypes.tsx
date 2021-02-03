@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import Layout from '@theme/Layout'
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext'
-import {  useTable, useFilters, useBlockLayout  } from "react-table";
+import {  useTable, useFilters, useBlockLayout, useGlobalFilter  } from "react-table";
 import {  SelectColumnFilter } from "../components/SelectColumnFilter";
 import {  FixedSizeList } from "react-window";
 import { Datum } from '../components/types';
@@ -10,7 +10,7 @@ import { FormGroup, FormControlLabel, Checkbox, Table, TableHead, TableRow, Tabl
 import {  DownloadLinkCell, downloadLinkCellMaxWidth } from "../components/DownloadLinkCell";
 import {  CopyLinkCell, copyLinkCellMaxWidth } from "../components/CopyLinkCell";
 import {  customIncludesFilterFn } from "../components/customIncludesFilterFn";
-import { fuzzyTextFilterFunction } from '../components/fuzzyTextFilterFunction';
+import { fuzzyTextFilterFunction, fuzzyTextGlobalFilterFunction } from '../components/fuzzyTextFilterFunction';
 import { TextColumnFilter } from '../components/TextColumnFilter';
 
 import data from "../data.json"
@@ -20,8 +20,10 @@ import phenotypesStyles from "./phenotypes.module.css"
 import { TruncatedTextCell } from '../components/TruncatedTextCell';
 import { PopulationCell } from '../components/PopulationCell';
 import {  commonPopulations } from "../components/populations";
+import { GlobalFilter } from '../components/GlobalFilter';
 
 
+const DefaultColumnFilter = () => null
 
 // Handle columns that can have "NA" values by replacing "NA" with `null`.
 // Note: if `accessor` is a function, the `id` field must be present.
@@ -60,7 +62,6 @@ const Phenotypes = () => {
           accessor: "description",
           filter: fuzzyTextFilterFunction,
           Filter: TextColumnFilter,
-          disableFilters: false,
           width: 400,
           Cell: TruncatedTextCell
         },
@@ -74,22 +75,22 @@ const Phenotypes = () => {
               Header: "Trait type", accessor: "trait_type",
               Filter: SelectColumnFilter,
               filter: customIncludesFilterFn,
-              disableFilters: false,
             },
             {
               Header: "Phenocode", accessor: "phenocode",
               filter: fuzzyTextFilterFunction,
               Filter: TextColumnFilter,
-              disableFilters: false,
+              Cell: TruncatedTextCell,
+              width: 200,
             },
             {
               Header: "Sex", accessor: "pheno_sex",
               Filter: SelectColumnFilter,
               filter: customIncludesFilterFn,
-              disableFilters: false,
             },
             {
               Header: "Modifier", accessor: "modifier",
+              disableFilters: true,
             },
           ]
         },
@@ -105,20 +106,19 @@ const Phenotypes = () => {
                 accessor: "category",
                 filter: fuzzyTextFilterFunction,
                 Filter: TextColumnFilter,
-                disableFilters: false,
                 width: 400,
                 Cell: TruncatedTextCell
               },
               {
                 Header: "N Pops",
                 accessor: "num_pops",
+                disableFilters: true,
               },
               {
                 Header: "Populations",
                 accessor: "pops",
                 filter: fuzzyTextFilterFunction,
                 Filter: TextColumnFilter,
-                disableFilters: false,
                 Cell: PopulationCell,
               }
             ]
@@ -136,27 +136,23 @@ const Phenotypes = () => {
                 ...getNaColumnProps("n_cases_full_cohort_both_sexes"),
                 Filter: SliderColumnFilter,
                 filter: rangeFilterFunction,
-                disableFilters: false,
               },
               {
                 ...getNaColumnProps("n_cases_full_cohort_females"),
                 Filter: SliderColumnFilter,
                 filter: rangeFilterFunction,
-                disableFilters: false,
               },
               {
                 Header: "Males",
                 ...getNaColumnProps("n_cases_full_cohort_males"),
                 Filter: SliderColumnFilter,
                 filter: rangeFilterFunction,
-                disableFilters: false,
               },
               ...commonPopulations.map(pop => ({
                 Header: pop,
                 ...getNaColumnProps(`n_cases_${pop}`),
                 Filter: SliderColumnFilter,
                 filter: rangeFilterFunction,
-                disableFilters: false,
               }))
             ]
           }
@@ -172,7 +168,6 @@ const Phenotypes = () => {
               ...getNaColumnProps(`n_controls_${pop}`),
               Filter: SliderColumnFilter,
               filter: rangeFilterFunction,
-              disableFilters: false,
             }))
           }
         ]
@@ -187,7 +182,6 @@ const Phenotypes = () => {
               ...getNaColumnProps(`saige_heritability_${pop}`),
               Filter: SliderColumnFilter,
               filter: rangeFilterFunction,
-              disableFilters: false,
             }))
           }
         ]
@@ -202,7 +196,6 @@ const Phenotypes = () => {
               ...getNaColumnProps(`lambda_gc_${pop}`),
               Filter: SliderColumnFilter,
               filter: rangeFilterFunction,
-              disableFilters: false,
             }))
           }
         ]
@@ -218,24 +211,28 @@ const Phenotypes = () => {
                 accessor: "aws_link",
                 Cell: DownloadLinkCell,
                 maxWidth: downloadLinkCellMaxWidth,
+                disableFilters: true,
               },
               {
                 Header: "tbi",
                 accessor: "aws_link_tabix",
                 Cell: DownloadLinkCell,
                 maxWidth: downloadLinkCellMaxWidth,
+                disableFilters: true,
               },
               {
                 Header: "wget tsv",
                 accessor: "wget",
                 Cell: CopyLinkCell,
                 maxWidth: copyLinkCellMaxWidth,
+                disableFilters: true,
               },
               {
                 Header: "wget tbi",
                 accessor: "wget_tabix",
                 Cell: CopyLinkCell,
                 maxWidth: copyLinkCellMaxWidth,
+                disableFilters: true,
               },
             ]
           }
@@ -247,8 +244,8 @@ const Phenotypes = () => {
           {
             Header: "MD5",
             columns: [
-              {Header: "tsv", accessor: "md5_hex"},
-              {Header: "tbi", accessor: "md5_hex_tabix"},
+              {Header: "tsv", accessor: "md5_hex", disableFilters: true},
+              {Header: "tbi", accessor: "md5_hex_tabix", disableFilters: true},
             ]
           }
         ]
@@ -257,6 +254,7 @@ const Phenotypes = () => {
     }
   , [columnVisibilities])
   const initialState = useMemo(() => ({
+    globalFilter: "",
     filters: [
       {id: "trait_type", value: ""},
       {id: "pheno_sex", value: ""},
@@ -268,19 +266,26 @@ const Phenotypes = () => {
 
   const defaultColumn = React.useMemo(
     () => ({
-      disableFilters: true,
-      // Filter: DefaultColumnFilter,
+      Filter: DefaultColumnFilter,
     }),
     []
   )
   const {
     getTableProps, getTableBodyProps, headerGroups, rows, prepareRow,
     totalColumnsWidth,
+    preGlobalFilteredRows,
+    setGlobalFilter,
+    visibleColumns,
+    state,
   } = useTable<Datum>({
     columns, data: data as any,
     initialState,
     defaultColumn,
-  }, useFilters, useBlockLayout)
+    globalFilter: fuzzyTextGlobalFilterFunction,
+  },
+  useFilters,
+  useGlobalFilter,
+  useBlockLayout)
 
   const headerGroupElems = headerGroups.map(headerGroup => {
     const headerElems = headerGroup.headers.map(column => {
@@ -401,6 +406,15 @@ const Phenotypes = () => {
             <Table size="small" {...getTableProps()}>
               <TableHead>
                 {headerGroupElems}
+                <TableRow>
+                  <TableCell colSpan={visibleColumns.length}>
+                    <GlobalFilter
+                      preGlobalFilteredRows={preGlobalFilteredRows}
+                      globalFilter={state.globalFilter}
+                      setGlobalFillter={setGlobalFilter}
+                    />
+                  </TableCell>
+                </TableRow>
               </TableHead>
               <div {...getTableBodyProps()}>
                 <FixedSizeList

@@ -10,3 +10,13 @@ export const fuzzyTextFilterFunction = (rows, id, filterValue) => {
   }
 }
 
+
+export const fuzzyTextGlobalFilterFunction = (rows, columnIds, filterValue) => {
+  if (!!filterValue) {
+    return matchSorter(rows, filterValue, {
+      keys: columnIds.map(id => row => row.values[id])
+    })
+  } else {
+    return rows
+  }
+}
