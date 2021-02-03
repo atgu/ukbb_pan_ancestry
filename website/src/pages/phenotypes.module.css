@@ -13,3 +13,10 @@
   text-overflow: ellipsis;
 }
 
+.populationCell {
+  display: grid;
+  grid-template-columns: repeat(3, 25px);
+  grid-template-rows: repeat(2, 25px);
+  justify-content: center;
+  align-items: center;
+}

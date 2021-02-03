@@ -18,9 +18,10 @@ import { SliderColumnFilter } from '../components/SliderColumnFilter';
 import { rangeFilterFunction } from '../components/rangeFilterFunction';
 import phenotypesStyles from "./phenotypes.module.css"
 import { TruncatedTextCell } from '../components/TruncatedTextCell';
+import { PopulationCell } from '../components/PopulationCell';
+import {  commonPopulations } from "../components/populations";
 
 
-const pops = ['AFR', 'AMR', 'CSA', 'EAS', 'EUR', 'MID']
 
 // Handle columns that can have "NA" values by replacing "NA" with `null`.
 // Note: if `accessor` is a function, the `id` field must be present.
@@ -118,6 +119,7 @@ const Phenotypes = () => {
                 filter: fuzzyTextFilterFunction,
                 Filter: TextColumnFilter,
                 disableFilters: false,
+                Cell: PopulationCell,
               }
             ]
           },
@@ -149,7 +151,7 @@ const Phenotypes = () => {
                 filter: rangeFilterFunction,
                 disableFilters: false,
               },
-              ...pops.map(pop => ({
+              ...commonPopulations.map(pop => ({
                 Header: pop,
                 ...getNaColumnProps(`n_cases_${pop}`),
                 Filter: SliderColumnFilter,
@@ -165,7 +167,7 @@ const Phenotypes = () => {
           ...columns,
           {
             Header: "N Controls",
-            columns: pops.map(pop => ({
+            columns: commonPopulations.map(pop => ({
               Header: pop,
               ...getNaColumnProps(`n_controls_${pop}`),
               Filter: SliderColumnFilter,
@@ -180,7 +182,7 @@ const Phenotypes = () => {
           ...columns,
           {
             Header: "Saige heritability",
-            columns: pops.map(pop => ({
+            columns: commonPopulations.map(pop => ({
               Header: pop,
               ...getNaColumnProps(`saige_heritability_${pop}`),
               Filter: SliderColumnFilter,
@@ -195,7 +197,7 @@ const Phenotypes = () => {
           ...columns,
           {
             Header: "Lambda GC",
-            columns: pops.map(pop => ({
+            columns: commonPopulations.map(pop => ({
               Header: pop,
               ...getNaColumnProps(`lambda_gc_${pop}`),
               Filter: SliderColumnFilter,
@@ -404,7 +406,7 @@ const Phenotypes = () => {
                 <FixedSizeList
                   height={700}
                   itemCount={rows.length}
-                  itemSize={50}
+                  itemSize={60}
                   width={totalColumnsWidth + scrollBarSize}
                   innerElementType={TableBody}
                 >
