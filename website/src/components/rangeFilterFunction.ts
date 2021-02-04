@@ -1,6 +1,7 @@
 export const rangeFilterFunction = (rows, columnIds, filterValue: undefined | [number, number]) => {
+  let result
   if (filterValue === undefined) {
-    return rows
+    result = rows
   } else {
     const id = columnIds[0]
     const [minVal, maxVal] = filterValue
@@ -8,7 +9,8 @@ export const rangeFilterFunction = (rows, columnIds, filterValue: undefined | [n
       const rowValue = row.values[id]
       return (typeof rowValue === "number") && rowValue >= minVal && rowValue <= maxVal
     })
-    return filteredRows
+    result = filteredRows
   }
+  return result
 }
 

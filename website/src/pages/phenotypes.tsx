@@ -14,13 +14,13 @@ import { fuzzyTextFilterFunction, fuzzyTextGlobalFilterFunction } from '../compo
 import { TextColumnFilter } from '../components/TextColumnFilter';
 
 import data from "../data.json"
-import { SliderColumnFilter } from '../components/SliderColumnFilter';
 import { rangeFilterFunction } from '../components/rangeFilterFunction';
 import phenotypesStyles from "./phenotypes.module.css"
 import { TruncatedTextCell } from '../components/TruncatedTextCell';
 import { PopulationCell } from '../components/PopulationCell';
 import {  commonPopulations } from "../components/populations";
 import { GlobalFilter } from '../components/GlobalFilter';
+import { NumberRangeColumnFilter } from '../components/NumberRangeColumnFilter';
 
 
 const DefaultColumnFilter = () => null
@@ -34,6 +34,7 @@ const getNaColumnProps = (fieldName) => ({
     return (value === "NA") ? null : value
   }
 })
+const numberRangeFilterColumnWidth = 350
 
 const Phenotypes = () => {
   const context = useDocusaurusContext()
@@ -41,8 +42,8 @@ const Phenotypes = () => {
 
   const [columnVisibilities, setColumnVisibilities] = useState({
     downloads: false,
-    description: true,
-    nCases: false,
+    description: false,
+    nCases: true,
     nControls: false,
     saigeHeritability: false,
     lambdaGc: false,
@@ -134,25 +135,30 @@ const Phenotypes = () => {
               {
                 Header: "Both sexes",
                 ...getNaColumnProps("n_cases_full_cohort_both_sexes"),
-                Filter: SliderColumnFilter,
+                Filter: NumberRangeColumnFilter,
                 filter: rangeFilterFunction,
+                width: numberRangeFilterColumnWidth,
               },
               {
+                Header: "Females",
                 ...getNaColumnProps("n_cases_full_cohort_females"),
-                Filter: SliderColumnFilter,
+                Filter: NumberRangeColumnFilter,
                 filter: rangeFilterFunction,
+                width: numberRangeFilterColumnWidth,
               },
               {
                 Header: "Males",
                 ...getNaColumnProps("n_cases_full_cohort_males"),
-                Filter: SliderColumnFilter,
+                Filter: NumberRangeColumnFilter,
                 filter: rangeFilterFunction,
+                width: numberRangeFilterColumnWidth,
               },
               ...commonPopulations.map(pop => ({
                 Header: pop,
                 ...getNaColumnProps(`n_cases_${pop}`),
-                Filter: SliderColumnFilter,
+                Filter: NumberRangeColumnFilter,
                 filter: rangeFilterFunction,
+                width: numberRangeFilterColumnWidth,
               }))
             ]
           }
@@ -166,8 +172,9 @@ const Phenotypes = () => {
             columns: commonPopulations.map(pop => ({
               Header: pop,
               ...getNaColumnProps(`n_controls_${pop}`),
-              Filter: SliderColumnFilter,
+              Filter: NumberRangeColumnFilter,
               filter: rangeFilterFunction,
+              width: numberRangeFilterColumnWidth,
             }))
           }
         ]
@@ -180,8 +187,9 @@ const Phenotypes = () => {
             columns: commonPopulations.map(pop => ({
               Header: pop,
               ...getNaColumnProps(`saige_heritability_${pop}`),
-              Filter: SliderColumnFilter,
+              Filter: NumberRangeColumnFilter,
               filter: rangeFilterFunction,
+              width: numberRangeFilterColumnWidth,
             }))
           }
         ]
@@ -194,8 +202,9 @@ const Phenotypes = () => {
             columns: commonPopulations.map(pop => ({
               Header: pop,
               ...getNaColumnProps(`lambda_gc_${pop}`),
-              Filter: SliderColumnFilter,
+              Filter: NumberRangeColumnFilter,
               filter: rangeFilterFunction,
+              width: numberRangeFilterColumnWidth,
             }))
           }
         ]
