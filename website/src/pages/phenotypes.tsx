@@ -41,9 +41,9 @@ const Phenotypes = () => {
   const { siteConfig = {} } = context
 
   const [columnVisibilities, setColumnVisibilities] = useState({
-    downloads: false,
-    description: false,
-    nCases: true,
+    downloads: true,
+    description: true,
+    nCases: false,
     nControls: false,
     saigeHeritability: false,
     lambdaGc: false,
@@ -63,7 +63,7 @@ const Phenotypes = () => {
           accessor: "description",
           filter: fuzzyTextFilterFunction,
           Filter: TextColumnFilter,
-          width: 400,
+          width: 300,
           Cell: TruncatedTextCell
         },
         {
@@ -71,6 +71,7 @@ const Phenotypes = () => {
           columns: [
             {
               Header: "Coding", accessor: "coding",
+              width: 100,
             },
             {
               Header: "Trait type", accessor: "trait_type",
@@ -92,6 +93,7 @@ const Phenotypes = () => {
             {
               Header: "Modifier", accessor: "modifier",
               disableFilters: true,
+              width: 100,
             },
           ]
         },
@@ -110,11 +112,11 @@ const Phenotypes = () => {
                 width: 400,
                 Cell: TruncatedTextCell
               },
-              {
-                Header: "N Pops",
-                accessor: "num_pops",
-                disableFilters: true,
-              },
+              // {
+              //   Header: "N Pops",
+              //   accessor: "num_pops",
+              //   disableFilters: true,
+              // },
               {
                 Header: "Populations",
                 accessor: "pops",
