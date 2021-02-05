@@ -16,4 +16,4 @@ export const DownloadLinkCell = ({value}: Props) => {
   )
 }
 
-export const downloadLinkCellMaxWidth = 50
+export const downloadLinkCellMaxWidth = 70

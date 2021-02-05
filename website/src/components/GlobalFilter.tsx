@@ -31,8 +31,6 @@ export const GlobalFilter = ({preGlobalFilteredRows, globalFilter, setGlobalFill
   return (
     <TextField
       type="search"
-      size="small"
-      margin="dense"
       fullWidth={true}
       value={value}
       onChange={e => {
@@ -40,7 +38,7 @@ export const GlobalFilter = ({preGlobalFilteredRows, globalFilter, setGlobalFill
         onChange(e.target.value)
       }}
       inputRef={inputRef}
-      placeholder={`Search across all fields in ${count} records`}
+      label={`Search across all fields in ${count} records`}
     />
 
   )

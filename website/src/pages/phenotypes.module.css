@@ -5,6 +5,7 @@
   max-width: 95%;
   display: grid;
   grid-template-columns: minmax(200px, 1fr) 4fr;
+  column-gap: 20px;
 }
 
 .longTextCell {

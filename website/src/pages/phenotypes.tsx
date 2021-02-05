@@ -6,7 +6,7 @@ import {  SelectColumnFilter } from "../components/SelectColumnFilter";
 import {  FixedSizeList } from "react-window";
 import { Datum } from '../components/types';
 import { scrollbarWidth } from '../components/scrollbarWidth';
-import { FormGroup, FormControlLabel, Checkbox, Table, TableHead, TableRow, TableCell, TableBody, } from '@material-ui/core';
+import { Table, TableHead, TableRow, TableCell, TableBody, } from '@material-ui/core';
 import {  DownloadLinkCell, downloadLinkCellMaxWidth } from "../components/DownloadLinkCell";
 import {  CopyLinkCell, copyLinkCellMaxWidth } from "../components/CopyLinkCell";
 import {  customIncludesFilterFn } from "../components/customIncludesFilterFn";
@@ -21,9 +21,12 @@ import { PopulationCell } from '../components/PopulationCell';
 import {  commonPopulations } from "../components/populations";
 import { GlobalFilter } from '../components/GlobalFilter';
 import { NumberRangeColumnFilter } from '../components/NumberRangeColumnFilter';
+import { ColumnGroupVisibility, PhenotypeFilters } from '../components/PhenotypeFilters';
 
 
 const DefaultColumnFilter = () => null
+const numCasesColumnWidth = 100
+const decimalNumbersColumnWidth = 120
 
 // Handle columns that can have "NA" values by replacing "NA" with `null`.
 // Note: if `accessor` is a function, the `id` field must be present.
@@ -34,13 +37,12 @@ const getNaColumnProps = (fieldName) => ({
     return (value === "NA") ? null : value
   }
 })
-const numberRangeFilterColumnWidth = 350
 
 const Phenotypes = () => {
   const context = useDocusaurusContext()
   const { siteConfig = {} } = context
 
-  const [columnVisibilities, setColumnVisibilities] = useState({
+  const [columnVisibilities, setColumnVisibilities] = useState<ColumnGroupVisibility>({
     downloads: true,
     description: true,
     nCases: false,
@@ -50,10 +52,6 @@ const Phenotypes = () => {
     md5: false,
   })
 
-  const handleColumnVisibilityChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    setColumnVisibilities({
-      ...columnVisibilities, [event.target.name]: event.target.checked
-  }) }, [columnVisibilities])
 
   const columns = useMemo(
     () => {
@@ -68,6 +66,7 @@ const Phenotypes = () => {
         },
         {
           Header: "Analysis",
+          columnGroupVisibilityAttribName: "analysis",
           columns: [
             {
               Header: "Coding", accessor: "coding",
@@ -77,18 +76,20 @@ const Phenotypes = () => {
               Header: "Trait type", accessor: "trait_type",
               Filter: SelectColumnFilter,
               filter: customIncludesFilterFn,
+              width: 120,
             },
             {
               Header: "Phenocode", accessor: "phenocode",
               filter: fuzzyTextFilterFunction,
               Filter: TextColumnFilter,
               Cell: TruncatedTextCell,
-              width: 200,
+              width: 120,
             },
             {
               Header: "Sex", accessor: "pheno_sex",
               Filter: SelectColumnFilter,
               filter: customIncludesFilterFn,
+              width: 120,
             },
             {
               Header: "Modifier", accessor: "modifier",
@@ -103,6 +104,7 @@ const Phenotypes = () => {
           ...columns,
           {
             Header: "Description",
+            columnGroupVisibilityAttribName: "description",
             columns: [
               {
                 Header: "Category",
@@ -112,11 +114,6 @@ const Phenotypes = () => {
                 width: 400,
                 Cell: TruncatedTextCell
               },
-              // {
-              //   Header: "N Pops",
-              //   accessor: "num_pops",
-              //   disableFilters: true,
-              // },
               {
                 Header: "Populations",
                 accessor: "pops",
@@ -133,34 +130,35 @@ const Phenotypes = () => {
           ...columns,
           {
             Header: "N Cases",
+            columnGroupVisibilityAttribName: "nCases",
             columns: [
               {
                 Header: "Both sexes",
                 ...getNaColumnProps("n_cases_full_cohort_both_sexes"),
                 Filter: NumberRangeColumnFilter,
                 filter: rangeFilterFunction,
-                width: numberRangeFilterColumnWidth,
+                width: numCasesColumnWidth,
               },
               {
                 Header: "Females",
                 ...getNaColumnProps("n_cases_full_cohort_females"),
                 Filter: NumberRangeColumnFilter,
                 filter: rangeFilterFunction,
-                width: numberRangeFilterColumnWidth,
+                width: numCasesColumnWidth,
               },
               {
                 Header: "Males",
                 ...getNaColumnProps("n_cases_full_cohort_males"),
                 Filter: NumberRangeColumnFilter,
                 filter: rangeFilterFunction,
-                width: numberRangeFilterColumnWidth,
+                width: numCasesColumnWidth,
               },
               ...commonPopulations.map(pop => ({
                 Header: pop,
                 ...getNaColumnProps(`n_cases_${pop}`),
                 Filter: NumberRangeColumnFilter,
                 filter: rangeFilterFunction,
-                width: numberRangeFilterColumnWidth,
+                width: numCasesColumnWidth,
               }))
             ]
           }
@@ -171,12 +169,13 @@ const Phenotypes = () => {
           ...columns,
           {
             Header: "N Controls",
+            columnGroupVisibilityAttribName: "nControls",
             columns: commonPopulations.map(pop => ({
               Header: pop,
               ...getNaColumnProps(`n_controls_${pop}`),
               Filter: NumberRangeColumnFilter,
               filter: rangeFilterFunction,
-              width: numberRangeFilterColumnWidth,
+              width: numCasesColumnWidth,
             }))
           }
         ]
@@ -186,12 +185,13 @@ const Phenotypes = () => {
           ...columns,
           {
             Header: "Saige heritability",
+            columnGroupVisibilityAttribName: "saigeHeritability",
             columns: commonPopulations.map(pop => ({
               Header: pop,
               ...getNaColumnProps(`saige_heritability_${pop}`),
               Filter: NumberRangeColumnFilter,
               filter: rangeFilterFunction,
-              width: numberRangeFilterColumnWidth,
+              width: decimalNumbersColumnWidth,
             }))
           }
         ]
@@ -201,12 +201,13 @@ const Phenotypes = () => {
           ...columns,
           {
             Header: "Lambda GC",
+            columnGroupVisibilityAttribName: "lambdaGc",
             columns: commonPopulations.map(pop => ({
               Header: pop,
               ...getNaColumnProps(`lambda_gc_${pop}`),
               Filter: NumberRangeColumnFilter,
               filter: rangeFilterFunction,
-              width: numberRangeFilterColumnWidth,
+              width: decimalNumbersColumnWidth,
             }))
           }
         ]
@@ -216,33 +217,34 @@ const Phenotypes = () => {
           ...columns,
           {
             Header: "Downloads",
+            columnGroupVisibilityAttribName: "downloads",
             columns: [
               {
                 Header: "tsv",
                 accessor: "aws_link",
                 Cell: DownloadLinkCell,
-                maxWidth: downloadLinkCellMaxWidth,
+                width: downloadLinkCellMaxWidth,
                 disableFilters: true,
               },
               {
                 Header: "tbi",
                 accessor: "aws_link_tabix",
                 Cell: DownloadLinkCell,
-                maxWidth: downloadLinkCellMaxWidth,
+                width: downloadLinkCellMaxWidth,
                 disableFilters: true,
               },
               {
                 Header: "wget tsv",
                 accessor: "wget",
                 Cell: CopyLinkCell,
-                maxWidth: copyLinkCellMaxWidth,
+                width: copyLinkCellMaxWidth,
                 disableFilters: true,
               },
               {
                 Header: "wget tbi",
                 accessor: "wget_tabix",
                 Cell: CopyLinkCell,
-                maxWidth: copyLinkCellMaxWidth,
+                width: copyLinkCellMaxWidth,
                 disableFilters: true,
               },
             ]
@@ -250,13 +252,15 @@ const Phenotypes = () => {
         ]
       }
       if (columnVisibilities.md5) {
+        const columnWidth = 320;
         columns = [
           ...columns,
           {
             Header: "MD5",
+            columnGroupVisibilityAttribName: "md5",
             columns: [
-              {Header: "tsv", accessor: "md5_hex", disableFilters: true},
-              {Header: "tbi", accessor: "md5_hex_tabix", disableFilters: true},
+              {Header: "tsv", accessor: "md5_hex", disableFilters: true, width: columnWidth},
+              {Header: "tbi", accessor: "md5_hex_tabix", disableFilters: true, width: columnWidth},
             ]
           }
         ]
@@ -288,6 +292,8 @@ const Phenotypes = () => {
     setGlobalFilter,
     visibleColumns,
     state,
+    columns: outputColumns,
+    setHiddenColumns,
   } = useTable<Datum>({
     columns, data: data as any,
     initialState,
@@ -300,13 +306,9 @@ const Phenotypes = () => {
 
   const headerGroupElems = headerGroups.map(headerGroup => {
     const headerElems = headerGroup.headers.map(column => {
-      const filterElem = column.canFilter ? (
-        <div>{column.render("Filter")}</div>
-       ) : null
       return (
         <TableCell align="center" {...column.getHeaderProps()}>
           {column.render("Header")}
-          {filterElem}
         </TableCell>
       )
     })
@@ -339,67 +341,7 @@ const Phenotypes = () => {
     )
   }, [prepareRow, rows])
 
-  const columnFilters = (
-    <FormGroup row={false}>
-      <FormControlLabel
-        control={
-          <Checkbox
-            checked={columnVisibilities.downloads} name="downloads"
-            onChange={handleColumnVisibilityChange}
-          /> }
-        label="Downloads"
-      />
-      <FormControlLabel
-        control={
-          <Checkbox
-            checked={columnVisibilities.description} name="description"
-            onChange={handleColumnVisibilityChange}
-          /> }
-        label="Description"
-      />
-      <FormControlLabel
-        control={
-          <Checkbox
-            checked={columnVisibilities.nCases} name="nCases"
-            onChange={handleColumnVisibilityChange}
-          /> }
-        label="N Cases"
-      />
-      <FormControlLabel
-        control={
-          <Checkbox
-            checked={columnVisibilities.nControls} name="nControls"
-            onChange={handleColumnVisibilityChange}
-          /> }
-        label="N Controls"
-      />
-      <FormControlLabel
-        control={
-          <Checkbox
-            checked={columnVisibilities.saigeHeritability} name="saigeHeritability"
-            onChange={handleColumnVisibilityChange}
-          /> }
-        label="Saige Heritability"
-      />
-      <FormControlLabel
-        control={
-          <Checkbox
-            checked={columnVisibilities.lambdaGc} name="lambdaGc"
-            onChange={handleColumnVisibilityChange}
-          /> }
-        label="Lambda GC"
-      />
-      <FormControlLabel
-        control={
-          <Checkbox
-            checked={columnVisibilities.md5} name="md5"
-            onChange={handleColumnVisibilityChange}
-          /> }
-        label="MD5"
-      />
-    </FormGroup>
 
-  )
 
   return (
     <Layout title={`${siteConfig.title}`} description="Phenotypes">
@@ -411,21 +353,19 @@ const Phenotypes = () => {
       <main>
         <div className={`container ${phenotypesStyles.container}`}>
           <div>
-            {columnFilters}
+            <PhenotypeFilters
+              columnVisibilities={columnVisibilities}
+              setColumnVisibilities={setColumnVisibilities}
+              columns={outputColumns}
+              preGlobalFilteredRows={preGlobalFilteredRows}
+              setGlobalFilter={setGlobalFilter}
+              globalFilter={state.globalFilter}
+            />
           </div>
           <div style={{overflowX: "auto"}}>
             <Table size="small" {...getTableProps()}>
               <TableHead>
                 {headerGroupElems}
-                <TableRow>
-                  <TableCell colSpan={visibleColumns.length}>
-                    <GlobalFilter
-                      preGlobalFilteredRows={preGlobalFilteredRows}
-                      globalFilter={state.globalFilter}
-                      setGlobalFillter={setGlobalFilter}
-                    />
-                  </TableCell>
-                </TableRow>
               </TableHead>
               <div {...getTableBodyProps()}>
                 <FixedSizeList

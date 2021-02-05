@@ -2,13 +2,13 @@ import { TextField } from "@material-ui/core"
 import React from "react"
 
 
-export const TextColumnFilter = ({column: {filterValue, preFilteredRows, setFilter}}) => {
+export const TextColumnFilter = ({column}) => {
+  const {filterValue, preFilteredRows, setFilter} = column;
   const count = preFilteredRows.length
   return (
     <TextField
       type="search"
-      size="small"
-      margin="dense"
+      label={column.Header}
       fullWidth={true}
       value={filterValue || ""}
       onChange={e => setFilter(e.target.value)}

@@ -19,4 +19,4 @@ export const CopyLinkCell = ({value}: Props) => {
   )
 }
 
-export const copyLinkCellMaxWidth = 65
+export const copyLinkCellMaxWidth = 80

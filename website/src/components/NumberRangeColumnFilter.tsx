@@ -1,11 +1,16 @@
-import { Button, Slider, TextField } from "@material-ui/core"
+import { Box, Button, FormControl, FormControlLabel, FormGroup, FormLabel, makeStyles, Slider, Switch, TextField } from "@material-ui/core"
 import React, { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react"
 import min from "lodash/min"
 import max from "lodash/max"
 import {  useAsyncDebounce } from "react-table";
 
+const useStyles = makeStyles(() => ({
 
-export const NumberRangeColumnFilter = ({column: {filterValue, setFilter, preFilteredRows, id}}) => {
+}))
+
+
+export const NumberRangeColumnFilter = ({column}) => {
+  const {filterValue, setFilter, preFilteredRows, id, } = column;
   const extremums = useMemo(() => {
     const allValues = preFilteredRows.map(row => row.values[id])
     return [ min(allValues), max(allValues) ] as const
@@ -39,13 +44,12 @@ export const NumberRangeColumnFilter = ({column: {filterValue, setFilter, preFil
     setMaxVal(value)
     debouncedSetFilterValue(newFilter)
   }, [setFilter, filterValue])
+  let content: React.ReactNode
   if (filterValue === undefined) {
-    return (
-      <Button size="small" variant="outlined" onClick={() => setFilter(extremums)}>Enable Filter</Button>
-    )
+    content = null
   } else {
-    return (
-      <div style={{display: "flex", alignItems: "center"}}>
+    content = (
+      <Box display="flex" flexDirection="row">
         <TextField
           value={minVal}
           type="number"
@@ -65,8 +69,31 @@ export const NumberRangeColumnFilter = ({column: {filterValue, setFilter, preFil
           onChange={handleMaxChange}
           style={{marginRight: "10px"}}
         />
-        <Button size="small" variant="outlined" onClick={() => setFilter(undefined)}>Disable</Button>
-      </div>
+      </Box>
     )
   }
+  const handleSwitchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const isChecked = event.target.checked
+    if (isChecked) {
+      setFilter(extremums)
+    } else {
+      setFilter(undefined)
+    }
+  }
+  return (
+    <Box display="flex" m={1}>
+      <FormControl component="fieldset">
+        <FormControlLabel
+          control={
+            <Switch
+              checked={filterValue !== undefined}
+              onChange={handleSwitchChange}
+            />
+          }
+          label={column.Header}
+        />
+        {content}
+      </FormControl>
+    </Box>
+  )
 }

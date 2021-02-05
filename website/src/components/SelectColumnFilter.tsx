@@ -1,4 +1,4 @@
-import { MenuItem, Select } from "@material-ui/core";
+import { MenuItem, Select, TextField } from "@material-ui/core";
 import React, { useEffect, useMemo } from "react"
 import {FilterProps} from "react-table";
 import {Datum} from "./types";
@@ -16,14 +16,20 @@ export const SelectColumnFilter = (props: FilterProps<Datum>) => {
   ))
   const effectiveValue = (filterValue === undefined) ? "" : filterValue
   return (
-    <Select
-      value={effectiveValue}
-      displayEmpty={true}
-      onChange={e => setFilter(e.target.value)}
-    >
-      <MenuItem value="">All</MenuItem>
-      {optionElems}
-    </Select>
+      <TextField
+        select={true}
+        fullWidth={true}
+        label={column.Header}
+        value={effectiveValue}
+        SelectProps={{
+          displayEmpty: true,
+          renderValue: value => value,
+        }}
+        onChange={e => setFilter(e.target.value)}
+      >
+        <MenuItem value="">All</MenuItem>
+        {optionElems}
+      </TextField>
   )
 }
 
