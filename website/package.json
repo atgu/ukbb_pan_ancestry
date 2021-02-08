@@ -21,6 +21,7 @@
     "@material-ui/icons": "^4.11.2",
     "@types/mousetrap": "1.6.5",
     "classnames": "^2.2.6",
+    "d3-scale": "^3.2.3",
     "match-sorter": "^6.2.0",
     "mousetrap": "^1.6.5",
     "react": "^16.8.4",
@@ -43,6 +44,7 @@
     ]
   },
   "devDependencies": {
+    "@types/d3-scale": "^3.2.2",
     "@types/react-table": "^7.0.26",
     "@types/react-window": "^1.8.2"
   }

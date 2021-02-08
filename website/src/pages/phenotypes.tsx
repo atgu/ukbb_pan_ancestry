@@ -18,12 +18,14 @@ import { rangeFilterFunction } from '../components/rangeFilterFunction';
 import phenotypesStyles from "./phenotypes.module.css"
 import { TruncatedTextCell } from '../components/TruncatedTextCell';
 import { PopulationCell } from '../components/PopulationCell';
-import {  commonPopulations } from "../components/populations";
+import {  commonPopulations, PerPopulationMetrics, PopulationCode, } from "../components/populations";
 import { GlobalFilter } from '../components/GlobalFilter';
 import { NumberRangeColumnFilter } from '../components/NumberRangeColumnFilter';
 import { ColumnGroupVisibility, PhenotypeFilters } from '../components/PhenotypeFilters';
 import { PopulationsFilter } from '../components/PopulationsFilter';
-import { populationsFilterFunction, Operator as PopulationsOperator, FilterValue as PopulationsFilterValue } from '../components/populationsFilterFunction';
+import { populationsFilterFunction } from '../components/populationsFilterFunction';
+import {  SaigeHeritabilityCell, width as saigeHeritabilityWidth } from "../components/SaigeHeritabilityCell";
+
 
 
 
@@ -38,6 +40,22 @@ const getNaColumnProps = (fieldName) => ({
   accessor: (row) => {
     const value = row[fieldName]
     return (value === "NA") ? null : value
+  }
+})
+
+const getPerPopulationMetrics = (metric_prefix) => ({
+  Header: "Per Population",
+  id: `${metric_prefix}_per_population`,
+  accessor: (row) => {
+    const result: PerPopulationMetrics = new Map()
+    for (const populationCode of commonPopulations) {
+      const key = `${metric_prefix}_${populationCode}`
+      const populationValue = row[key]
+      if (typeof populationValue === "number") {
+        result.set(populationCode, populationValue)
+      }
+    }
+    return result
   }
 })
 
@@ -189,13 +207,14 @@ const Phenotypes = () => {
           {
             Header: "Saige heritability",
             columnGroupVisibilityAttribName: "saigeHeritability",
-            columns: commonPopulations.map(pop => ({
-              Header: pop,
-              ...getNaColumnProps(`saige_heritability_${pop}`),
-              Filter: NumberRangeColumnFilter,
-              filter: rangeFilterFunction,
-              width: decimalNumbersColumnWidth,
-            }))
+            columns: [
+              {
+                ...getPerPopulationMetrics("saige_heritability"),
+                Cell: SaigeHeritabilityCell,
+                width: saigeHeritabilityWidth,
+                materialUiNoPadding: true,
+              },
+            ]
           }
         ]
       }
@@ -331,8 +350,9 @@ const Phenotypes = () => {
     const row = rows[index]
     prepareRow(row)
     const cellElems = row.cells.map(cell => {
+      const padding = ("materialUiNoPadding" in cell.column && cell.column.materialUiNoPadding === true) ? "none" : "default"
       return (
-        <TableCell {...cell.getCellProps()}>
+        <TableCell {...cell.getCellProps()} padding={padding}>
           {cell.render("Cell")}
         </TableCell>
       )
