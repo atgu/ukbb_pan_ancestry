@@ -22,6 +22,9 @@ import {  commonPopulations } from "../components/populations";
 import { GlobalFilter } from '../components/GlobalFilter';
 import { NumberRangeColumnFilter } from '../components/NumberRangeColumnFilter';
 import { ColumnGroupVisibility, PhenotypeFilters } from '../components/PhenotypeFilters';
+import { PopulationsFilter } from '../components/PopulationsFilter';
+import { populationsFilterFunction, Operator as PopulationsOperator, FilterValue as PopulationsFilterValue } from '../components/populationsFilterFunction';
+
 
 
 const DefaultColumnFilter = () => null
@@ -117,8 +120,8 @@ const Phenotypes = () => {
               {
                 Header: "Populations",
                 accessor: "pops",
-                filter: fuzzyTextFilterFunction,
-                Filter: TextColumnFilter,
+                filter: populationsFilterFunction,
+                Filter: PopulationsFilter,
                 Cell: PopulationCell,
               }
             ]
@@ -268,16 +271,18 @@ const Phenotypes = () => {
       return columns
     }
   , [columnVisibilities])
-  const initialState = useMemo(() => ({
-    globalFilter: "",
-    filters: [
-      {id: "trait_type", value: ""},
-      {id: "pheno_sex", value: ""},
-      // {id: "n_cases_full_cohort_both_sexes", value: undefined},
-      // {id: "n_cases_full_cohort_females", value: undefined},
-      // {id: "n_cases_full_cohort_males", value: undefined},
-    ]
-  }), [])
+  const initialState = useMemo(() => {
+    return {
+      globalFilter: "",
+      filters: [
+        {id: "trait_type", value: ""},
+        {id: "pheno_sex", value: ""},
+        // {id: "n_cases_full_cohort_both_sexes", value: undefined},
+        // {id: "n_cases_full_cohort_females", value: undefined},
+        // {id: "n_cases_full_cohort_males", value: undefined},
+      ]
+    }
+  }, [])
 
   const defaultColumn = React.useMemo(
     () => ({

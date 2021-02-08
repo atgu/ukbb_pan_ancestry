@@ -1,15 +1,23 @@
-import { Tooltip } from "@material-ui/core"
+import { makeStyles, Tooltip } from "@material-ui/core"
 import React from "react"
-import styles from "../pages/phenotypes.module.css"
+
+const useStyles = makeStyles(() => ({
+  cell: {
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  }
+}))
 
 interface Props {
   value: string
 }
 
 export const TruncatedTextCell = ({value}: Props) => {
+  const classes = useStyles()
   return (
     <Tooltip title={value} placement="top-start">
-      <div className={styles.longTextCell}>
+      <div className={classes.cell}>
         {value}
       </div>
     </Tooltip>

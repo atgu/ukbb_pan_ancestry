@@ -1,13 +1,8 @@
-import { Box, Button, FormControl, FormControlLabel, FormGroup, FormLabel, makeStyles, Slider, Switch, TextField } from "@material-ui/core"
-import React, { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react"
+import { Box, FormControl, FormControlLabel, Switch, TextField } from "@material-ui/core"
+import React, { ChangeEvent, useCallback, useMemo, useState } from "react"
 import min from "lodash/min"
 import max from "lodash/max"
 import {  useAsyncDebounce } from "react-table";
-
-const useStyles = makeStyles(() => ({
-
-}))
-
 
 export const NumberRangeColumnFilter = ({column}) => {
   const {filterValue, setFilter, preFilteredRows, id, } = column;

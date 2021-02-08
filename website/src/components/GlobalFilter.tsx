@@ -1,9 +1,25 @@
 import React, { useEffect, useRef, useState } from "react"
-import { TextField } from "@material-ui/core"
+import { makeStyles, TextField } from "@material-ui/core"
 import {  useAsyncDebounce } from "react-table";
 import Mousetrap from "mousetrap"
 
+const useStyles = makeStyles(() => ({
+  labelUnfocused: {
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    maxWidth: "100%"
+  },
+  labelFocused: {
+    whiteSpace: "unset",
+    overflow: "unset",
+    textOverflow: "unset",
+    maxWidth: "unset",
+  }
+}))
+
 export const GlobalFilter = ({preGlobalFilteredRows, globalFilter, setGlobalFillter}) => {
+  const classes = useStyles()
   const count = preGlobalFilteredRows.length
   const [value, setValue] = useState(globalFilter)
   const onChange = useAsyncDebounce(val => {
@@ -38,7 +54,13 @@ export const GlobalFilter = ({preGlobalFilteredRows, globalFilter, setGlobalFill
         onChange(e.target.value)
       }}
       inputRef={inputRef}
-      label={`Search across all fields in ${count} records`}
+      InputLabelProps={{
+        classes: {
+          root: classes.labelUnfocused,
+          focused: classes.labelFocused,
+        }
+      }}
+      label={ `Search all fields in ${count} records` }
     />
 
   )

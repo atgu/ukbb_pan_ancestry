@@ -72,7 +72,6 @@ export const PhenotypeFilters = (props: Props) => {
           <FormLabel>Filters</FormLabel>
           <ColumnGroupIndividualFilters
             columnGroup={columns.find(col => col.columnGroupVisibilityAttribName === "analysis")}
-            excludedColumnIds={[]}
           />
         </FormGroup>
       </AccordionDetails>
@@ -86,7 +85,6 @@ export const PhenotypeFilters = (props: Props) => {
       filters: (
         <ColumnGroupIndividualFilters
           columnGroup={columns.find(col => col.columnGroupVisibilityAttribName === "description")}
-          excludedColumnIds={["pops"]}
         />
       )
     }
@@ -131,7 +129,6 @@ export const PhenotypeFilters = (props: Props) => {
       filters: (
         <ColumnGroupIndividualFilters
           columnGroup={columns.find(col => col.columnGroupVisibilityAttribName === "nCases")}
-          excludedColumnIds={[]}
         />
       )
     }
@@ -158,7 +155,6 @@ export const PhenotypeFilters = (props: Props) => {
       filters: (
         <ColumnGroupIndividualFilters
           columnGroup={columns.find(col => col.columnGroupVisibilityAttribName === "nControls")}
-          excludedColumnIds={[]}
         />
       )
     }
@@ -185,7 +181,6 @@ export const PhenotypeFilters = (props: Props) => {
       filters: (
         <ColumnGroupIndividualFilters
           columnGroup={columns.find(col => col.columnGroupVisibilityAttribName === "saigeHeritability")}
-          excludedColumnIds={[]}
         />
       )
     }
@@ -213,7 +208,6 @@ export const PhenotypeFilters = (props: Props) => {
       filters: (
         <ColumnGroupIndividualFilters
           columnGroup={columns.find(col => col.columnGroupVisibilityAttribName === "lambdaGc")}
-          excludedColumnIds={[]}
         />
       )
     }
