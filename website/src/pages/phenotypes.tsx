@@ -25,9 +25,8 @@ import { ColumnGroupVisibility, PhenotypeFilters, PopulationVisibility } from '.
 import { PopulationsFilter } from '../components/PopulationsFilter';
 import { populationsFilterFunction } from '../components/populationsFilterFunction';
 import {  SaigeHeritabilityCell, width as saigeHeritabilityWidth } from "../components/SaigeHeritabilityCell";
-
-
-
+import min from "lodash/min"
+import max from "lodash/max"
 
 const DefaultColumnFilter = () => null
 const numCasesColumnWidth = 100
@@ -46,9 +45,8 @@ const getNaColumnProps = (fieldName) => ({
 const getPerPopulationMetrics = (
     metric_prefix: string,
     populationMetricsVisibilities: PopulationVisibility,
-    shouldGenerateHeader: boolean
   ) => {
-  const sansHeader =  {
+  return {
     id: `${metric_prefix}_per_population`,
     accessor: (row) => {
       const result: PerPopulationMetrics = new Map()
@@ -62,7 +60,6 @@ const getPerPopulationMetrics = (
       return result
     }
   }
-  return (shouldGenerateHeader === true) ? {...sansHeader, Header: "Per Population"} : sansHeader
 }
 
 const Phenotypes = () => {
@@ -70,9 +67,9 @@ const Phenotypes = () => {
   const { siteConfig = {} } = context
 
   const [columnVisibilities, setColumnVisibilities] = useState<ColumnGroupVisibility>({
-    downloads: true,
-    description: true,
-    nCases: false,
+    downloads: false,
+    description: false,
+    nCases: true,
     nControls: false,
     saigeHeritability: false,
     lambdaGc: false,
@@ -88,6 +85,27 @@ const Phenotypes = () => {
     [PopulationCode.MID]: true,
   })
 
+  const minSaigeHeritabilityValue = 0
+  const maxSaigeHeritabilityValue = 1
+
+  const {
+    minPopulationNCasesValue, maxPopulationNCasesValue
+  } = useMemo(() => {
+    const allPopulationNCasesValues = []
+    for (const datum of data) {
+      for (const population of commonPopulations) {
+        const populationNCasesValue = datum[`n_cases_${population}`]
+        if (typeof populationNCasesValue === "number") {
+          allPopulationNCasesValues.push(populationNCasesValue)
+        }
+      }
+    }
+    return {
+      minPopulationNCasesValue: min(allPopulationNCasesValues),
+      maxPopulationNCasesValue: max(allPopulationNCasesValues)
+    }
+
+  }, [data])
 
   const columns = useMemo(
     () => {
@@ -189,13 +207,15 @@ const Phenotypes = () => {
                 filter: rangeFilterFunction,
                 width: numCasesColumnWidth,
               },
-              ...commonPopulations.filter(pop => populationMetricsVisibilities[pop] === true).map(pop => ({
-                Header: pop,
-                ...getNaColumnProps(`n_cases_${pop}`),
-                Filter: NumberRangeColumnFilter,
-                filter: rangeFilterFunction,
-                width: numCasesColumnWidth,
-              }))
+              {
+                Header: "Per Population",
+                ...getPerPopulationMetrics("n_cases", populationMetricsVisibilities),
+                Cell: SaigeHeritabilityCell,
+                width: saigeHeritabilityWidth,
+                materialUiNoPadding: true,
+                minValue: minPopulationNCasesValue,
+                maxValue: maxPopulationNCasesValue,
+              }
             ]
           }
         ]
@@ -222,10 +242,12 @@ const Phenotypes = () => {
           {
             Header: "Saige heritability",
             columnGroupVisibilityAttribName: "saigeHeritability",
-            ...getPerPopulationMetrics("saige_heritability", populationMetricsVisibilities, false),
+            ...getPerPopulationMetrics("saige_heritability", populationMetricsVisibilities),
             Cell: SaigeHeritabilityCell,
             width: saigeHeritabilityWidth,
             materialUiNoPadding: true,
+            minValue: minSaigeHeritabilityValue,
+            maxValue: maxSaigeHeritabilityValue,
           }
         ]
       }

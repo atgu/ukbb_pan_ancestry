@@ -7,7 +7,8 @@ import { ExpandMore } from "@material-ui/icons"
 import { ColumnGroupIndividualFilters } from "./ColumnGroupIndividualFilters"
 import {  ColumnGroupFilterGroup, FilterDisplay, preventEventPropagation } from "./ColumnGroupFilterGroup";
 import { GlobalFilter } from "./GlobalFilter"
-import { commonPopulations, PopulationCode } from "./populations"
+import { commonPopulations, PopulationCode, populationColorMapping } from "./populations"
+import { ColoredSwitch, NewColoredSwitch } from "./ColoredSwitch"
 
 const useStyles = makeStyles((theme: Theme) => ({
   analysisAccordionTitle: {
@@ -140,10 +141,13 @@ export const PhenotypeFilters = (props: Props) => {
   const populationMetricsVisibilitiesFilterElems = commonPopulations.map(pop => {
     const onChange = (event: React.ChangeEvent<HTMLInputElement>) =>
       handlePopulationMetricsVisibilityChange(pop, event.target.checked)
+    const color = populationColorMapping.get(pop)
     return (
       <FormControlLabel key={pop}
+        style={{color}}
         control={
-          <Switch
+          <NewColoredSwitch
+            color={color}
             checked={populationMetricsVisibilities[pop]}
             onChange={onChange}
           />

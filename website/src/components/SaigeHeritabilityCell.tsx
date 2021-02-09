@@ -2,6 +2,8 @@ import React, { useRef, useState } from "react"
 import {commonPopulations, PerPopulationMetrics, populationColorMapping} from "./populations";
 import {  scaleLinear } from "d3-scale";
 import { makeStyles, Tooltip } from "@material-ui/core";
+import { ColumnInstance } from "react-table";
+import { Datum } from "./types";
 
 
 export const height = 60
@@ -9,10 +11,9 @@ export const width = 200;
 
 interface Props {
   value: PerPopulationMetrics
+  column: ColumnInstance<Datum> & {minValue: number, maxValue: number}
 }
 
-const minValue = 0
-const maxValue = 1
 const displayedPopulations = commonPopulations
 
 const margins = {
@@ -28,9 +29,10 @@ const xScale = scaleLinear<number, number>().domain([
 ]).range([
   margins.left + horizontalDistanceBetweenBars / 2, width - margins.right - horizontalDistanceBetweenBars / 2
 ])
-const yScale = scaleLinear<number, number>().domain([minValue, maxValue]).range([height - margins.bottom, margins.top])
 
-export const SaigeHeritabilityCell = ({value}: Props) => {
+export const SaigeHeritabilityCell = ({value, column}: Props) => {
+  const {minValue, maxValue} = column
+  const yScale = scaleLinear<number, number>().domain([minValue, maxValue]).range([height - margins.bottom, margins.top])
   const bars = displayedPopulations.map((population, index) => {
     const numericValue = value.get(population)
     if (population === undefined) {
@@ -64,7 +66,6 @@ export const SaigeHeritabilityCell = ({value}: Props) => {
       )
     }
   })
-  const yCoordOfXAxis = yScale(minValue)
   return (
     <div style={{width: `${width}px`, height: `${height}px`, position: "relative"}}>
       {bars}
