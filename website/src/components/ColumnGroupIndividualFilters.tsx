@@ -3,10 +3,10 @@ import { ColumnInstance } from "react-table"
 import { Datum } from "./types"
 
 interface Props {
-  columnGroup: ColumnInstance<Datum>
+  columns: ColumnInstance<Datum>[]
 }
-export const ColumnGroupIndividualFilters = ({columnGroup}: Props) => {
-  const filters = columnGroup.columns.map((col, index) => col.canFilter ? (
+export const ColumnGroupIndividualFilters = ({columns}: Props) => {
+  const filters = columns.map((col, index) => col.canFilter ? (
     <div key={index}>
       {col.render("Filter")}
     </div>

@@ -21,7 +21,7 @@ import { PopulationCell } from '../components/PopulationCell';
 import {  commonPopulations, PerPopulationMetrics, PopulationCode, } from "../components/populations";
 import { GlobalFilter } from '../components/GlobalFilter';
 import { NumberRangeColumnFilter } from '../components/NumberRangeColumnFilter';
-import { ColumnGroupVisibility, PhenotypeFilters } from '../components/PhenotypeFilters';
+import { ColumnGroupVisibility, PhenotypeFilters, PopulationVisibility } from '../components/PhenotypeFilters';
 import { PopulationsFilter } from '../components/PopulationsFilter';
 import { populationsFilterFunction } from '../components/populationsFilterFunction';
 import {  SaigeHeritabilityCell, width as saigeHeritabilityWidth } from "../components/SaigeHeritabilityCell";
@@ -43,21 +43,27 @@ const getNaColumnProps = (fieldName) => ({
   }
 })
 
-const getPerPopulationMetrics = (metric_prefix) => ({
-  Header: "Per Population",
-  id: `${metric_prefix}_per_population`,
-  accessor: (row) => {
-    const result: PerPopulationMetrics = new Map()
-    for (const populationCode of commonPopulations) {
-      const key = `${metric_prefix}_${populationCode}`
-      const populationValue = row[key]
-      if (typeof populationValue === "number") {
-        result.set(populationCode, populationValue)
+const getPerPopulationMetrics = (
+    metric_prefix: string,
+    populationMetricsVisibilities: PopulationVisibility,
+    shouldGenerateHeader: boolean
+  ) => {
+  const sansHeader =  {
+    id: `${metric_prefix}_per_population`,
+    accessor: (row) => {
+      const result: PerPopulationMetrics = new Map()
+      for (const populationCode of commonPopulations) {
+        const key = `${metric_prefix}_${populationCode}`
+        const populationValue = row[key]
+        if (typeof populationValue === "number" && populationMetricsVisibilities[populationCode] === true) {
+          result.set(populationCode, populationValue)
+        }
       }
+      return result
     }
-    return result
   }
-})
+  return (shouldGenerateHeader === true) ? {...sansHeader, Header: "Per Population"} : sansHeader
+}
 
 const Phenotypes = () => {
   const context = useDocusaurusContext()
@@ -71,6 +77,15 @@ const Phenotypes = () => {
     saigeHeritability: false,
     lambdaGc: false,
     md5: false,
+  })
+
+  const [populationMetricsVisibilities, setPopulationMetricsVisibilities] = useState<PopulationVisibility>({
+    [PopulationCode.AFR]: true,
+    [PopulationCode.AMR]: true,
+    [PopulationCode.CSA]: true,
+    [PopulationCode.EAS]: true,
+    [PopulationCode.EUR]: true,
+    [PopulationCode.MID]: true,
   })
 
 
@@ -174,7 +189,7 @@ const Phenotypes = () => {
                 filter: rangeFilterFunction,
                 width: numCasesColumnWidth,
               },
-              ...commonPopulations.map(pop => ({
+              ...commonPopulations.filter(pop => populationMetricsVisibilities[pop] === true).map(pop => ({
                 Header: pop,
                 ...getNaColumnProps(`n_cases_${pop}`),
                 Filter: NumberRangeColumnFilter,
@@ -191,7 +206,7 @@ const Phenotypes = () => {
           {
             Header: "N Controls",
             columnGroupVisibilityAttribName: "nControls",
-            columns: commonPopulations.map(pop => ({
+            columns: commonPopulations.filter(pop => populationMetricsVisibilities[pop] === true).map(pop => ({
               Header: pop,
               ...getNaColumnProps(`n_controls_${pop}`),
               Filter: NumberRangeColumnFilter,
@@ -207,14 +222,10 @@ const Phenotypes = () => {
           {
             Header: "Saige heritability",
             columnGroupVisibilityAttribName: "saigeHeritability",
-            columns: [
-              {
-                ...getPerPopulationMetrics("saige_heritability"),
-                Cell: SaigeHeritabilityCell,
-                width: saigeHeritabilityWidth,
-                materialUiNoPadding: true,
-              },
-            ]
+            ...getPerPopulationMetrics("saige_heritability", populationMetricsVisibilities, false),
+            Cell: SaigeHeritabilityCell,
+            width: saigeHeritabilityWidth,
+            materialUiNoPadding: true,
           }
         ]
       }
@@ -224,7 +235,7 @@ const Phenotypes = () => {
           {
             Header: "Lambda GC",
             columnGroupVisibilityAttribName: "lambdaGc",
-            columns: commonPopulations.map(pop => ({
+            columns: commonPopulations.filter(pop => populationMetricsVisibilities[pop] === true).map(pop => ({
               Header: pop,
               ...getNaColumnProps(`lambda_gc_${pop}`),
               Filter: NumberRangeColumnFilter,
@@ -289,7 +300,7 @@ const Phenotypes = () => {
       }
       return columns
     }
-  , [columnVisibilities])
+  , [columnVisibilities, populationMetricsVisibilities])
   const initialState = useMemo(() => {
     return {
       globalFilter: "",
@@ -385,6 +396,8 @@ const Phenotypes = () => {
               preGlobalFilteredRows={preGlobalFilteredRows}
               setGlobalFilter={setGlobalFilter}
               globalFilter={state.globalFilter}
+              populationMetricsVisibilities={populationMetricsVisibilities}
+              setPopulationMetricsVisibilities={setPopulationMetricsVisibilities}
             />
           </div>
           <div style={{overflowX: "auto"}}>

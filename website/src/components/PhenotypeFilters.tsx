@@ -7,13 +7,21 @@ import { ExpandMore } from "@material-ui/icons"
 import { ColumnGroupIndividualFilters } from "./ColumnGroupIndividualFilters"
 import {  ColumnGroupFilterGroup, FilterDisplay, preventEventPropagation } from "./ColumnGroupFilterGroup";
 import { GlobalFilter } from "./GlobalFilter"
+import { commonPopulations, PopulationCode } from "./populations"
 
 const useStyles = makeStyles((theme: Theme) => ({
   analysisAccordionTitle: {
     marginLeft: theme.spacing(6)
+  },
+  populationMetricsFilterGroup: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, 1fr)",
   }
 }))
 
+export type PopulationVisibility = {
+  [K in PopulationCode]: boolean
+}
 
 export interface ColumnGroupVisibility {
   downloads: boolean,
@@ -39,7 +47,9 @@ enum AccordionName {
 
 interface Props {
   columnVisibilities: ColumnGroupVisibility
-  setColumnVisibilities: (visibilities: ColumnGroupVisibility) => void
+  setColumnVisibilities: React.Dispatch<React.SetStateAction<ColumnGroupVisibility>>
+  populationMetricsVisibilities: PopulationVisibility
+  setPopulationMetricsVisibilities: React.Dispatch<React.SetStateAction<PopulationVisibility>>
   columns: ColumnInstance<Datum>[]
   preGlobalFilteredRows: UseGlobalFiltersInstanceProps<Datum>["preGlobalFilteredFlatRows"]
   globalFilter: any
@@ -50,8 +60,9 @@ export const PhenotypeFilters = (props: Props) => {
   const {
     columns, columnVisibilities, setColumnVisibilities,
     globalFilter, setGlobalFilter, preGlobalFilteredRows,
+    populationMetricsVisibilities, setPopulationMetricsVisibilities,
   } = props;
-  const clases = useStyles()
+  const classes = useStyles()
 
   const [expandedAccordion, setExpandedAccordion] = useState<AccordionName | undefined>(undefined)
 
@@ -64,14 +75,14 @@ export const PhenotypeFilters = (props: Props) => {
 
   const analysisFilter = (
     <Accordion expanded={expandedAccordion === AccordionName.Analysis} onChange={getAccordionChangeHandler(AccordionName.Analysis)}>
-      <AccordionSummary expandIcon={<ExpandMore/>} className={clases.analysisAccordionTitle}>
+      <AccordionSummary expandIcon={<ExpandMore/>} className={classes.analysisAccordionTitle}>
         Analysis
       </AccordionSummary>
       <AccordionDetails>
         <FormGroup>
           <FormLabel>Filters</FormLabel>
           <ColumnGroupIndividualFilters
-            columnGroup={columns.find(col => col.columnGroupVisibilityAttribName === "analysis")}
+            columns={columns.find(col => col.columnGroupVisibilityAttribName === "analysis").columns}
           />
         </FormGroup>
       </AccordionDetails>
@@ -84,7 +95,7 @@ export const PhenotypeFilters = (props: Props) => {
       showFilter: true,
       filters: (
         <ColumnGroupIndividualFilters
-          columnGroup={columns.find(col => col.columnGroupVisibilityAttribName === "description")}
+          columns={columns.find(col => col.columnGroupVisibilityAttribName === "description").columns}
         />
       )
     }
@@ -122,13 +133,47 @@ export const PhenotypeFilters = (props: Props) => {
       </AccordionSummary>
     </Paper>
   )
+
+  const handlePopulationMetricsVisibilityChange = (population: PopulationCode, isVisible: boolean) =>
+    setPopulationMetricsVisibilities( currentState => ({...currentState, [population]: isVisible}))
+
+  const populationMetricsVisibilitiesFilterElems = commonPopulations.map(pop => {
+    const onChange = (event: React.ChangeEvent<HTMLInputElement>) =>
+      handlePopulationMetricsVisibilityChange(pop, event.target.checked)
+    return (
+      <FormControlLabel key={pop}
+        control={
+          <Switch
+            checked={populationMetricsVisibilities[pop]}
+            onChange={onChange}
+          />
+        }
+        label={pop}
+      />
+    )
+  })
+
+  const populationMetricsVibilitiesFilter = (
+    <Accordion>
+      <AccordionSummary expandIcon={<ExpandMore/>} className={classes.analysisAccordionTitle}>
+        Per-Population Metrics
+      </AccordionSummary>
+      <AccordionDetails>
+        <FormGroup className={classes.populationMetricsFilterGroup}>
+          {populationMetricsVisibilitiesFilterElems}
+        </FormGroup>
+      </AccordionDetails>
+    </Accordion>
+  )
+
+
   let nCasesFilterDisplay: FilterDisplay
   if (columnVisibilities.nCases) {
     nCasesFilterDisplay = {
       showFilter: true,
       filters: (
         <ColumnGroupIndividualFilters
-          columnGroup={columns.find(col => col.columnGroupVisibilityAttribName === "nCases")}
+          columns={columns.find(col => col.columnGroupVisibilityAttribName === "nCases").columns}
         />
       )
     }
@@ -154,7 +199,7 @@ export const PhenotypeFilters = (props: Props) => {
       showFilter: true,
       filters: (
         <ColumnGroupIndividualFilters
-          columnGroup={columns.find(col => col.columnGroupVisibilityAttribName === "nControls")}
+          columns={columns.find(col => col.columnGroupVisibilityAttribName === "nControls").columns}
         />
       )
     }
@@ -180,7 +225,7 @@ export const PhenotypeFilters = (props: Props) => {
       showFilter: true,
       filters: (
         <ColumnGroupIndividualFilters
-          columnGroup={columns.find(col => col.columnGroupVisibilityAttribName === "saigeHeritability")}
+          columns={[columns.find(col => col.columnGroupVisibilityAttribName === "saigeHeritability")]}
         />
       )
     }
@@ -207,7 +252,7 @@ export const PhenotypeFilters = (props: Props) => {
       showFilter: true,
       filters: (
         <ColumnGroupIndividualFilters
-          columnGroup={columns.find(col => col.columnGroupVisibilityAttribName === "lambdaGc")}
+          columns={columns.find(col => col.columnGroupVisibilityAttribName === "lambdaGc").columns}
         />
       )
     }
@@ -264,6 +309,7 @@ export const PhenotypeFilters = (props: Props) => {
       {descriptionFilter}
       {analysisFilter}
       {downloadsFilter}
+      {populationMetricsVibilitiesFilter}
       {nCasesFilter}
       {nControlsFilter}
       {saigeHeritabilityFilter}
