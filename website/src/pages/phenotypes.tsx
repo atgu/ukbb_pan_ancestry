@@ -95,7 +95,7 @@ const Phenotypes = () => {
     for (const datum of data) {
       for (const population of commonPopulations) {
         const populationNCasesValue = datum[`n_cases_${population}`]
-        if (typeof populationNCasesValue === "number") {
+        if (populationMetricsVisibilities[population] === true && typeof populationNCasesValue === "number") {
           allPopulationNCasesValues.push(populationNCasesValue)
         }
       }
@@ -105,7 +105,7 @@ const Phenotypes = () => {
       maxPopulationNCasesValue: max(allPopulationNCasesValues)
     }
 
-  }, [data])
+  }, [data, populationMetricsVisibilities])
 
   const columns = useMemo(
     () => {

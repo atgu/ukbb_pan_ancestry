@@ -8,7 +8,7 @@ import { ColumnGroupIndividualFilters } from "./ColumnGroupIndividualFilters"
 import {  ColumnGroupFilterGroup, FilterDisplay, preventEventPropagation } from "./ColumnGroupFilterGroup";
 import { GlobalFilter } from "./GlobalFilter"
 import { commonPopulations, PopulationCode, populationColorMapping } from "./populations"
-import { ColoredSwitch, NewColoredSwitch } from "./ColoredSwitch"
+import { PopulationSwitch } from "./PopulationSwitch"
 
 const useStyles = makeStyles((theme: Theme) => ({
   analysisAccordionTitle: {
@@ -146,8 +146,8 @@ export const PhenotypeFilters = (props: Props) => {
       <FormControlLabel key={pop}
         style={{color}}
         control={
-          <NewColoredSwitch
-            color={color}
+          <PopulationSwitch
+            population={pop}
             checked={populationMetricsVisibilities[pop]}
             onChange={onChange}
           />
