@@ -89,20 +89,30 @@ const Phenotypes = () => {
   const maxSaigeHeritabilityValue = 1
 
   const {
-    minPopulationNCasesValue, maxPopulationNCasesValue
+    minPopulationNCasesValue, maxPopulationNCasesValue,
+    minPopulationNControlsValue, maxPopulationNControlsValue,
   } = useMemo(() => {
     const allPopulationNCasesValues = []
+    const allPopulationNControlValues = []
     for (const datum of data) {
       for (const population of commonPopulations) {
         const populationNCasesValue = datum[`n_cases_${population}`]
-        if (populationMetricsVisibilities[population] === true && typeof populationNCasesValue === "number") {
-          allPopulationNCasesValues.push(populationNCasesValue)
+        const populationNControlsValue = datum[`n_controls_${population}`]
+        if (populationMetricsVisibilities[population] === true) {
+          if (typeof populationNCasesValue === "number") {
+            allPopulationNCasesValues.push(populationNCasesValue)
+          }
+          if (typeof populationNControlsValue === "number") {
+            allPopulationNControlValues.push(populationNControlsValue)
+          }
         }
       }
     }
     return {
       minPopulationNCasesValue: min(allPopulationNCasesValues),
-      maxPopulationNCasesValue: max(allPopulationNCasesValues)
+      maxPopulationNCasesValue: max(allPopulationNCasesValues),
+      minPopulationNControlsValue: min(allPopulationNControlValues),
+      maxPopulationNControlsValue: max(allPopulationNControlValues),
     }
 
   }, [data, populationMetricsVisibilities])
@@ -226,14 +236,13 @@ const Phenotypes = () => {
           {
             Header: "N Controls",
             columnGroupVisibilityAttribName: "nControls",
-            columns: commonPopulations.filter(pop => populationMetricsVisibilities[pop] === true).map(pop => ({
-              Header: pop,
-              ...getNaColumnProps(`n_controls_${pop}`),
-              Filter: NumberRangeColumnFilter,
-              filter: rangeFilterFunction,
-              width: numCasesColumnWidth,
-            }))
-          }
+            ...getPerPopulationMetrics("n_controls", populationMetricsVisibilities),
+            Cell: SaigeHeritabilityCell,
+            width: saigeHeritabilityWidth,
+            materialUiNoPadding: true,
+            minValue: minPopulationNControlsValue,
+            maxValue: maxPopulationNControlsValue,
+          },
         ]
       }
       if (columnVisibilities.saigeHeritability) {

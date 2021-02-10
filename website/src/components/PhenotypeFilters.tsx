@@ -43,6 +43,7 @@ enum AccordionName {
   SaigeHeritability,
   LambdaGc,
   Md5,
+  PerPopulationMetrics
 }
 
 
@@ -158,7 +159,7 @@ export const PhenotypeFilters = (props: Props) => {
   })
 
   const populationMetricsVibilitiesFilter = (
-    <Accordion>
+    <Accordion expanded={expandedAccordion === AccordionName.PerPopulationMetrics} onChange={getAccordionChangeHandler(AccordionName.PerPopulationMetrics)}>
       <AccordionSummary expandIcon={<ExpandMore/>} className={classes.analysisAccordionTitle}>
         Per-Population Metrics
       </AccordionSummary>
@@ -203,7 +204,7 @@ export const PhenotypeFilters = (props: Props) => {
       showFilter: true,
       filters: (
         <ColumnGroupIndividualFilters
-          columns={columns.find(col => col.columnGroupVisibilityAttribName === "nControls").columns}
+          columns={[columns.find(col => col.columnGroupVisibilityAttribName === "nControls")]}
         />
       )
     }
