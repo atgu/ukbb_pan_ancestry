@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useReducer, useState } from 'react'
 import Layout from '@theme/Layout'
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext'
 import {  useTable, useFilters, useBlockLayout, useGlobalFilter  } from "react-table";
@@ -21,12 +21,14 @@ import { PopulationCell } from '../components/PopulationCell';
 import {  commonPopulations, PerPopulationMetrics, PopulationCode, } from "../components/populations";
 import { GlobalFilter } from '../components/GlobalFilter';
 import { NumberRangeColumnFilter } from '../components/NumberRangeColumnFilter';
-import { ColumnGroupVisibility, PhenotypeFilters, PopulationVisibility } from '../components/PhenotypeFilters';
+import { PhenotypeFilters} from '../components/PhenotypeFilters';
 import { PopulationsFilter } from '../components/PopulationsFilter';
 import { populationsFilterFunction } from '../components/populationsFilterFunction';
 import {  SaigeHeritabilityCell, width as saigeHeritabilityWidth } from "../components/SaigeHeritabilityCell";
 import min from "lodash/min"
 import max from "lodash/max"
+import {  ActionType, ColumnGroupName, initialState, PerPopulationMetricsVisibility, reducer } from "../components/phenotypesReducer";
+
 
 const DefaultColumnFilter = () => null
 const numCasesColumnWidth = 100
@@ -44,7 +46,7 @@ const getNaColumnProps = (fieldName) => ({
 
 const getPerPopulationMetrics = (
     metric_prefix: string,
-    populationMetricsVisibilities: PopulationVisibility,
+    populationMetricsVisibilities: PerPopulationMetricsVisibility,
   ) => {
   return {
     id: `${metric_prefix}_per_population`,
@@ -62,28 +64,12 @@ const getPerPopulationMetrics = (
   }
 }
 
+
 const Phenotypes = () => {
   const context = useDocusaurusContext()
   const { siteConfig = {} } = context
 
-  const [columnVisibilities, setColumnVisibilities] = useState<ColumnGroupVisibility>({
-    downloads: false,
-    description: false,
-    nCases: true,
-    nControls: false,
-    saigeHeritability: false,
-    lambdaGc: false,
-    md5: false,
-  })
-
-  const [populationMetricsVisibilities, setPopulationMetricsVisibilities] = useState<PopulationVisibility>({
-    [PopulationCode.AFR]: true,
-    [PopulationCode.AMR]: true,
-    [PopulationCode.CSA]: true,
-    [PopulationCode.EAS]: true,
-    [PopulationCode.EUR]: true,
-    [PopulationCode.MID]: true,
-  })
+  const [state, dispatch] = useReducer(reducer, initialState)
 
   const minSaigeHeritabilityValue = 0
   const maxSaigeHeritabilityValue = 1
@@ -98,7 +84,7 @@ const Phenotypes = () => {
       for (const population of commonPopulations) {
         const populationNCasesValue = datum[`n_cases_${population}`]
         const populationNControlsValue = datum[`n_controls_${population}`]
-        if (populationMetricsVisibilities[population] === true) {
+        if (state.perPopulationMetricsVisibilities[population] === true) {
           if (typeof populationNCasesValue === "number") {
             allPopulationNCasesValues.push(populationNCasesValue)
           }
@@ -115,10 +101,11 @@ const Phenotypes = () => {
       maxPopulationNControlsValue: max(allPopulationNControlValues),
     }
 
-  }, [data, populationMetricsVisibilities])
+  }, [data, state.perPopulationMetricsVisibilities])
 
   const columns = useMemo(
     () => {
+      const columnVisibilities = state.columnGroupVisibilities
       let columns = [
         {
           Header: "Description",
@@ -128,47 +115,52 @@ const Phenotypes = () => {
           width: 300,
           Cell: TruncatedTextCell
         },
-        {
-          Header: "Analysis",
-          columnGroupVisibilityAttribName: "analysis",
-          columns: [
-            {
-              Header: "Coding", accessor: "coding",
-              width: 100,
-            },
-            {
-              Header: "Trait type", accessor: "trait_type",
-              Filter: SelectColumnFilter,
-              filter: customIncludesFilterFn,
-              width: 120,
-            },
-            {
-              Header: "Phenocode", accessor: "phenocode",
-              filter: fuzzyTextFilterFunction,
-              Filter: TextColumnFilter,
-              Cell: TruncatedTextCell,
-              width: 120,
-            },
-            {
-              Header: "Sex", accessor: "pheno_sex",
-              Filter: SelectColumnFilter,
-              filter: customIncludesFilterFn,
-              width: 120,
-            },
-            {
-              Header: "Modifier", accessor: "modifier",
-              disableFilters: true,
-              width: 100,
-            },
-          ]
-        },
       ]
+      if (columnVisibilities.analysis) {
+        columns = [
+          ...columns,
+          {
+            Header: "Analysis",
+            columnGroupName: ColumnGroupName.Analysis,
+            columns: [
+              {
+                Header: "Coding", accessor: "coding",
+                width: 100,
+              },
+              {
+                Header: "Trait type", accessor: "trait_type",
+                Filter: SelectColumnFilter,
+                filter: customIncludesFilterFn,
+                width: 120,
+              },
+              {
+                Header: "Phenocode", accessor: "phenocode",
+                filter: fuzzyTextFilterFunction,
+                Filter: TextColumnFilter,
+                Cell: TruncatedTextCell,
+                width: 120,
+              },
+              {
+                Header: "Sex", accessor: "pheno_sex",
+                Filter: SelectColumnFilter,
+                filter: customIncludesFilterFn,
+                width: 120,
+              },
+              {
+                Header: "Modifier", accessor: "modifier",
+                disableFilters: true,
+                width: 100,
+              },
+            ]
+          },
+        ]
+      }
       if (columnVisibilities.description) {
         columns = [
           ...columns,
           {
             Header: "Description",
-            columnGroupVisibilityAttribName: "description",
+            columnGroupName: ColumnGroupName.Description,
             columns: [
               {
                 Header: "Category",
@@ -194,7 +186,7 @@ const Phenotypes = () => {
           ...columns,
           {
             Header: "N Cases",
-            columnGroupVisibilityAttribName: "nCases",
+            columnGroupName: ColumnGroupName.NCases,
             columns: [
               {
                 Header: "Both sexes",
@@ -219,7 +211,7 @@ const Phenotypes = () => {
               },
               {
                 Header: "Per Population",
-                ...getPerPopulationMetrics("n_cases", populationMetricsVisibilities),
+                ...getPerPopulationMetrics("n_cases", state.perPopulationMetricsVisibilities),
                 Cell: SaigeHeritabilityCell,
                 width: saigeHeritabilityWidth,
                 materialUiNoPadding: true,
@@ -235,8 +227,8 @@ const Phenotypes = () => {
           ...columns,
           {
             Header: "N Controls",
-            columnGroupVisibilityAttribName: "nControls",
-            ...getPerPopulationMetrics("n_controls", populationMetricsVisibilities),
+            columnGroupName: ColumnGroupName.NControls,
+            ...getPerPopulationMetrics("n_controls", state.perPopulationMetricsVisibilities),
             Cell: SaigeHeritabilityCell,
             width: saigeHeritabilityWidth,
             materialUiNoPadding: true,
@@ -250,8 +242,8 @@ const Phenotypes = () => {
           ...columns,
           {
             Header: "Saige heritability",
-            columnGroupVisibilityAttribName: "saigeHeritability",
-            ...getPerPopulationMetrics("saige_heritability", populationMetricsVisibilities),
+            columnGroupName: ColumnGroupName.SaigeHeritability,
+            ...getPerPopulationMetrics("saige_heritability", state.perPopulationMetricsVisibilities),
             Cell: SaigeHeritabilityCell,
             width: saigeHeritabilityWidth,
             materialUiNoPadding: true,
@@ -265,8 +257,8 @@ const Phenotypes = () => {
           ...columns,
           {
             Header: "Lambda GC",
-            columnGroupVisibilityAttribName: "lambdaGc",
-            columns: commonPopulations.filter(pop => populationMetricsVisibilities[pop] === true).map(pop => ({
+            columnGroupName: ColumnGroupName.LambdaGc,
+            columns: commonPopulations.filter(pop => state.perPopulationMetricsVisibilities[pop] === true).map(pop => ({
               Header: pop,
               ...getNaColumnProps(`lambda_gc_${pop}`),
               Filter: NumberRangeColumnFilter,
@@ -281,7 +273,7 @@ const Phenotypes = () => {
           ...columns,
           {
             Header: "Downloads",
-            columnGroupVisibilityAttribName: "downloads",
+            columnGroupName: ColumnGroupName.Downloads,
             columns: [
               {
                 Header: "tsv",
@@ -321,7 +313,7 @@ const Phenotypes = () => {
           ...columns,
           {
             Header: "MD5",
-            columnGroupVisibilityAttribName: "md5",
+            columnGroupName: ColumnGroupName.Md5,
             columns: [
               {Header: "tsv", accessor: "md5_hex", disableFilters: true, width: columnWidth},
               {Header: "tbi", accessor: "md5_hex_tabix", disableFilters: true, width: columnWidth},
@@ -331,8 +323,8 @@ const Phenotypes = () => {
       }
       return columns
     }
-  , [columnVisibilities, populationMetricsVisibilities])
-  const initialState = useMemo(() => {
+  , [state.columnGroupVisibilities, state.perPopulationMetricsVisibilities])
+  const initialReactTableState = useMemo(() => {
     return {
       globalFilter: "",
       filters: [
@@ -357,12 +349,12 @@ const Phenotypes = () => {
     preGlobalFilteredRows,
     setGlobalFilter,
     visibleColumns,
-    state,
+    state: reactTableState,
     columns: outputColumns,
     setHiddenColumns,
   } = useTable<Datum>({
     columns, data: data as any,
-    initialState,
+    initialState: initialReactTableState,
     defaultColumn,
     globalFilter: fuzzyTextGlobalFilterFunction,
   },
@@ -408,6 +400,18 @@ const Phenotypes = () => {
     )
   }, [prepareRow, rows])
 
+  const setColumnGroupVisibilites = useCallback((columnGroupName: ColumnGroupName, isVisible: boolean) => dispatch({
+    type: ActionType.SET_COLUMN_GROUP_VISIBILITY,
+    payload: {
+      columnGroup: columnGroupName,
+      isVisible,
+    }
+  }), [])
+
+  const setPerPoulationMetricsVisibilities = useCallback((population: PopulationCode, isVisible: boolean) => dispatch({
+    type: ActionType.SET_POPULATION_METRICS_VISIBILITY,
+    payload: { population, isVisible }
+  }), [])
 
 
   return (
@@ -421,14 +425,14 @@ const Phenotypes = () => {
         <div className={`container ${phenotypesStyles.container}`}>
           <div>
             <PhenotypeFilters
-              columnVisibilities={columnVisibilities}
-              setColumnVisibilities={setColumnVisibilities}
+              columnVisibilities={state.columnGroupVisibilities}
+              setColumnVisibilities={setColumnGroupVisibilites}
               columns={outputColumns}
               preGlobalFilteredRows={preGlobalFilteredRows}
               setGlobalFilter={setGlobalFilter}
-              globalFilter={state.globalFilter}
-              populationMetricsVisibilities={populationMetricsVisibilities}
-              setPopulationMetricsVisibilities={setPopulationMetricsVisibilities}
+              globalFilter={reactTableState.globalFilter}
+              populationMetricsVisibilities={state.perPopulationMetricsVisibilities}
+              setPopulationMetricsVisibilities={setPerPoulationMetricsVisibilities}
             />
           </div>
           <div style={{overflowX: "auto"}}>

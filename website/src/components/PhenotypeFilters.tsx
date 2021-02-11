@@ -9,6 +9,7 @@ import {  ColumnGroupFilterGroup, FilterDisplay, preventEventPropagation } from 
 import { GlobalFilter } from "./GlobalFilter"
 import { commonPopulations, PopulationCode, populationColorMapping } from "./populations"
 import { PopulationSwitch } from "./PopulationSwitch"
+import { ColumnGroupVisibility, PerPopulationMetricsVisibility, ColumnGroupName } from "./phenotypesReducer"
 
 const useStyles = makeStyles((theme: Theme) => ({
   analysisAccordionTitle: {
@@ -20,19 +21,6 @@ const useStyles = makeStyles((theme: Theme) => ({
   }
 }))
 
-export type PopulationVisibility = {
-  [K in PopulationCode]: boolean
-}
-
-export interface ColumnGroupVisibility {
-  downloads: boolean,
-  description: boolean,
-  nCases: boolean,
-  nControls: boolean,
-  saigeHeritability: boolean,
-  lambdaGc: boolean,
-  md5: boolean,
-}
 
 enum AccordionName {
   Description,
@@ -49,9 +37,9 @@ enum AccordionName {
 
 interface Props {
   columnVisibilities: ColumnGroupVisibility
-  setColumnVisibilities: React.Dispatch<React.SetStateAction<ColumnGroupVisibility>>
-  populationMetricsVisibilities: PopulationVisibility
-  setPopulationMetricsVisibilities: React.Dispatch<React.SetStateAction<PopulationVisibility>>
+  setColumnVisibilities: (population: ColumnGroupName, isVisible: boolean) => void
+  populationMetricsVisibilities: PerPopulationMetricsVisibility
+  setPopulationMetricsVisibilities: (population: PopulationCode, isVisible: boolean) => void
   columns: ColumnInstance<Datum>[]
   preGlobalFilteredRows: UseGlobalFiltersInstanceProps<Datum>["preGlobalFilteredFlatRows"]
   globalFilter: any
@@ -69,9 +57,8 @@ export const PhenotypeFilters = (props: Props) => {
   const [expandedAccordion, setExpandedAccordion] = useState<AccordionName | undefined>(undefined)
 
   const handleColumnVisibilityChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    setColumnVisibilities({
-      ...columnVisibilities, [event.target.name]: event.target.checked
-  }) }, [columnVisibilities])
+    setColumnVisibilities(event.target.name as ColumnGroupName, event.target.checked)
+  }, [columnVisibilities])
 
   const getAccordionChangeHandler = (accordionName: AccordionName) => (_: unknown, isExpanded: boolean) => setExpandedAccordion(isExpanded ? accordionName : undefined)
 
@@ -84,7 +71,7 @@ export const PhenotypeFilters = (props: Props) => {
         <FormGroup>
           <FormLabel>Filters</FormLabel>
           <ColumnGroupIndividualFilters
-            columns={columns.find(col => col.columnGroupVisibilityAttribName === "analysis").columns}
+            columns={columns.find(col => col.columnGroupName === ColumnGroupName.Analysis).columns}
           />
         </FormGroup>
       </AccordionDetails>
@@ -92,12 +79,12 @@ export const PhenotypeFilters = (props: Props) => {
   )
 
   let descriptionFilterDisplay: FilterDisplay
-  if (columnVisibilities.description) {
+  if (columnVisibilities[ColumnGroupName.Description]) {
     descriptionFilterDisplay = {
       showFilter: true,
       filters: (
         <ColumnGroupIndividualFilters
-          columns={columns.find(col => col.columnGroupVisibilityAttribName === "description").columns}
+          columns={columns.find(col => col.columnGroupName === ColumnGroupName.Description).columns}
         />
       )
     }
@@ -109,7 +96,7 @@ export const PhenotypeFilters = (props: Props) => {
     <ColumnGroupFilterGroup
       visibilityControl={
         <Switch
-          checked={columnVisibilities.description} name="description"
+          checked={columnVisibilities[ColumnGroupName.Description]} name={ColumnGroupName.Description}
           onChange={handleColumnVisibilityChange}
         /> }
       label="Description"
@@ -127,7 +114,7 @@ export const PhenotypeFilters = (props: Props) => {
           onFocus={preventEventPropagation}
           control={
             <Switch
-              checked={columnVisibilities.downloads} name="downloads"
+              checked={columnVisibilities[ColumnGroupName.Downloads]} name={ColumnGroupName.Downloads}
               onChange={handleColumnVisibilityChange}
             /> }
           label="Downloads"
@@ -136,12 +123,10 @@ export const PhenotypeFilters = (props: Props) => {
     </Paper>
   )
 
-  const handlePopulationMetricsVisibilityChange = (population: PopulationCode, isVisible: boolean) =>
-    setPopulationMetricsVisibilities( currentState => ({...currentState, [population]: isVisible}))
 
   const populationMetricsVisibilitiesFilterElems = commonPopulations.map(pop => {
     const onChange = (event: React.ChangeEvent<HTMLInputElement>) =>
-      handlePopulationMetricsVisibilityChange(pop, event.target.checked)
+      setPopulationMetricsVisibilities(pop, event.target.checked)
     const color = populationColorMapping.get(pop)
     return (
       <FormControlLabel key={pop}
@@ -173,12 +158,12 @@ export const PhenotypeFilters = (props: Props) => {
 
 
   let nCasesFilterDisplay: FilterDisplay
-  if (columnVisibilities.nCases) {
+  if (columnVisibilities[ColumnGroupName.NCases]) {
     nCasesFilterDisplay = {
       showFilter: true,
       filters: (
         <ColumnGroupIndividualFilters
-          columns={columns.find(col => col.columnGroupVisibilityAttribName === "nCases").columns}
+          columns={columns.find(col => col.columnGroupName === ColumnGroupName.NCases).columns}
         />
       )
     }
@@ -189,7 +174,7 @@ export const PhenotypeFilters = (props: Props) => {
     <ColumnGroupFilterGroup
       visibilityControl={
         <Switch
-          checked={columnVisibilities.nCases} name="nCases"
+          checked={columnVisibilities[ColumnGroupName.NCases]} name={ColumnGroupName.NCases}
           onChange={handleColumnVisibilityChange}
         /> }
       label="N Cases"
@@ -199,12 +184,12 @@ export const PhenotypeFilters = (props: Props) => {
     />
   )
   let nControlsFilterDisplay: FilterDisplay
-  if (columnVisibilities.nControls) {
+  if (columnVisibilities[ColumnGroupName.NControls]) {
     nControlsFilterDisplay = {
       showFilter: true,
       filters: (
         <ColumnGroupIndividualFilters
-          columns={[columns.find(col => col.columnGroupVisibilityAttribName === "nControls")]}
+          columns={[columns.find(col => col.columnGroupName === ColumnGroupName.NControls)]}
         />
       )
     }
@@ -215,7 +200,7 @@ export const PhenotypeFilters = (props: Props) => {
     <ColumnGroupFilterGroup
       visibilityControl={
         <Switch
-          checked={columnVisibilities.nControls} name="nControls"
+          checked={columnVisibilities[ColumnGroupName.NControls]} name={ColumnGroupName.NControls}
           onChange={handleColumnVisibilityChange}
         /> }
       label="N Controls"
@@ -225,12 +210,12 @@ export const PhenotypeFilters = (props: Props) => {
     />
   )
   let saigeHeritabilityFilterDisplay: FilterDisplay
-  if (columnVisibilities.saigeHeritability) {
+  if (columnVisibilities[ColumnGroupName.SaigeHeritability]) {
     saigeHeritabilityFilterDisplay = {
       showFilter: true,
       filters: (
         <ColumnGroupIndividualFilters
-          columns={[columns.find(col => col.columnGroupVisibilityAttribName === "saigeHeritability")]}
+          columns={[columns.find(col => col.columnGroupName === ColumnGroupName.SaigeHeritability)]}
         />
       )
     }
@@ -242,7 +227,7 @@ export const PhenotypeFilters = (props: Props) => {
     <ColumnGroupFilterGroup
       visibilityControl={
         <Switch
-          checked={columnVisibilities.saigeHeritability} name="saigeHeritability"
+          checked={columnVisibilities[ColumnGroupName.SaigeHeritability]} name={ColumnGroupName.SaigeHeritability}
           onChange={handleColumnVisibilityChange}
         /> }
       label="Saige Heritability"
@@ -252,12 +237,12 @@ export const PhenotypeFilters = (props: Props) => {
     />
   )
   let lambdaGcFilterDisplay: FilterDisplay
-  if (columnVisibilities.lambdaGc) {
+  if (columnVisibilities[ColumnGroupName.LambdaGc]) {
     lambdaGcFilterDisplay = {
       showFilter: true,
       filters: (
         <ColumnGroupIndividualFilters
-          columns={columns.find(col => col.columnGroupVisibilityAttribName === "lambdaGc").columns}
+          columns={columns.find(col => col.columnGroupName === ColumnGroupName.LambdaGc).columns}
         />
       )
     }
@@ -269,7 +254,7 @@ export const PhenotypeFilters = (props: Props) => {
     <ColumnGroupFilterGroup
       visibilityControl={
         <Switch
-          checked={columnVisibilities.lambdaGc} name="lambdaGc"
+          checked={columnVisibilities[ColumnGroupName.LambdaGc]} name={ColumnGroupName.LambdaGc}
           onChange={handleColumnVisibilityChange}
         /> }
       label="Lambda GC"
@@ -286,7 +271,7 @@ export const PhenotypeFilters = (props: Props) => {
           onFocus={preventEventPropagation}
           control={
             <Switch
-              checked={columnVisibilities.md5} name="md5"
+              checked={columnVisibilities[ColumnGroupName.Md5]} name={ColumnGroupName.Md5}
               onChange={handleColumnVisibilityChange}
             /> }
           label="MD5"
