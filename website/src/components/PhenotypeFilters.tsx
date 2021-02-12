@@ -9,7 +9,9 @@ import {  ColumnGroupFilterGroup, FilterDisplay, preventEventPropagation } from 
 import { GlobalFilter } from "./GlobalFilter"
 import { commonPopulations, PopulationCode, populationColorMapping } from "./populations"
 import { PopulationSwitch } from "./PopulationSwitch"
-import { ColumnGroupVisibility, PerPopulationMetricsVisibility, ColumnGroupName } from "./phenotypesReducer"
+import { ColumnGroupVisibility, PerPopulationMetricsVisibility, ColumnGroupName, PerPopulationRangeFilter, RangeFilterMetric, RangeFilterValue } from "./phenotypesReducer"
+import {  NumberRangeColumnFilter } from "./NewNumberRangeColumnFilter";
+
 
 const useStyles = makeStyles((theme: Theme) => ({
   analysisAccordionTitle: {
@@ -21,6 +23,9 @@ const useStyles = makeStyles((theme: Theme) => ({
   }
 }))
 
+export type PerPopulationExtremums = {
+  [K in PopulationCode]: {min: number, max: number}
+}
 
 enum AccordionName {
   Description,
@@ -35,6 +40,7 @@ enum AccordionName {
 }
 
 
+
 interface Props {
   columnVisibilities: ColumnGroupVisibility
   setColumnVisibilities: (population: ColumnGroupName, isVisible: boolean) => void
@@ -44,6 +50,12 @@ interface Props {
   preGlobalFilteredRows: UseGlobalFiltersInstanceProps<Datum>["preGlobalFilteredFlatRows"]
   globalFilter: any
   setGlobalFilter: UseGlobalFiltersInstanceProps<Datum>["setGlobalFilter"]
+  nCasesFilters: PerPopulationRangeFilter
+  nCasesPerPopulationExtremums: PerPopulationExtremums
+  nControlsFilters: PerPopulationRangeFilter
+  nControlsPerPopulationExtremums: PerPopulationExtremums
+  disableFilterOnePopulation: (args: {metric: RangeFilterMetric, population: PopulationCode}) => void
+  updateFilterOnePopulation: (args: {metric: RangeFilterMetric, population: PopulationCode, min: number, max: number}) => void
 }
 
 export const PhenotypeFilters = (props: Props) => {
@@ -51,6 +63,9 @@ export const PhenotypeFilters = (props: Props) => {
     columns, columnVisibilities, setColumnVisibilities,
     globalFilter, setGlobalFilter, preGlobalFilteredRows,
     populationMetricsVisibilities, setPopulationMetricsVisibilities,
+    updateFilterOnePopulation, disableFilterOnePopulation,
+    nCasesFilters, nCasesPerPopulationExtremums,
+    nControlsFilters, nControlsPerPopulationExtremums,
   } = props;
   const classes = useStyles()
 
@@ -159,12 +174,29 @@ export const PhenotypeFilters = (props: Props) => {
 
   let nCasesFilterDisplay: FilterDisplay
   if (columnVisibilities[ColumnGroupName.NCases]) {
+    const nCasesPopulationFilterElems = Object.entries(nCasesFilters).map(([population, filterValue]) => {
+      return (
+        <NumberRangeColumnFilter key={population}
+          label={population}
+          population={population as PopulationCode}
+          globalMinValue={nCasesPerPopulationExtremums[population as PopulationCode].min}
+          globalMaxValue={nCasesPerPopulationExtremums[population as PopulationCode].max}
+          metric={RangeFilterMetric.NCases}
+          filterValue={filterValue}
+          disableFilter={disableFilterOnePopulation}
+          updateFilter={updateFilterOnePopulation}
+        />
+      )
+    })
     nCasesFilterDisplay = {
       showFilter: true,
       filters: (
-        <ColumnGroupIndividualFilters
-          columns={columns.find(col => col.columnGroupName === ColumnGroupName.NCases).columns}
-        />
+        <>
+          <ColumnGroupIndividualFilters
+            columns={columns.find(col => col.columnGroupName === ColumnGroupName.NCases).columns}
+          />
+          {nCasesPopulationFilterElems}
+        </>
       )
     }
   } else {
@@ -185,12 +217,24 @@ export const PhenotypeFilters = (props: Props) => {
   )
   let nControlsFilterDisplay: FilterDisplay
   if (columnVisibilities[ColumnGroupName.NControls]) {
+    const nControlsPopulationFilterElems = Object.entries(nControlsFilters).map(([population, filterValue]) => {
+      return (
+        <NumberRangeColumnFilter key={population}
+          label={population}
+          population={population as PopulationCode}
+          globalMinValue={nControlsPerPopulationExtremums[population as PopulationCode].min}
+          globalMaxValue={nControlsPerPopulationExtremums[population as PopulationCode].max}
+          metric={RangeFilterMetric.NControls}
+          filterValue={filterValue}
+          disableFilter={disableFilterOnePopulation}
+          updateFilter={updateFilterOnePopulation}
+        />
+      )
+    })
     nControlsFilterDisplay = {
       showFilter: true,
       filters: (
-        <ColumnGroupIndividualFilters
-          columns={[columns.find(col => col.columnGroupName === ColumnGroupName.NControls)]}
-        />
+        <>{nControlsPopulationFilterElems}</>
       )
     }
   } else {

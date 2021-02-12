@@ -5,6 +5,20 @@ export type PerPopulationMetricsVisibility = {
   [K in PopulationCode]: boolean
 }
 
+// Each key determines the value of the range filter for a particular population:
+export type PerPopulationRangeFilter = {
+  [K in PopulationCode]: RangeFilterValue
+}
+
+export type RangeFilterValue = undefined | {min: number, max: number}
+
+// All metrics that allow range filtering:
+export enum RangeFilterMetric {
+  NCases = "n_cases",
+  NControls = "n_controls",
+  // SaigeHeritability = "saige_heritability",
+}
+
 export enum ColumnGroupName {
   Analysis = "analysis",
   Downloads = "downloads",
@@ -20,30 +34,39 @@ export type ColumnGroupVisibility = {
   [K in ColumnGroupName]: boolean
 }
 
-// Each key determines the value of the range filter for a particular population:
-type PerPopulationRangeFilter = {
-  [K in PopulationCode]: undefined | [number, number]
+const withAllFiltersDisabled: PerPopulationRangeFilter = {
+  [PopulationCode.AFR]: undefined,
+  [PopulationCode.AMR]: undefined,
+  [PopulationCode.CSA]: undefined,
+  [PopulationCode.EAS]: undefined,
+  [PopulationCode.EUR]: undefined,
+  [PopulationCode.MID]: undefined,
 }
 
 interface State {
   columnGroupVisibilities: ColumnGroupVisibility
   perPopulationMetricsVisibilities: PerPopulationMetricsVisibility
-  // nCasesFilters: PerPopulationRangeFilter
-  // nControlsFilters: PerPopulationRangeFilter
-  // saigeHeritabilityFilters: PerPopulationRangeFilter
-  // lambdaGcFilters: PerPopulationRangeFilter
+  // Range filter settings:
+  [RangeFilterMetric.NCases]: PerPopulationRangeFilter
+  [RangeFilterMetric.NControls]: PerPopulationRangeFilter
 }
+
+const nCasesInitialVisibility = false
+const nControlsInitialVisibility = false
+const saigeHeritabilityInitialVisibility = false
+const lambdaGcInitialVisibility = false
+const md5InitialVisibility = false
 
 export const initialState: State = {
   columnGroupVisibilities: {
     [ColumnGroupName.Analysis]: true,
     [ColumnGroupName.Downloads]: false,
     [ColumnGroupName.Description]: true,
-    [ColumnGroupName.NCases]: false,
-    [ColumnGroupName.NControls]: false,
-    [ColumnGroupName.SaigeHeritability]: false,
-    [ColumnGroupName.LambdaGc]: false,
-    [ColumnGroupName.Md5]: false,
+    [ColumnGroupName.NCases]: nCasesInitialVisibility,
+    [ColumnGroupName.NControls]: nControlsInitialVisibility,
+    [ColumnGroupName.SaigeHeritability]: saigeHeritabilityInitialVisibility,
+    [ColumnGroupName.LambdaGc]: lambdaGcInitialVisibility,
+    [ColumnGroupName.Md5]: md5InitialVisibility,
   },
   perPopulationMetricsVisibilities: {
     [PopulationCode.AFR]: true,
@@ -52,12 +75,20 @@ export const initialState: State = {
     [PopulationCode.EAS]: true,
     [PopulationCode.EUR]: true,
     [PopulationCode.MID]: true,
+  },
+  [RangeFilterMetric.NCases]: {
+    ...withAllFiltersDisabled
+  },
+  [RangeFilterMetric.NControls]: {
+    ...withAllFiltersDisabled
   }
 }
 
 export enum ActionType {
   SET_COLUMN_GROUP_VISIBILITY,
   SET_POPULATION_METRICS_VISIBILITY,
+  UPDATE_FILTER_ONE_POPULATION,
+  DISABLE_FILTER_ONE_POPULATION,
 }
 
 type Action = {
@@ -66,29 +97,74 @@ type Action = {
 } | {
   type: ActionType.SET_POPULATION_METRICS_VISIBILITY,
   payload: {population: PopulationCode, isVisible: boolean}
+} | {
+  type: ActionType.UPDATE_FILTER_ONE_POPULATION,
+  payload: {population: PopulationCode, metric: RangeFilterMetric, min: number, max: number}
+} | {
+  type: ActionType.DISABLE_FILTER_ONE_POPULATION
+  payload: {population: PopulationCode, metric: RangeFilterMetric}
 }
 
 export const reducer = (prevState: State, action: Action): State => {
   let nextState: State
   if (action.type === ActionType.SET_COLUMN_GROUP_VISIBILITY) {
     const {columnGroup, isVisible} = action.payload;
-    const newValue = (prevState.columnGroupVisibilities[columnGroup] !== isVisible) ? {
+    const hasColumnGroupVisibilityChanged = prevState.columnGroupVisibilities[columnGroup] !== isVisible
+    const newValueForColumnGroup = (hasColumnGroupVisibilityChanged === true) ? {
       ...prevState.columnGroupVisibilities,
       [columnGroup]: isVisible,
     } : prevState.columnGroupVisibilities
-    nextState = {
+
+    const tempNextState: State = {
       ...prevState,
-      columnGroupVisibilities: newValue
+      columnGroupVisibilities: newValueForColumnGroup
+    }
+    // If a column group has been turned off, make sure to disable all range filters that affect that column group:
+    if (hasColumnGroupVisibilityChanged === true && columnGroup === ColumnGroupName.NCases && isVisible === false) {
+      nextState = {
+        ...tempNextState,
+        [RangeFilterMetric.NCases]: {...withAllFiltersDisabled }
+      }
+    } else if (hasColumnGroupVisibilityChanged === true && columnGroup === ColumnGroupName.NControls && isVisible === false) {
+      nextState = {
+        ...tempNextState,
+        [RangeFilterMetric.NControls]: {...withAllFiltersDisabled }
+      }
+    } else {
+      nextState = tempNextState
     }
   } else if (action.type === ActionType.SET_POPULATION_METRICS_VISIBILITY) {
     const {population, isVisible} = action.payload;
-    const newValue = (prevState.perPopulationMetricsVisibilities[population] !== isVisible) ? {
+    const newValueForPopulation = (prevState.perPopulationMetricsVisibilities[population] !== isVisible) ? {
       ...prevState.perPopulationMetricsVisibilities,
       [population]: isVisible,
     } : prevState.perPopulationMetricsVisibilities
     nextState = {
       ...prevState,
-      perPopulationMetricsVisibilities: newValue
+      perPopulationMetricsVisibilities: newValueForPopulation
+    }
+  } else if (action.type === ActionType.UPDATE_FILTER_ONE_POPULATION) {
+    const {population, metric, min, max} = action.payload;
+    const currentFilterValue = prevState[metric][population]
+    const willFilterValueChange = (currentFilterValue === undefined) ||
+      (currentFilterValue.min !== min) || (currentFilterValue.max !== currentFilterValue.max);
+    const newValueForMetric = willFilterValueChange ? {
+      ...prevState[metric],
+      [population]: {min, max}
+    } : prevState[metric]
+    nextState = {
+      ...prevState,
+      [metric]: newValueForMetric
+    }
+  } else if (action.type === ActionType.DISABLE_FILTER_ONE_POPULATION) {
+    const {population, metric} = action.payload;
+    const newValueForMetric = (prevState[metric][population] !== undefined) ? {
+      ...prevState[metric],
+      [population]: undefined
+    } : prevState[metric]
+    nextState = {
+      ...prevState,
+      [metric]: newValueForMetric
     }
   } else {
     nextState = prevState

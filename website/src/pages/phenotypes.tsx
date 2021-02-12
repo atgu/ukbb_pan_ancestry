@@ -21,13 +21,13 @@ import { PopulationCell } from '../components/PopulationCell';
 import {  commonPopulations, PerPopulationMetrics, PopulationCode, } from "../components/populations";
 import { GlobalFilter } from '../components/GlobalFilter';
 import { NumberRangeColumnFilter } from '../components/NumberRangeColumnFilter';
-import { PhenotypeFilters} from '../components/PhenotypeFilters';
+import { PhenotypeFilters, PerPopulationExtremums } from '../components/PhenotypeFilters';
 import { PopulationsFilter } from '../components/PopulationsFilter';
 import { populationsFilterFunction } from '../components/populationsFilterFunction';
 import {  SaigeHeritabilityCell, width as saigeHeritabilityWidth } from "../components/SaigeHeritabilityCell";
 import min from "lodash/min"
 import max from "lodash/max"
-import {  ActionType, ColumnGroupName, initialState, PerPopulationMetricsVisibility, reducer } from "../components/phenotypesReducer";
+import {  ActionType, ColumnGroupName, initialState, PerPopulationMetricsVisibility, RangeFilterMetric, reducer } from "../components/phenotypesReducer";
 
 
 const DefaultColumnFilter = () => null
@@ -70,42 +70,117 @@ const Phenotypes = () => {
   const { siteConfig = {} } = context
 
   const [state, dispatch] = useReducer(reducer, initialState)
+  const {
+    columnGroupVisibilities, perPopulationMetricsVisibilities,
+    n_cases: nCasesFilters,
+    n_controls: nControlsFilters,
+  } = state;
 
   const minSaigeHeritabilityValue = 0
   const maxSaigeHeritabilityValue = 1
 
   const {
-    minPopulationNCasesValue, maxPopulationNCasesValue,
-    minPopulationNControlsValue, maxPopulationNControlsValue,
+    globalNCases, globalNControls,
+    filteredByPopulationRangeFilters,
+    perPopulationNCasesExtremums,
+    perPopulationNControlsExtremums,
   } = useMemo(() => {
-    const allPopulationNCasesValues = []
-    const allPopulationNControlValues = []
-    for (const datum of data) {
+    // Used to collect all values for each population of a paticular metric for aggregation:
+    type PerPopulationAccumulators = {
+      [K in PopulationCode]: number[]
+    }
+    const getInitialAccumulators = (): PerPopulationAccumulators => ({
+      [PopulationCode.AFR]: [],
+      [PopulationCode.AMR]: [],
+      [PopulationCode.CSA]: [],
+      [PopulationCode.EAS]: [],
+      [PopulationCode.EUR]: [],
+      [PopulationCode.MID]: [],
+    })
+    const allNCasesValues = []
+    const allNControlsValues = []
+    const perPopulationNCasesValues = getInitialAccumulators()
+    const perPopulationNControlsValues = getInitialAccumulators()
+    for (const row of data) {
       for (const population of commonPopulations) {
-        const populationNCasesValue = datum[`n_cases_${population}`]
-        const populationNControlsValue = datum[`n_controls_${population}`]
-        if (state.perPopulationMetricsVisibilities[population] === true) {
-          if (typeof populationNCasesValue === "number") {
-            allPopulationNCasesValues.push(populationNCasesValue)
+        const nCasesValue = row[`n_cases_${population}`]
+        const nControlsValue = row[`n_controls_${population}`]
+        if (typeof nCasesValue === "number") {
+          perPopulationNCasesValues[population].push(nCasesValue)
+        }
+        if (typeof nControlsValue === "number") {
+          perPopulationNControlsValues[population].push(nControlsValue)
+        }
+        if (perPopulationMetricsVisibilities[population] === true) {
+          if (typeof nCasesValue === "number") {
+            allNCasesValues.push(nCasesValue)
           }
-          if (typeof populationNControlsValue === "number") {
-            allPopulationNControlValues.push(populationNControlsValue)
+          if (typeof nControlsValue === "number") {
+            allNControlsValues.push(nControlsValue)
           }
         }
       }
     }
+
+    const getMetricValueForPopulationExtractor =
+      (metricPrefix: string, population: PopulationCode) => (row: Datum) => row[`${metricPrefix}${population}`]
+
+    let filteredByPopulationRangeFilters: Datum[] = data
+    for (const [population, filterValue] of Object.entries(nCasesFilters)) {
+      if (filterValue !== undefined) {
+        const extractor = getMetricValueForPopulationExtractor("n_cases_", population as PopulationCode)
+        filteredByPopulationRangeFilters = filteredByPopulationRangeFilters.filter(elem => {
+          const extractedValue = extractor(elem)
+          return (
+            typeof extractedValue === "number" &&
+            extractedValue >= filterValue.min &&
+            extractedValue <= filterValue.max
+          )
+        })
+      }
+    }
+    for (const [population, filterValue] of Object.entries(nControlsFilters)) {
+      if (filterValue !== undefined) {
+        const extractor = getMetricValueForPopulationExtractor("n_controls_", population as PopulationCode)
+        filteredByPopulationRangeFilters = filteredByPopulationRangeFilters.filter(elem => {
+          const extractedValue = extractor(elem)
+          return (
+            typeof extractedValue === "number" &&
+            extractedValue >= filterValue.min &&
+            extractedValue <= filterValue.max
+          )
+        })
+      }
+    }
+    const perPopulationNCasesExtremums = Object.fromEntries(
+      Object.entries(perPopulationNCasesValues).map(([population, values]) => ([
+        population , {min: min(values)!, max: max(values)!}
+      ]))
+    ) as PerPopulationExtremums
+    const perPopulationNControlsExtremums = Object.fromEntries(
+      Object.entries(perPopulationNControlsValues).map(([population, values]) => ([
+        population , {min: min(values)!, max: max(values)!}
+      ]))
+    ) as PerPopulationExtremums
     return {
-      minPopulationNCasesValue: min(allPopulationNCasesValues),
-      maxPopulationNCasesValue: max(allPopulationNCasesValues),
-      minPopulationNControlsValue: min(allPopulationNControlValues),
-      maxPopulationNControlsValue: max(allPopulationNControlValues),
+      globalNCases: {
+        min: min(allNCasesValues)!,
+        max: max(allNCasesValues)!,
+      },
+      globalNControls: {
+        min: min(allNControlsValues),
+        max: max(allNControlsValues),
+      },
+      perPopulationNCasesExtremums,
+      perPopulationNControlsExtremums,
+      filteredByPopulationRangeFilters
     }
 
-  }, [data, state.perPopulationMetricsVisibilities])
+  }, [data, perPopulationMetricsVisibilities, nCasesFilters, nControlsFilters])
 
   const columns = useMemo(
     () => {
-      const columnVisibilities = state.columnGroupVisibilities
+      const columnVisibilities = columnGroupVisibilities
       let columns = [
         {
           Header: "Description",
@@ -211,12 +286,12 @@ const Phenotypes = () => {
               },
               {
                 Header: "Per Population",
-                ...getPerPopulationMetrics("n_cases", state.perPopulationMetricsVisibilities),
+                ...getPerPopulationMetrics("n_cases", perPopulationMetricsVisibilities),
                 Cell: SaigeHeritabilityCell,
                 width: saigeHeritabilityWidth,
                 materialUiNoPadding: true,
-                minValue: minPopulationNCasesValue,
-                maxValue: maxPopulationNCasesValue,
+                minValue: globalNCases.min,
+                maxValue: globalNCases.max,
               }
             ]
           }
@@ -228,12 +303,12 @@ const Phenotypes = () => {
           {
             Header: "N Controls",
             columnGroupName: ColumnGroupName.NControls,
-            ...getPerPopulationMetrics("n_controls", state.perPopulationMetricsVisibilities),
+            ...getPerPopulationMetrics("n_controls", perPopulationMetricsVisibilities),
             Cell: SaigeHeritabilityCell,
             width: saigeHeritabilityWidth,
             materialUiNoPadding: true,
-            minValue: minPopulationNControlsValue,
-            maxValue: maxPopulationNControlsValue,
+            minValue: globalNControls.min,
+            maxValue: globalNControls.max,
           },
         ]
       }
@@ -243,7 +318,7 @@ const Phenotypes = () => {
           {
             Header: "Saige heritability",
             columnGroupName: ColumnGroupName.SaigeHeritability,
-            ...getPerPopulationMetrics("saige_heritability", state.perPopulationMetricsVisibilities),
+            ...getPerPopulationMetrics("saige_heritability", perPopulationMetricsVisibilities),
             Cell: SaigeHeritabilityCell,
             width: saigeHeritabilityWidth,
             materialUiNoPadding: true,
@@ -258,7 +333,7 @@ const Phenotypes = () => {
           {
             Header: "Lambda GC",
             columnGroupName: ColumnGroupName.LambdaGc,
-            columns: commonPopulations.filter(pop => state.perPopulationMetricsVisibilities[pop] === true).map(pop => ({
+            columns: commonPopulations.filter(pop => perPopulationMetricsVisibilities[pop] === true).map(pop => ({
               Header: pop,
               ...getNaColumnProps(`lambda_gc_${pop}`),
               Filter: NumberRangeColumnFilter,
@@ -323,7 +398,7 @@ const Phenotypes = () => {
       }
       return columns
     }
-  , [state.columnGroupVisibilities, state.perPopulationMetricsVisibilities])
+  , [columnGroupVisibilities, perPopulationMetricsVisibilities])
   const initialReactTableState = useMemo(() => {
     return {
       globalFilter: "",
@@ -351,9 +426,9 @@ const Phenotypes = () => {
     visibleColumns,
     state: reactTableState,
     columns: outputColumns,
-    setHiddenColumns,
   } = useTable<Datum>({
-    columns, data: data as any,
+    columns,
+    data: filteredByPopulationRangeFilters as any,
     initialState: initialReactTableState,
     defaultColumn,
     globalFilter: fuzzyTextGlobalFilterFunction,
@@ -413,6 +488,17 @@ const Phenotypes = () => {
     payload: { population, isVisible }
   }), [])
 
+  const disableRangeFilterOnePopulation = useCallback((args: {metric: RangeFilterMetric, population: PopulationCode}) => dispatch({
+    type: ActionType.DISABLE_FILTER_ONE_POPULATION,
+    payload: {metric: args.metric, population: args.population}
+  }), [])
+  const updateRangeFilterOnePopulation = useCallback((args: {metric: RangeFilterMetric, population: PopulationCode, min: number, max: number}) => dispatch({
+    type: ActionType.UPDATE_FILTER_ONE_POPULATION,
+    payload: {
+      metric: args.metric, population: args.population,
+      min: args.min, max: args.max
+    }
+  }), [])
 
   return (
     <Layout title={`${siteConfig.title}`} description="Phenotypes">
@@ -425,14 +511,20 @@ const Phenotypes = () => {
         <div className={`container ${phenotypesStyles.container}`}>
           <div>
             <PhenotypeFilters
-              columnVisibilities={state.columnGroupVisibilities}
+              columnVisibilities={columnGroupVisibilities}
               setColumnVisibilities={setColumnGroupVisibilites}
               columns={outputColumns}
               preGlobalFilteredRows={preGlobalFilteredRows}
               setGlobalFilter={setGlobalFilter}
               globalFilter={reactTableState.globalFilter}
-              populationMetricsVisibilities={state.perPopulationMetricsVisibilities}
+              populationMetricsVisibilities={perPopulationMetricsVisibilities}
               setPopulationMetricsVisibilities={setPerPoulationMetricsVisibilities}
+              nCasesFilters={nCasesFilters}
+              nCasesPerPopulationExtremums={perPopulationNCasesExtremums}
+              nControlsFilters={nControlsFilters}
+              nControlsPerPopulationExtremums={perPopulationNControlsExtremums}
+              disableFilterOnePopulation={disableRangeFilterOnePopulation}
+              updateFilterOnePopulation={updateRangeFilterOnePopulation}
             />
           </div>
           <div style={{overflowX: "auto"}}>
