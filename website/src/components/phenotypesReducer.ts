@@ -16,7 +16,7 @@ export type RangeFilterValue = undefined | {min: number, max: number}
 export enum RangeFilterMetric {
   NCases = "n_cases",
   NControls = "n_controls",
-  // SaigeHeritability = "saige_heritability",
+  SaigeHeritability = "saige_heritability",
 }
 
 export enum ColumnGroupName {
@@ -49,6 +49,7 @@ interface State {
   // Range filter settings:
   [RangeFilterMetric.NCases]: PerPopulationRangeFilter
   [RangeFilterMetric.NControls]: PerPopulationRangeFilter
+  [RangeFilterMetric.SaigeHeritability]: PerPopulationRangeFilter
 }
 
 const nCasesInitialVisibility = false
@@ -80,6 +81,9 @@ export const initialState: State = {
     ...withAllFiltersDisabled
   },
   [RangeFilterMetric.NControls]: {
+    ...withAllFiltersDisabled
+  },
+  [RangeFilterMetric.SaigeHeritability]: {
     ...withAllFiltersDisabled
   }
 }
@@ -129,6 +133,11 @@ export const reducer = (prevState: State, action: Action): State => {
       nextState = {
         ...tempNextState,
         [RangeFilterMetric.NControls]: {...withAllFiltersDisabled }
+      }
+    } else if (hasColumnGroupVisibilityChanged === true && columnGroup === ColumnGroupName.SaigeHeritability && isVisible === false) {
+      nextState = {
+        ...tempNextState,
+        [RangeFilterMetric.SaigeHeritability]: {...withAllFiltersDisabled }
       }
     } else {
       nextState = tempNextState

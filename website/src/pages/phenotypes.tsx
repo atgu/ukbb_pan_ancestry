@@ -74,6 +74,7 @@ const Phenotypes = () => {
     columnGroupVisibilities, perPopulationMetricsVisibilities,
     n_cases: nCasesFilters,
     n_controls: nControlsFilters,
+    saige_heritability: saigeHeritabilityFilters,
   } = state;
 
   const minSaigeHeritabilityValue = 0
@@ -84,6 +85,7 @@ const Phenotypes = () => {
     filteredByPopulationRangeFilters,
     perPopulationNCasesExtremums,
     perPopulationNControlsExtremums,
+    perPopulationSaigeHeritabilityExtremums,
   } = useMemo(() => {
     // Used to collect all values for each population of a paticular metric for aggregation:
     type PerPopulationAccumulators = {
@@ -99,17 +101,23 @@ const Phenotypes = () => {
     })
     const allNCasesValues = []
     const allNControlsValues = []
+    const allSaigeHeritabilityValues = []
     const perPopulationNCasesValues = getInitialAccumulators()
     const perPopulationNControlsValues = getInitialAccumulators()
+    const perPopulationSaigeHeritabilityValues = getInitialAccumulators()
     for (const row of data) {
       for (const population of commonPopulations) {
         const nCasesValue = row[`n_cases_${population}`]
         const nControlsValue = row[`n_controls_${population}`]
+        const saigeHeritabilityValue = row[`saige_heritability_${population}`]
         if (typeof nCasesValue === "number") {
           perPopulationNCasesValues[population].push(nCasesValue)
         }
         if (typeof nControlsValue === "number") {
           perPopulationNControlsValues[population].push(nControlsValue)
+        }
+        if (typeof saigeHeritabilityValue === "number") {
+          perPopulationSaigeHeritabilityValues[population].push(saigeHeritabilityValue)
         }
         if (perPopulationMetricsVisibilities[population] === true) {
           if (typeof nCasesValue === "number") {
@@ -117,6 +125,9 @@ const Phenotypes = () => {
           }
           if (typeof nControlsValue === "number") {
             allNControlsValues.push(nControlsValue)
+          }
+          if (typeof saigeHeritabilityValue === "number") {
+            allSaigeHeritabilityValues.push(saigeHeritabilityValue)
           }
         }
       }
@@ -152,6 +163,19 @@ const Phenotypes = () => {
         })
       }
     }
+    for (const [population, filterValue] of Object.entries(saigeHeritabilityFilters)) {
+      if (filterValue !== undefined) {
+        const extractor = getMetricValueForPopulationExtractor("saige_heritability_", population as PopulationCode)
+        filteredByPopulationRangeFilters = filteredByPopulationRangeFilters.filter(elem => {
+          const extractedValue = extractor(elem)
+          return (
+            typeof extractedValue === "number" &&
+            extractedValue >= filterValue.min &&
+            extractedValue <= filterValue.max
+          )
+        })
+      }
+    }
     const perPopulationNCasesExtremums = Object.fromEntries(
       Object.entries(perPopulationNCasesValues).map(([population, values]) => ([
         population , {min: min(values)!, max: max(values)!}
@@ -159,6 +183,11 @@ const Phenotypes = () => {
     ) as PerPopulationExtremums
     const perPopulationNControlsExtremums = Object.fromEntries(
       Object.entries(perPopulationNControlsValues).map(([population, values]) => ([
+        population , {min: min(values)!, max: max(values)!}
+      ]))
+    ) as PerPopulationExtremums
+    const perPopulationSaigeHeritabilityExtremums = Object.fromEntries(
+      Object.entries(perPopulationSaigeHeritabilityValues).map(([population, values]) => ([
         population , {min: min(values)!, max: max(values)!}
       ]))
     ) as PerPopulationExtremums
@@ -173,10 +202,11 @@ const Phenotypes = () => {
       },
       perPopulationNCasesExtremums,
       perPopulationNControlsExtremums,
+      perPopulationSaigeHeritabilityExtremums,
       filteredByPopulationRangeFilters
     }
 
-  }, [data, perPopulationMetricsVisibilities, nCasesFilters, nControlsFilters])
+  }, [data, perPopulationMetricsVisibilities, nCasesFilters, nControlsFilters, saigeHeritabilityFilters])
 
   const columns = useMemo(
     () => {
@@ -523,6 +553,8 @@ const Phenotypes = () => {
               nCasesPerPopulationExtremums={perPopulationNCasesExtremums}
               nControlsFilters={nControlsFilters}
               nControlsPerPopulationExtremums={perPopulationNControlsExtremums}
+              saigeHeritabilityFilters={saigeHeritabilityFilters}
+              saigeHeritabilityPerPopulationExtremums={perPopulationSaigeHeritabilityExtremums}
               disableFilterOnePopulation={disableRangeFilterOnePopulation}
               updateFilterOnePopulation={updateRangeFilterOnePopulation}
             />

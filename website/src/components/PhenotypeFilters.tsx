@@ -54,6 +54,8 @@ interface Props {
   nCasesPerPopulationExtremums: PerPopulationExtremums
   nControlsFilters: PerPopulationRangeFilter
   nControlsPerPopulationExtremums: PerPopulationExtremums
+  saigeHeritabilityFilters: PerPopulationRangeFilter
+  saigeHeritabilityPerPopulationExtremums: PerPopulationExtremums
   disableFilterOnePopulation: (args: {metric: RangeFilterMetric, population: PopulationCode}) => void
   updateFilterOnePopulation: (args: {metric: RangeFilterMetric, population: PopulationCode, min: number, max: number}) => void
 }
@@ -66,6 +68,7 @@ export const PhenotypeFilters = (props: Props) => {
     updateFilterOnePopulation, disableFilterOnePopulation,
     nCasesFilters, nCasesPerPopulationExtremums,
     nControlsFilters, nControlsPerPopulationExtremums,
+    saigeHeritabilityFilters, saigeHeritabilityPerPopulationExtremums,
   } = props;
   const classes = useStyles()
 
@@ -255,12 +258,24 @@ export const PhenotypeFilters = (props: Props) => {
   )
   let saigeHeritabilityFilterDisplay: FilterDisplay
   if (columnVisibilities[ColumnGroupName.SaigeHeritability]) {
+    const saigeHeritabilityPopulationFilterElems = Object.entries(saigeHeritabilityFilters).map(([population, filterValue]) => {
+      return (
+        <NumberRangeColumnFilter key={population}
+          label={population}
+          population={population as PopulationCode}
+          globalMinValue={saigeHeritabilityPerPopulationExtremums[population as PopulationCode].min}
+          globalMaxValue={saigeHeritabilityPerPopulationExtremums[population as PopulationCode].max}
+          metric={RangeFilterMetric.SaigeHeritability}
+          filterValue={filterValue}
+          disableFilter={disableFilterOnePopulation}
+          updateFilter={updateFilterOnePopulation}
+        />
+      )
+    })
     saigeHeritabilityFilterDisplay = {
       showFilter: true,
       filters: (
-        <ColumnGroupIndividualFilters
-          columns={[columns.find(col => col.columnGroupName === ColumnGroupName.SaigeHeritability)]}
-        />
+        <>{saigeHeritabilityPopulationFilterElems}</>
       )
     }
 
