@@ -56,6 +56,8 @@ interface Props {
   nControlsPerPopulationExtremums: PerPopulationExtremums
   saigeHeritabilityFilters: PerPopulationRangeFilter
   saigeHeritabilityPerPopulationExtremums: PerPopulationExtremums
+  lambdaGcFilters: PerPopulationRangeFilter
+  lambdaGcPerPopulationExtremums: PerPopulationExtremums
   disableFilterOnePopulation: (args: {metric: RangeFilterMetric, population: PopulationCode}) => void
   updateFilterOnePopulation: (args: {metric: RangeFilterMetric, population: PopulationCode, min: number, max: number}) => void
 }
@@ -69,6 +71,7 @@ export const PhenotypeFilters = (props: Props) => {
     nCasesFilters, nCasesPerPopulationExtremums,
     nControlsFilters, nControlsPerPopulationExtremums,
     saigeHeritabilityFilters, saigeHeritabilityPerPopulationExtremums,
+    lambdaGcFilters, lambdaGcPerPopulationExtremums,
   } = props;
   const classes = useStyles()
 
@@ -297,12 +300,24 @@ export const PhenotypeFilters = (props: Props) => {
   )
   let lambdaGcFilterDisplay: FilterDisplay
   if (columnVisibilities[ColumnGroupName.LambdaGc]) {
+    const lambdaGcPopulationFilterElems = Object.entries(lambdaGcFilters).map(([population, filterValue]) => {
+      return (
+        <NumberRangeColumnFilter key={population}
+          label={population}
+          population={population as PopulationCode}
+          globalMinValue={lambdaGcPerPopulationExtremums[population as PopulationCode].min}
+          globalMaxValue={lambdaGcPerPopulationExtremums[population as PopulationCode].max}
+          metric={RangeFilterMetric.LambdaGc}
+          filterValue={filterValue}
+          disableFilter={disableFilterOnePopulation}
+          updateFilter={updateFilterOnePopulation}
+        />
+      )
+    })
     lambdaGcFilterDisplay = {
       showFilter: true,
       filters: (
-        <ColumnGroupIndividualFilters
-          columns={columns.find(col => col.columnGroupName === ColumnGroupName.LambdaGc).columns}
-        />
+        <> {lambdaGcPopulationFilterElems} </>
       )
     }
 

@@ -19,12 +19,12 @@ import phenotypesStyles from "./phenotypes.module.css"
 import { TruncatedTextCell } from '../components/TruncatedTextCell';
 import { PopulationCell } from '../components/PopulationCell';
 import {  commonPopulations, PerPopulationMetrics, PopulationCode, } from "../components/populations";
-import { GlobalFilter } from '../components/GlobalFilter';
 import { NumberRangeColumnFilter } from '../components/NumberRangeColumnFilter';
 import { PhenotypeFilters, PerPopulationExtremums } from '../components/PhenotypeFilters';
 import { PopulationsFilter } from '../components/PopulationsFilter';
 import { populationsFilterFunction } from '../components/populationsFilterFunction';
-import {  SaigeHeritabilityCell, width as saigeHeritabilityWidth } from "../components/SaigeHeritabilityCell";
+import {  BarChartCell, width as chartCellWidth, height as chartCellHeight } from "../components/BarChartCell";
+import {  ScatterPlotCell} from "../components/ScatterPlotCell";
 import min from "lodash/min"
 import max from "lodash/max"
 import {  ActionType, ColumnGroupName, initialState, PerPopulationMetricsVisibility, RangeFilterMetric, reducer } from "../components/phenotypesReducer";
@@ -75,17 +75,21 @@ const Phenotypes = () => {
     n_cases: nCasesFilters,
     n_controls: nControlsFilters,
     saige_heritability: saigeHeritabilityFilters,
+    lambda_gc: lambdaGcFilters,
   } = state;
+
 
   const minSaigeHeritabilityValue = 0
   const maxSaigeHeritabilityValue = 1
-
+  const clampedLambdaGcMin = 0.5
+  const clampedLambdaGcMax = 1.5
   const {
-    globalNCases, globalNControls,
+    globalNCases, globalNControls, globalLambdaGc,
     filteredByPopulationRangeFilters,
     perPopulationNCasesExtremums,
     perPopulationNControlsExtremums,
     perPopulationSaigeHeritabilityExtremums,
+    perPopulationLambdaGcExtremums,
   } = useMemo(() => {
     // Used to collect all values for each population of a paticular metric for aggregation:
     type PerPopulationAccumulators = {
@@ -102,14 +106,17 @@ const Phenotypes = () => {
     const allNCasesValues = []
     const allNControlsValues = []
     const allSaigeHeritabilityValues = []
+    const allLambdaGcValues = []
     const perPopulationNCasesValues = getInitialAccumulators()
     const perPopulationNControlsValues = getInitialAccumulators()
     const perPopulationSaigeHeritabilityValues = getInitialAccumulators()
+    const perPopulationLambdaGcValues = getInitialAccumulators()
     for (const row of data) {
       for (const population of commonPopulations) {
         const nCasesValue = row[`n_cases_${population}`]
         const nControlsValue = row[`n_controls_${population}`]
         const saigeHeritabilityValue = row[`saige_heritability_${population}`]
+        const lambdaGcValue = row[`lambda_gc_${population}`]
         if (typeof nCasesValue === "number") {
           perPopulationNCasesValues[population].push(nCasesValue)
         }
@@ -118,6 +125,9 @@ const Phenotypes = () => {
         }
         if (typeof saigeHeritabilityValue === "number") {
           perPopulationSaigeHeritabilityValues[population].push(saigeHeritabilityValue)
+        }
+        if (typeof lambdaGcValue === "number") {
+          perPopulationLambdaGcValues[population].push(lambdaGcValue)
         }
         if (perPopulationMetricsVisibilities[population] === true) {
           if (typeof nCasesValue === "number") {
@@ -128,6 +138,12 @@ const Phenotypes = () => {
           }
           if (typeof saigeHeritabilityValue === "number") {
             allSaigeHeritabilityValues.push(saigeHeritabilityValue)
+          }
+          if (typeof saigeHeritabilityValue === "number") {
+            allSaigeHeritabilityValues.push(saigeHeritabilityValue)
+          }
+          if (typeof lambdaGcValue === "number") {
+            allLambdaGcValues.push(lambdaGcValue)
           }
         }
       }
@@ -176,6 +192,19 @@ const Phenotypes = () => {
         })
       }
     }
+    for (const [population, filterValue] of Object.entries(lambdaGcFilters)) {
+      if (filterValue !== undefined) {
+        const extractor = getMetricValueForPopulationExtractor("lambda_gc_", population as PopulationCode)
+        filteredByPopulationRangeFilters = filteredByPopulationRangeFilters.filter(elem => {
+          const extractedValue = extractor(elem)
+          return (
+            typeof extractedValue === "number" &&
+            extractedValue >= filterValue.min &&
+            extractedValue <= filterValue.max
+          )
+        })
+      }
+    }
     const perPopulationNCasesExtremums = Object.fromEntries(
       Object.entries(perPopulationNCasesValues).map(([population, values]) => ([
         population , {min: min(values)!, max: max(values)!}
@@ -191,6 +220,17 @@ const Phenotypes = () => {
         population , {min: min(values)!, max: max(values)!}
       ]))
     ) as PerPopulationExtremums
+    const perPopulationLambdaGcExtremums = Object.fromEntries(
+      Object.entries(perPopulationLambdaGcValues).map(([population, values]) => {
+        const rawMin = min(values)!
+        const rawMax = max(values)!
+        const displayedMin = (rawMin < clampedLambdaGcMin) ? clampedLambdaGcMin : rawMin
+        const displayedMax = (rawMax > clampedLambdaGcMax) ? clampedLambdaGcMax : rawMax
+        return [population, {min: displayedMin, max: displayedMax}]
+      })
+    ) as PerPopulationExtremums
+    const rawGlobalLambdaGcMin = min(allLambdaGcValues)!
+    const rawGlobalLambdaGcMax = max(allLambdaGcValues)!
     return {
       globalNCases: {
         min: min(allNCasesValues)!,
@@ -200,13 +240,18 @@ const Phenotypes = () => {
         min: min(allNControlsValues),
         max: max(allNControlsValues),
       },
+      globalLambdaGc: {
+        min: (rawGlobalLambdaGcMin < clampedLambdaGcMin) ? clampedLambdaGcMin : rawGlobalLambdaGcMin,
+        max: (rawGlobalLambdaGcMax > clampedLambdaGcMax) ? clampedLambdaGcMax : rawGlobalLambdaGcMax,
+      },
       perPopulationNCasesExtremums,
       perPopulationNControlsExtremums,
       perPopulationSaigeHeritabilityExtremums,
+      perPopulationLambdaGcExtremums,
       filteredByPopulationRangeFilters
     }
 
-  }, [data, perPopulationMetricsVisibilities, nCasesFilters, nControlsFilters, saigeHeritabilityFilters])
+  }, [data, perPopulationMetricsVisibilities, nCasesFilters, nControlsFilters, saigeHeritabilityFilters, lambdaGcFilters])
 
   const columns = useMemo(
     () => {
@@ -317,8 +362,8 @@ const Phenotypes = () => {
               {
                 Header: "Per Population",
                 ...getPerPopulationMetrics("n_cases", perPopulationMetricsVisibilities),
-                Cell: SaigeHeritabilityCell,
-                width: saigeHeritabilityWidth,
+                Cell: BarChartCell,
+                width: chartCellWidth,
                 materialUiNoPadding: true,
                 minValue: globalNCases.min,
                 maxValue: globalNCases.max,
@@ -334,8 +379,8 @@ const Phenotypes = () => {
             Header: "N Controls",
             columnGroupName: ColumnGroupName.NControls,
             ...getPerPopulationMetrics("n_controls", perPopulationMetricsVisibilities),
-            Cell: SaigeHeritabilityCell,
-            width: saigeHeritabilityWidth,
+            Cell: BarChartCell,
+            width: chartCellWidth,
             materialUiNoPadding: true,
             minValue: globalNControls.min,
             maxValue: globalNControls.max,
@@ -349,8 +394,8 @@ const Phenotypes = () => {
             Header: "Saige heritability",
             columnGroupName: ColumnGroupName.SaigeHeritability,
             ...getPerPopulationMetrics("saige_heritability", perPopulationMetricsVisibilities),
-            Cell: SaigeHeritabilityCell,
-            width: saigeHeritabilityWidth,
+            Cell: BarChartCell,
+            width: chartCellWidth,
             materialUiNoPadding: true,
             minValue: minSaigeHeritabilityValue,
             maxValue: maxSaigeHeritabilityValue,
@@ -363,13 +408,13 @@ const Phenotypes = () => {
           {
             Header: "Lambda GC",
             columnGroupName: ColumnGroupName.LambdaGc,
-            columns: commonPopulations.filter(pop => perPopulationMetricsVisibilities[pop] === true).map(pop => ({
-              Header: pop,
-              ...getNaColumnProps(`lambda_gc_${pop}`),
-              Filter: NumberRangeColumnFilter,
-              filter: rangeFilterFunction,
-              width: decimalNumbersColumnWidth,
-            }))
+            ...getPerPopulationMetrics("lambda_gc", perPopulationMetricsVisibilities),
+            Cell: ScatterPlotCell,
+            width: chartCellWidth,
+            materialUiNoPadding: true,
+            minValue: globalLambdaGc.min,
+            maxValue: globalLambdaGc.max,
+            xAxisConfig: {isShown: true, yIntercept: 1}
           }
         ]
       }
@@ -428,7 +473,12 @@ const Phenotypes = () => {
       }
       return columns
     }
-  , [columnGroupVisibilities, perPopulationMetricsVisibilities])
+  , [
+    columnGroupVisibilities, perPopulationMetricsVisibilities,
+    globalNCases.min, globalNCases.max,
+    globalNControls.min, globalNControls.max,
+    globalLambdaGc.min, globalLambdaGc.max,
+  ])
   const initialReactTableState = useMemo(() => {
     return {
       globalFilter: "",
@@ -555,6 +605,8 @@ const Phenotypes = () => {
               nControlsPerPopulationExtremums={perPopulationNControlsExtremums}
               saigeHeritabilityFilters={saigeHeritabilityFilters}
               saigeHeritabilityPerPopulationExtremums={perPopulationSaigeHeritabilityExtremums}
+              lambdaGcFilters={lambdaGcFilters}
+              lambdaGcPerPopulationExtremums={perPopulationLambdaGcExtremums}
               disableFilterOnePopulation={disableRangeFilterOnePopulation}
               updateFilterOnePopulation={updateRangeFilterOnePopulation}
             />
@@ -568,7 +620,7 @@ const Phenotypes = () => {
                 <FixedSizeList
                   height={700}
                   itemCount={rows.length}
-                  itemSize={60}
+                  itemSize={chartCellHeight}
                   width={totalColumnsWidth + scrollBarSize}
                   innerElementType={TableBody}
                 >

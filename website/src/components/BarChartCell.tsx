@@ -30,14 +30,14 @@ const xScale = scaleLinear<number, number>().domain([
   margins.left + horizontalDistanceBetweenBars / 2, width - margins.right - horizontalDistanceBetweenBars / 2
 ])
 
-export const SaigeHeritabilityCell = ({value, column}: Props) => {
+export const BarChartCell = ({value, column}: Props) => {
   const {minValue, maxValue} = column
   const yScale = scaleLinear<number, number>().domain([minValue, maxValue]).range([height - margins.bottom, margins.top])
   const bars = displayedPopulations.map((population, index) => {
-    const numericValue = value.get(population)
     if (population === undefined) {
       return null
     } else {
+      const numericValue = value.get(population)
       const color = populationColorMapping.get(population)
       let barHeight: number, y: number
       if (numericValue === 0) {
@@ -66,6 +66,7 @@ export const SaigeHeritabilityCell = ({value, column}: Props) => {
       )
     }
   })
+
   return (
     <div style={{width: `${width}px`, height: `${height}px`, position: "relative"}}>
       {bars}

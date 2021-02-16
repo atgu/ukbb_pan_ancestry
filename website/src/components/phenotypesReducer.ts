@@ -17,6 +17,7 @@ export enum RangeFilterMetric {
   NCases = "n_cases",
   NControls = "n_controls",
   SaigeHeritability = "saige_heritability",
+  LambdaGc = "lambda_gc",
 }
 
 export enum ColumnGroupName {
@@ -50,6 +51,7 @@ interface State {
   [RangeFilterMetric.NCases]: PerPopulationRangeFilter
   [RangeFilterMetric.NControls]: PerPopulationRangeFilter
   [RangeFilterMetric.SaigeHeritability]: PerPopulationRangeFilter
+  [RangeFilterMetric.LambdaGc]: PerPopulationRangeFilter
 }
 
 const nCasesInitialVisibility = false
@@ -84,6 +86,9 @@ export const initialState: State = {
     ...withAllFiltersDisabled
   },
   [RangeFilterMetric.SaigeHeritability]: {
+    ...withAllFiltersDisabled
+  },
+  [RangeFilterMetric.LambdaGc]: {
     ...withAllFiltersDisabled
   }
 }
@@ -138,6 +143,11 @@ export const reducer = (prevState: State, action: Action): State => {
       nextState = {
         ...tempNextState,
         [RangeFilterMetric.SaigeHeritability]: {...withAllFiltersDisabled }
+      }
+    } else if (hasColumnGroupVisibilityChanged === true && columnGroup === ColumnGroupName.LambdaGc && isVisible === false) {
+      nextState = {
+        ...tempNextState,
+        [RangeFilterMetric.LambdaGc]: {...withAllFiltersDisabled }
       }
     } else {
       nextState = tempNextState
