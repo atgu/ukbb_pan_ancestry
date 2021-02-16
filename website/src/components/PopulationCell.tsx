@@ -1,6 +1,6 @@
 import React from "react"
 import {  populationColorMapping, commonPopulations as expectedPopulations } from "./populations";
-import styles from "../pages/phenotypes.module.css"
+import styles from "./phenotypes.module.css"
 import { FiberManualRecord } from "@material-ui/icons";
 import { Tooltip } from "@material-ui/core"
 
