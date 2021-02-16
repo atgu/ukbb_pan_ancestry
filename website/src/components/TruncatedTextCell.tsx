@@ -3,9 +3,12 @@ import React from "react"
 
 const useStyles = makeStyles(() => ({
   cell: {
-    whiteSpace: "nowrap",
+    // https://dropshado.ws/post/1015351370/webkit-line-clamp
     overflow: "hidden",
     textOverflow: "ellipsis",
+    display: "-webkit-box",
+    "-webkit-line-clamp": 2,
+    "-webkit-box-orient": "vertical",
   }
 }))
 
