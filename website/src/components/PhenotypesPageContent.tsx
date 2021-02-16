@@ -4,7 +4,7 @@ import {  SelectColumnFilter } from "../components/SelectColumnFilter";
 import {  FixedSizeList } from "react-window";
 import { Datum } from '../components/types';
 import { scrollbarWidth } from '../components/scrollbarWidth';
-import { Table, TableHead, TableRow, TableCell, TableBody, createMuiTheme, ThemeProvider, } from '@material-ui/core';
+import { Table, TableHead, TableRow, TableCell, TableBody, createMuiTheme, ThemeProvider, makeStyles, Theme, } from '@material-ui/core';
 import {  DownloadLinkCell, downloadLinkCellMaxWidth } from "../components/DownloadLinkCell";
 import {  CopyLinkCell, copyLinkCellMaxWidth } from "../components/CopyLinkCell";
 import {  customIncludesFilterFn } from "../components/customIncludesFilterFn";
@@ -26,7 +26,16 @@ import {  ScatterPlotCell} from "../components/ScatterPlotCell";
 import min from "lodash/min"
 import max from "lodash/max"
 import {  ActionType, ColumnGroupName, initialState, PerPopulationMetricsVisibility, RangeFilterMetric, reducer } from "../components/phenotypesReducer";
+import clsx from "clsx"
 
+const useStyles = makeStyles((theme: Theme) => ({
+  oddTableRow: {
+    // Need to double up on class names to override Infima's default styling:
+    "&&": {
+      backgroundColor: theme.palette.action.hover,
+    }
+  }
+}))
 
 const DefaultColumnFilter = () => null
 const numCasesColumnWidth = 100
@@ -73,7 +82,7 @@ export const PhenotypesPageContent = () => {
     saige_heritability: saigeHeritabilityFilters,
     lambda_gc: lambdaGcFilters,
   } = state;
-
+  const classes = useStyles()
 
   const minSaigeHeritabilityValue = 0
   const maxSaigeHeritabilityValue = 1
@@ -529,6 +538,9 @@ export const PhenotypesPageContent = () => {
     })
     return (
       <TableRow
+        className={clsx({
+          [classes.oddTableRow]: index % 2 == 1
+        })}
         {...row.getRowProps({style})}
       >
         {cellElems}
