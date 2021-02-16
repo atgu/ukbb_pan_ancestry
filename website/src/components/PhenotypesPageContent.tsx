@@ -1,11 +1,10 @@
 import React, { useCallback, useMemo, useReducer, useState } from 'react'
-import useThemeContext from '@theme/hooks/useThemeContext';
 import {  useTable, useFilters, useBlockLayout, useGlobalFilter  } from "react-table";
 import {  SelectColumnFilter } from "../components/SelectColumnFilter";
 import {  FixedSizeList } from "react-window";
 import { Datum } from '../components/types';
 import { scrollbarWidth } from '../components/scrollbarWidth';
-import { Table, TableHead, TableRow, TableCell, TableBody, } from '@material-ui/core';
+import { Table, TableHead, TableRow, TableCell, TableBody, createMuiTheme, ThemeProvider, } from '@material-ui/core';
 import {  DownloadLinkCell, downloadLinkCellMaxWidth } from "../components/DownloadLinkCell";
 import {  CopyLinkCell, copyLinkCellMaxWidth } from "../components/CopyLinkCell";
 import {  customIncludesFilterFn } from "../components/customIncludesFilterFn";
@@ -65,7 +64,6 @@ const getPerPopulationMetrics = (
 
 
 export const PhenotypesPageContent = () => {
-  const themeContext = useThemeContext();
 
   const [state, dispatch] = useReducer(reducer, initialState)
   const {
