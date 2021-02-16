@@ -274,10 +274,6 @@ const Phenotypes = () => {
             columnGroupName: ColumnGroupName.Analysis,
             columns: [
               {
-                Header: "Coding", accessor: "coding",
-                width: 100,
-              },
-              {
                 Header: "Trait type", accessor: "trait_type",
                 Filter: SelectColumnFilter,
                 filter: customIncludesFilterFn,
@@ -289,17 +285,6 @@ const Phenotypes = () => {
                 Filter: TextColumnFilter,
                 Cell: TruncatedTextCell,
                 width: 120,
-              },
-              {
-                Header: "Sex", accessor: "pheno_sex",
-                Filter: SelectColumnFilter,
-                filter: customIncludesFilterFn,
-                width: 120,
-              },
-              {
-                Header: "Modifier", accessor: "modifier",
-                disableFilters: true,
-                width: 100,
               },
             ]
           },
