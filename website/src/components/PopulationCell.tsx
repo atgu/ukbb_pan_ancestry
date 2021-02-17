@@ -1,10 +1,20 @@
 import React from "react"
 import {  populationColorMapping, commonPopulations as expectedPopulations } from "./populations";
-import styles from "./phenotypes.module.css"
 import { FiberManualRecord } from "@material-ui/icons";
-import { Tooltip } from "@material-ui/core"
+import { makeStyles, Tooltip } from "@material-ui/core"
+
+const useStyles = makeStyles({
+  root: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, 25px)",
+    gridTemplateRows: "repeat(2, 25px)",
+    justifyContent: "center",
+    alignItems: "center",
+  }
+})
 
 export const PopulationCell = ({value}) => {
+  const classes = useStyles()
   const actualPopulations = value ? new Set(value.split(",")) : new Set()
   const populationElems = expectedPopulations.map(pop => {
     if (actualPopulations.has(pop) ) {
@@ -19,7 +29,7 @@ export const PopulationCell = ({value}) => {
   })
 
   return (
-    <div className={styles.populationCell}>
+    <div className={classes.root}>
       {populationElems}
     </div>
   )

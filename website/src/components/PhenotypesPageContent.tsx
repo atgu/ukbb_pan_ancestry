@@ -27,6 +27,7 @@ import min from "lodash/min"
 import max from "lodash/max"
 import {  ActionType, ColumnGroupName, initialState, PerPopulationMetricsVisibility, RangeFilterMetric, reducer } from "../components/phenotypesReducer";
 import clsx from "clsx"
+import { PopuplationHeader } from './PopulationHeader';
 
 const useStyles = makeStyles((theme: Theme) => ({
   oddTableRow: {
@@ -34,6 +35,9 @@ const useStyles = makeStyles((theme: Theme) => ({
     "&&": {
       backgroundColor: theme.palette.action.hover,
     }
+  },
+  tableCell: {
+    padding: "0",
   }
 }))
 
@@ -316,6 +320,7 @@ export const PhenotypesPageContent = () => {
                 filter: populationsFilterFunction,
                 Filter: PopulationsFilter,
                 Cell: PopulationCell,
+                Header: PopuplationHeader,
               }
             ]
           },
@@ -510,7 +515,7 @@ export const PhenotypesPageContent = () => {
   const headerGroupElems = headerGroups.map(headerGroup => {
     const headerElems = headerGroup.headers.map(column => {
       return (
-        <TableCell align="center" {...column.getHeaderProps()}>
+        <TableCell align="center" {...column.getHeaderProps()} className={classes.tableCell}>
           {column.render("Header")}
         </TableCell>
       )
