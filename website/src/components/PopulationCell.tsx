@@ -10,6 +10,9 @@ const useStyles = makeStyles({
     gridTemplateRows: "repeat(2, 25px)",
     justifyContent: "center",
     alignItems: "center",
+    alignContent: "center",
+    width: "100%",
+    height: "100%",
   }
 })
 

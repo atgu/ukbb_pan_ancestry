@@ -54,22 +54,16 @@ interface State {
   [RangeFilterMetric.LambdaGc]: PerPopulationRangeFilter
 }
 
-const nCasesInitialVisibility = false
-const nControlsInitialVisibility = false
-const saigeHeritabilityInitialVisibility = false
-const lambdaGcInitialVisibility = false
-const md5InitialVisibility = false
-
 export const initialState: State = {
   columnGroupVisibilities: {
     [ColumnGroupName.Analysis]: true,
-    [ColumnGroupName.Downloads]: false,
+    [ColumnGroupName.Downloads]: true,
     [ColumnGroupName.Description]: true,
-    [ColumnGroupName.NCases]: nCasesInitialVisibility,
-    [ColumnGroupName.NControls]: nControlsInitialVisibility,
-    [ColumnGroupName.SaigeHeritability]: saigeHeritabilityInitialVisibility,
-    [ColumnGroupName.LambdaGc]: lambdaGcInitialVisibility,
-    [ColumnGroupName.Md5]: md5InitialVisibility,
+    [ColumnGroupName.NCases]: false,
+    [ColumnGroupName.NControls]: false,
+    [ColumnGroupName.SaigeHeritability]: false,
+    [ColumnGroupName.LambdaGc]: false,
+    [ColumnGroupName.Md5]: false,
   },
   perPopulationMetricsVisibilities: {
     [PopulationCode.AFR]: true,
