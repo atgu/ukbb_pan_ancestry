@@ -1,4 +1,5 @@
-import React, { useCallback, useMemo, useReducer, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import BrowserOnly from '@docusaurus/BrowserOnly';
 import {  useTable, useFilters, useBlockLayout, useGlobalFilter  } from "react-table";
 import {  SelectColumnFilter } from "../components/SelectColumnFilter";
 import {  FixedSizeList } from "react-window";
@@ -28,6 +29,7 @@ import clsx from "clsx"
 import { PopuplationHeader } from './PopulationHeader';
 import { determineExtremums, maxSaigeHeritabilityValue } from './determineExtremums';
 import { format } from 'd3-format';
+import "regenerator-runtime/runtime";
 
 const useStyles = makeStyles((theme: Theme) => ({
   oddTableRow: {
@@ -369,7 +371,6 @@ export const PhenotypesPageContent = () => {
     )
   })
 
-  const scrollBarSize = useMemo(() => scrollbarWidth(), [])
 
 
   const RenderRow = useCallback(({index, style}) => {
@@ -419,6 +420,12 @@ export const PhenotypesPageContent = () => {
     }
   }), [])
 
+  const scrollBarSizeRef = useRef<number | undefined>(undefined)
+  useEffect(() => {
+    if (scrollBarSizeRef.current === undefined) {
+      scrollBarSizeRef.current = scrollbarWidth()
+    }
+  })
   return (
     <>
       <header>
@@ -455,17 +462,29 @@ export const PhenotypesPageContent = () => {
               <TableHead>
                 {headerGroupElems}
               </TableHead>
-              <div {...getTableBodyProps()}>
-                <FixedSizeList
-                  height={700}
-                  itemCount={rows.length}
-                  itemSize={chartCellHeight}
-                  width={totalColumnsWidth + scrollBarSize}
-                  innerElementType={TableBody}
-                >
-                  {RenderRow}
-                </FixedSizeList>
-              </div>
+              <BrowserOnly>
+              {
+                () => {
+                  if (scrollBarSizeRef.current === undefined) {
+                    return null
+                  } else {
+                    return (
+                      <div {...getTableBodyProps()}>
+                        <FixedSizeList
+                          height={700}
+                          itemCount={rows.length}
+                          itemSize={chartCellHeight}
+                          width={totalColumnsWidth + scrollBarSizeRef.current}
+                          innerElementType={TableBody}
+                        >
+                          {RenderRow}
+                        </FixedSizeList>
+                      </div>
+                    )
+                  }
+                }
+              }
+              </BrowserOnly>
             </Table>
           </div>
         </div>
