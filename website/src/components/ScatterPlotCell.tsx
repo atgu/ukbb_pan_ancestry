@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react"
 import {commonPopulations, PerPopulationMetrics, populationColorMapping} from "./populations";
 import {  scaleLinear } from "d3-scale";
-import { Tooltip } from "@material-ui/core";
+import { makeStyles, Tooltip } from "@material-ui/core";
 import { ColumnInstance } from "react-table";
 import { Datum } from "./types";
 import {  height, width } from "./BarChartCell";
@@ -14,7 +14,12 @@ type XAxisConfig = {
 }
 interface Props {
   value: PerPopulationMetrics
-  column: ColumnInstance<Datum> & {minValue: number, maxValue: number, xAxisConfig: XAxisConfig}
+  column: ColumnInstance<Datum> & {
+    minValue: number,
+    maxValue: number,
+    xAxisConfig: XAxisConfig
+    labelFormatter: (value: number) => string
+  }
 }
 
 const displayedPopulations = commonPopulations
@@ -22,7 +27,7 @@ const displayedPopulations = commonPopulations
 const margins = {
   left: 10,
   right: 10,
-  top: 10,
+  top: 13,
   bottom: 10,
 }
 const dotDiameter = 8
@@ -33,8 +38,21 @@ const xScale = scaleLinear<number, number>().domain([
   margins.left + horizontalDistanceBetweenDots / 2, width - margins.right - horizontalDistanceBetweenDots / 2
 ])
 
+const useStyles = makeStyles({
+  dotContainer: {
+    position: "absolute",
+    top: "0",
+  },
+  barLabel: {
+    position: "absolute",
+    fontSize: "0.7rem",
+    transform: "translate(-50%, -50%)",
+  },
+})
+
 export const ScatterPlotCell = ({value, column}: Props) => {
-  const {minValue, maxValue, xAxisConfig} = column
+  const classes = useStyles()
+  const {minValue, maxValue, xAxisConfig, labelFormatter} = column
   const yScale = scaleLinear<number, number>().
     domain([minValue, maxValue]).
     range([height - margins.bottom, margins.top]).
@@ -49,32 +67,32 @@ export const ScatterPlotCell = ({value, column}: Props) => {
       } else {
         const color = populationColorMapping.get(population)
         const topYCoord = yScale(numericValue)
-        const asterisk = (numericValue < minValue || numericValue > maxValue) ? (
-          <div style={{
-            position: "absolute",
-            right: "-8px",
-            top: "-13px",
-            fontSize: "1.5rem",
-          }}
-          >*</div>
-        ) : null
+        const label = (
+          <div
+            className={classes.barLabel}
+            style={{ top: `${topYCoord - 9}px`, }}
+          >{labelFormatter(numericValue)}</div>
+        )
         return (
-          <Tooltip title={`${population}: ${numericValue}`} placement="top">
+          <div className={classes.dotContainer} key={population} style={{
+            left: `${xScale(index)}px`,
+            height: `${height}px`,
+          }}>
             <div key={population}
               style={{
                 position: "absolute",
                 width: `${dotDiameter}px`,
                 height: `${dotDiameter}px`,
-                left: `${xScale(index)}px`,
+                left: "0",
                 top: `${topYCoord}px`,
                 transform: `translate(-50%, -50%)`,
                 borderRadius: "50%",
                 backgroundColor: color,
               }}
             >
-              {asterisk}
             </div>
-          </Tooltip>
+            {label}
+          </div>
         )
       }
     }

@@ -251,7 +251,8 @@ export const PhenotypesPageContent = () => {
             width: chartCellWidth,
             minValue: globalLambdaGc.min,
             maxValue: globalLambdaGc.max,
-            xAxisConfig: {isShown: true, yIntercept: 1}
+            xAxisConfig: {isShown: true, yIntercept: 1},
+            labelFormatter: format(".3f"),
           }
         ]
       }
