@@ -83,20 +83,32 @@ export const PhenotypeFilters = (props: Props) => {
 
   const getAccordionChangeHandler = (accordionName: AccordionName) => (_: unknown, isExpanded: boolean) => setExpandedAccordion(isExpanded ? accordionName : undefined)
 
+  let analysisFilterDisplay: FilterDisplay
+  if (columnVisibilities[ColumnGroupName.Analysis]) {
+    analysisFilterDisplay = {
+      showFilter: true,
+      filters: (
+        <ColumnGroupIndividualFilters
+          columns={columns.find(col => col.columnGroupName === ColumnGroupName.Analysis).columns}
+        />
+      )
+    }
+  } else {
+    analysisFilterDisplay = {showFilter: false}
+  }
   const analysisFilter = (
-    <Accordion expanded={expandedAccordion === AccordionName.Analysis} onChange={getAccordionChangeHandler(AccordionName.Analysis)}>
-      <AccordionSummary expandIcon={<ExpandMore/>} className={classes.analysisAccordionTitle}>
-        Analysis
-      </AccordionSummary>
-      <AccordionDetails>
-        <FormGroup>
-          <FormLabel>Filters</FormLabel>
-          <ColumnGroupIndividualFilters
-            columns={columns.find(col => col.columnGroupName === ColumnGroupName.Analysis).columns}
-          />
-        </FormGroup>
-      </AccordionDetails>
-    </Accordion>
+    <ColumnGroupFilterGroup
+      visibilityControl={
+        <Switch
+          checked={columnVisibilities[ColumnGroupName.Analysis]} name={ColumnGroupName.Analysis}
+          onChange={handleColumnVisibilityChange}
+        /> }
+      label="Analysis"
+      filterDisplay={analysisFilterDisplay}
+      isAccordionExpanded={expandedAccordion === AccordionName.Analysis}
+      onAccordionChange={getAccordionChangeHandler(AccordionName.Analysis)}
+    />
+
   )
 
   let descriptionFilterDisplay: FilterDisplay

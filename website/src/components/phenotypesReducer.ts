@@ -56,13 +56,13 @@ interface State {
 
 export const initialState: State = {
   columnGroupVisibilities: {
-    [ColumnGroupName.Analysis]: true,
+    [ColumnGroupName.Analysis]: false,
     [ColumnGroupName.Downloads]: true,
-    [ColumnGroupName.Description]: true,
-    [ColumnGroupName.NCases]: false,
-    [ColumnGroupName.NControls]: false,
-    [ColumnGroupName.SaigeHeritability]: false,
-    [ColumnGroupName.LambdaGc]: false,
+    [ColumnGroupName.Description]: false,
+    [ColumnGroupName.NCases]: true,
+    [ColumnGroupName.NControls]: true,
+    [ColumnGroupName.SaigeHeritability]: true,
+    [ColumnGroupName.LambdaGc]: true,
     [ColumnGroupName.Md5]: false,
   },
   perPopulationMetricsVisibilities: {

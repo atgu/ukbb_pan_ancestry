@@ -182,27 +182,6 @@ export const PhenotypesPageContent = () => {
             columnGroupName: ColumnGroupName.NCases,
             columns: [
               {
-                Header: "Both sexes",
-                ...getNaColumnProps("n_cases_full_cohort_both_sexes"),
-                Filter: NumberRangeColumnFilter,
-                filter: rangeFilterFunction,
-                width: numCasesColumnWidth,
-              },
-              {
-                Header: "Females",
-                ...getNaColumnProps("n_cases_full_cohort_females"),
-                Filter: NumberRangeColumnFilter,
-                filter: rangeFilterFunction,
-                width: numCasesColumnWidth,
-              },
-              {
-                Header: "Males",
-                ...getNaColumnProps("n_cases_full_cohort_males"),
-                Filter: NumberRangeColumnFilter,
-                filter: rangeFilterFunction,
-                width: numCasesColumnWidth,
-              },
-              {
                 Header: "Per Population",
                 ...getPerPopulationMetrics("n_cases", perPopulationMetricsVisibilities),
                 Cell: BarChartCell,
