@@ -157,30 +157,16 @@ export const PhenotypesPageContent = () => {
           },
         ]
       }
-      if (columnVisibilities.description) {
+      if (columnVisibilities.populations) {
         columns = [
           ...columns,
           {
-            Header: "Description",
-            columnGroupName: ColumnGroupName.Description,
-            columns: [
-              {
-                Header: "Category",
-                accessor: "category",
-                filter: fuzzyTextFilterFunction,
-                Filter: TextColumnFilter,
-                width: 400,
-                Cell: TruncatedTextCell
-              },
-              {
-                Header: "Populations",
-                accessor: "pops",
-                filter: populationsFilterFunction,
-                Filter: PopulationsFilter,
-                Cell: PopulationCell,
-                Header: PopuplationHeader,
-              }
-            ]
+            columnGroupName: ColumnGroupName.Populations,
+            accessor: "pops",
+            filter: populationsFilterFunction,
+            Filter: PopulationsFilter,
+            Cell: PopulationCell,
+            Header: PopuplationHeader,
           },
         ]
       }

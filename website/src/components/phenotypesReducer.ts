@@ -23,7 +23,7 @@ export enum RangeFilterMetric {
 export enum ColumnGroupName {
   Analysis = "analysis",
   Downloads = "downloads",
-  Description = "description",
+  Populations = "populations",
   NCases = "nCases",
   NControls = "nControls",
   SaigeHeritability = "saigeHeritability",
@@ -58,7 +58,7 @@ export const initialState: State = {
   columnGroupVisibilities: {
     [ColumnGroupName.Analysis]: false,
     [ColumnGroupName.Downloads]: true,
-    [ColumnGroupName.Description]: false,
+    [ColumnGroupName.Populations]: false,
     [ColumnGroupName.NCases]: true,
     [ColumnGroupName.NControls]: true,
     [ColumnGroupName.SaigeHeritability]: true,

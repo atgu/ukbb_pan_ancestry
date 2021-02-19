@@ -28,7 +28,7 @@ export type PerPopulationExtremums = {
 }
 
 enum AccordionName {
-  Description,
+  Populations,
   Analysis,
   Downloads,
   NCases,
@@ -110,35 +110,6 @@ export const PhenotypeFilters = (props: Props) => {
     />
 
   )
-
-  let descriptionFilterDisplay: FilterDisplay
-  if (columnVisibilities[ColumnGroupName.Description]) {
-    descriptionFilterDisplay = {
-      showFilter: true,
-      filters: (
-        <ColumnGroupIndividualFilters
-          columns={columns.find(col => col.columnGroupName === ColumnGroupName.Description).columns}
-        />
-      )
-    }
-  } else {
-    descriptionFilterDisplay = {showFilter: false}
-  }
-
-  const descriptionFilter = (
-    <ColumnGroupFilterGroup
-      visibilityControl={
-        <Switch
-          checked={columnVisibilities[ColumnGroupName.Description]} name={ColumnGroupName.Description}
-          onChange={handleColumnVisibilityChange}
-        /> }
-      label="Description"
-      filterDisplay={descriptionFilterDisplay}
-      isAccordionExpanded={expandedAccordion === AccordionName.Description}
-      onAccordionChange={getAccordionChangeHandler(AccordionName.Description)}
-    />
-  )
-
   const downloadsFilter = (
     <Paper>
       <AccordionSummary>
@@ -156,6 +127,36 @@ export const PhenotypeFilters = (props: Props) => {
     </Paper>
   )
 
+  let populationsAccordionDetails: React.ReactNode
+  if (columnVisibilities[ColumnGroupName.Populations]) {
+    populationsAccordionDetails =
+      columns.find(col => col.columnGroupName === ColumnGroupName.Populations)!.render("Filter")
+  } else {
+    populationsAccordionDetails = null
+  }
+
+  const populationsFilter = (
+    <Accordion
+      expanded={expandedAccordion === AccordionName.Populations}
+      onChange={getAccordionChangeHandler(AccordionName.Populations)}>
+      <AccordionSummary expandIcon={<ExpandMore/>}>
+        <FormControlLabel
+          onClick={preventEventPropagation}
+          onFocus={preventEventPropagation}
+          control={
+            <Switch
+              checked={columnVisibilities[ColumnGroupName.Populations]} name={ColumnGroupName.Populations}
+              onChange={handleColumnVisibilityChange}
+            />
+          }
+          label="Populations"
+        />
+      </AccordionSummary>
+      <AccordionDetails>
+        {populationsAccordionDetails}
+      </AccordionDetails>
+    </Accordion>
+  )
 
   const populationMetricsVisibilitiesFilterElems = commonPopulations.map(pop => {
     const onChange = (event: React.ChangeEvent<HTMLInputElement>) =>
@@ -382,7 +383,7 @@ export const PhenotypeFilters = (props: Props) => {
   return (
     <div>
       {globalFilterElem}
-      {descriptionFilter}
+      {populationsFilter}
       {analysisFilter}
       {downloadsFilter}
       {populationMetricsVibilitiesFilter}

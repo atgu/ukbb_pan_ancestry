@@ -96,7 +96,7 @@ export const PopulationsFilter = ({column}) => {
               onChange={handleSwitchChange}
             />
           }
-          label={column.Header}
+          label="Combination Selection"
         />
         {content}
       </FormControl>
