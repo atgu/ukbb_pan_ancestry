@@ -11,7 +11,6 @@ import {  CopyLinkCell, copyLinkCellMaxWidth } from "../components/CopyLinkCell"
 import {  customIncludesFilterFn } from "../components/customIncludesFilterFn";
 import { fuzzyTextFilterFunction, fuzzyTextGlobalFilterFunction } from '../components/fuzzyTextFilterFunction';
 import { TextColumnFilter } from '../components/TextColumnFilter';
-
 import data from "../data.json"
 import phenotypesStyles from "./phenotypes.module.css"
 import { TruncatedTextCell } from '../components/TruncatedTextCell';
@@ -27,6 +26,7 @@ import clsx from "clsx"
 import { PopuplationHeader } from './PopulationHeader';
 import { determineExtremums, maxSaigeHeritabilityValue } from './determineExtremums';
 import { format } from 'd3-format';
+import { Description, DescriptionCell, width as descriptionCellWidth } from './DescriptionCell';
 
 const useStyles = makeStyles((theme: Theme) => ({
   oddTableRow: {
@@ -74,6 +74,19 @@ const getPerPopulationMetrics = (
   }
 }
 
+const getPhenotypeDescription = (row): Description => {
+  const sex = (row.pheno_sex) ? row.pheno_sex : undefined
+  const code = (row.phenocode) ? row.phenocode : undefined
+  const traitType = (row.trait_type) ? row.trait_type : undefined
+  return {
+    name: row.description,
+    category: row.category,
+    sex,
+    code,
+    traitType,
+  }
+}
+
 
 export const PhenotypesPageContent = () => {
 
@@ -113,11 +126,11 @@ export const PhenotypesPageContent = () => {
       let columns = [
         {
           Header: "Description",
-          accessor: "description",
-          filter: fuzzyTextFilterFunction,
-          Filter: TextColumnFilter,
-          width: 300,
-          Cell: TruncatedTextCell
+          // filter: fuzzyTextFilterFunction,
+          // Filter: TextColumnFilter,
+          width: descriptionCellWidth,
+          accessor: getPhenotypeDescription,
+          Cell: DescriptionCell
         },
       ]
       if (columnVisibilities.analysis) {
