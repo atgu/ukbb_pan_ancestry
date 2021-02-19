@@ -1,30 +1,9 @@
-import React, { useEffect, useRef, useState } from "react"
-import { makeStyles, TextField } from "@material-ui/core"
-import {  useAsyncDebounce } from "react-table";
+import React, { useEffect, useRef } from "react"
 import Mousetrap from "mousetrap"
+import { BaseTextFilter } from "./BaseTextFilter"
 
-const useStyles = makeStyles(() => ({
-  labelUnfocused: {
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    maxWidth: "100%"
-  },
-  labelFocused: {
-    whiteSpace: "unset",
-    overflow: "unset",
-    textOverflow: "unset",
-    maxWidth: "unset",
-  }
-}))
 
 export const GlobalFilter = ({preGlobalFilteredRows, globalFilter, setGlobalFillter}) => {
-  const classes = useStyles()
-  const count = preGlobalFilteredRows.length
-  const [value, setValue] = useState(globalFilter)
-  const onChange = useAsyncDebounce(val => {
-    setGlobalFillter(value || "")
-  }, 250)
   const inputRef = useRef<HTMLInputElement | null>(null)
   const keyboardHandlerRef = useRef((e: KeyboardEvent) => {
     const {current: inputElem} = inputRef;
@@ -44,24 +23,13 @@ export const GlobalFilter = ({preGlobalFilteredRows, globalFilter, setGlobalFill
       Mousetrap.unbind(shortcuts)
     }
   }, [])
+  const count = preGlobalFilteredRows.length
   return (
-    <TextField
-      type="search"
-      fullWidth={true}
-      value={value}
-      onChange={e => {
-        setValue(e.target.value)
-        onChange(e.target.value)
-      }}
-      inputRef={inputRef}
-      InputLabelProps={{
-        classes: {
-          root: classes.labelUnfocused,
-          focused: classes.labelFocused,
-        }
-      }}
-      label={ `Search all fields in ${count} records` }
+    <BaseTextFilter
+      ref={inputRef}
+      filterValue={globalFilter}
+      setFilterValue={setGlobalFillter}
+      label={`Search all fields in ${count} records`}
     />
-
   )
 }

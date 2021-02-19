@@ -21,7 +21,6 @@ export enum RangeFilterMetric {
 }
 
 export enum ColumnGroupName {
-  Analysis = "analysis",
   Downloads = "downloads",
   Populations = "populations",
   NCases = "nCases",
@@ -47,16 +46,21 @@ const withAllFiltersDisabled: PerPopulationRangeFilter = {
 interface State {
   columnGroupVisibilities: ColumnGroupVisibility
   perPopulationMetricsVisibilities: PerPopulationMetricsVisibility
+  traitTypeFilterValue: undefined | string
+  sexFilterValue: undefined | string
+  descriptionFilterValue: undefined | string
   // Range filter settings:
   [RangeFilterMetric.NCases]: PerPopulationRangeFilter
   [RangeFilterMetric.NControls]: PerPopulationRangeFilter
   [RangeFilterMetric.SaigeHeritability]: PerPopulationRangeFilter
-  [RangeFilterMetric.LambdaGc]: PerPopulationRangeFilter
+  [RangeFilterMetric.LambdaGc]: PerPopulationRangeFilter,
 }
 
 export const initialState: State = {
+  traitTypeFilterValue: undefined,
+  sexFilterValue: undefined,
+  descriptionFilterValue: undefined,
   columnGroupVisibilities: {
-    [ColumnGroupName.Analysis]: false,
     [ColumnGroupName.Downloads]: true,
     [ColumnGroupName.Populations]: false,
     [ColumnGroupName.NCases]: true,
@@ -84,7 +88,7 @@ export const initialState: State = {
   },
   [RangeFilterMetric.LambdaGc]: {
     ...withAllFiltersDisabled
-  }
+  },
 }
 
 export enum ActionType {
@@ -92,6 +96,9 @@ export enum ActionType {
   SET_POPULATION_METRICS_VISIBILITY,
   UPDATE_FILTER_ONE_POPULATION,
   DISABLE_FILTER_ONE_POPULATION,
+  UPDATE_SEX_FILTER,
+  UPDATE_TRAIT_TYPE_FILTER,
+  UPDATE_DESCRIPTION_FILTER,
 }
 
 type Action = {
@@ -106,6 +113,15 @@ type Action = {
 } | {
   type: ActionType.DISABLE_FILTER_ONE_POPULATION
   payload: {population: PopulationCode, metric: RangeFilterMetric}
+} | {
+  type: ActionType.UPDATE_SEX_FILTER,
+  payload: {value: State["sexFilterValue"]}
+} | {
+  type: ActionType.UPDATE_TRAIT_TYPE_FILTER,
+  payload: {value: State["traitTypeFilterValue"]}
+} | {
+  type: ActionType.UPDATE_DESCRIPTION_FILTER,
+  payload: {value: State["descriptionFilterValue"]}
 }
 
 export const reducer = (prevState: State, action: Action): State => {
@@ -178,6 +194,21 @@ export const reducer = (prevState: State, action: Action): State => {
     nextState = {
       ...prevState,
       [metric]: newValueForMetric
+    }
+  } else if (action.type === ActionType.UPDATE_SEX_FILTER) {
+    nextState = {
+      ...prevState,
+      sexFilterValue: action.payload.value,
+    }
+  } else if (action.type === ActionType.UPDATE_TRAIT_TYPE_FILTER) {
+    nextState = {
+      ...prevState,
+      traitTypeFilterValue: action.payload.value,
+    }
+  } else if (action.type === ActionType.UPDATE_DESCRIPTION_FILTER) {
+    nextState = {
+      ...prevState,
+      descriptionFilterValue: action.payload.value,
     }
   } else {
     nextState = prevState

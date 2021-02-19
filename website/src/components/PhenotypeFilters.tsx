@@ -11,15 +11,22 @@ import { commonPopulations, PopulationCode, populationColorMapping } from "./pop
 import { PopulationSwitch } from "./PopulationSwitch"
 import { ColumnGroupVisibility, PerPopulationMetricsVisibility, ColumnGroupName, PerPopulationRangeFilter, RangeFilterMetric, RangeFilterValue } from "./phenotypesReducer"
 import {  NumberRangeColumnFilter } from "./NewNumberRangeColumnFilter";
-
+import { DropdownFilter, Option } from "./DropdownFilter"
+import { BaseTextFilter } from "./BaseTextFilter"
 
 const useStyles = makeStyles((theme: Theme) => ({
-  analysisAccordionTitle: {
+  accordionTitleNoSwitch: {
     marginLeft: theme.spacing(6)
   },
   populationMetricsFilterGroup: {
     display: "grid",
     gridTemplateColumns: "repeat(3, 1fr)",
+  },
+  descriptionFormGroup: {
+    width: "100%",
+  },
+  traitTypeFilter: {
+    marginTop: theme.spacing(1),
   }
 }))
 
@@ -29,7 +36,7 @@ export type PerPopulationExtremums = {
 
 enum AccordionName {
   Populations,
-  Analysis,
+  Description,
   Downloads,
   NCases,
   NControls,
@@ -60,6 +67,14 @@ interface Props {
   lambdaGcPerPopulationExtremums: PerPopulationExtremums
   disableFilterOnePopulation: (args: {metric: RangeFilterMetric, population: PopulationCode}) => void
   updateFilterOnePopulation: (args: {metric: RangeFilterMetric, population: PopulationCode, min: number, max: number}) => void
+  setSexFilterValue: (value: string | undefined) => void
+  sexFilterValue: string | undefined
+  traitTypeFilterOptions: Option[]
+  traitTypeFilterValue: string | undefined
+  setTraitTypeFilterValue: (value: string | undefined) => void
+  descriptionFilterValue: string | undefined
+  setDescriptionFilterValue: (value: string | undefined) => void
+  recordsCount: number
 }
 
 export const PhenotypeFilters = (props: Props) => {
@@ -72,6 +87,10 @@ export const PhenotypeFilters = (props: Props) => {
     nControlsFilters, nControlsPerPopulationExtremums,
     saigeHeritabilityFilters, saigeHeritabilityPerPopulationExtremums,
     lambdaGcFilters, lambdaGcPerPopulationExtremums,
+    sexFilterValue, setSexFilterValue,
+    traitTypeFilterOptions, traitTypeFilterValue, setTraitTypeFilterValue,
+    descriptionFilterValue, setDescriptionFilterValue,
+    recordsCount
   } = props;
   const classes = useStyles()
 
@@ -83,33 +102,40 @@ export const PhenotypeFilters = (props: Props) => {
 
   const getAccordionChangeHandler = (accordionName: AccordionName) => (_: unknown, isExpanded: boolean) => setExpandedAccordion(isExpanded ? accordionName : undefined)
 
-  let analysisFilterDisplay: FilterDisplay
-  if (columnVisibilities[ColumnGroupName.Analysis]) {
-    analysisFilterDisplay = {
-      showFilter: true,
-      filters: (
-        <ColumnGroupIndividualFilters
-          columns={columns.find(col => col.columnGroupName === ColumnGroupName.Analysis).columns}
-        />
-      )
-    }
-  } else {
-    analysisFilterDisplay = {showFilter: false}
-  }
-  const analysisFilter = (
-    <ColumnGroupFilterGroup
-      visibilityControl={
-        <Switch
-          checked={columnVisibilities[ColumnGroupName.Analysis]} name={ColumnGroupName.Analysis}
-          onChange={handleColumnVisibilityChange}
-        /> }
-      label="Analysis"
-      filterDisplay={analysisFilterDisplay}
-      isAccordionExpanded={expandedAccordion === AccordionName.Analysis}
-      onAccordionChange={getAccordionChangeHandler(AccordionName.Analysis)}
-    />
-
+  const descriptionFilter = (
+    <Accordion expanded={expandedAccordion === AccordionName.Description} onChange={getAccordionChangeHandler(AccordionName.Description)}>
+      <AccordionSummary expandIcon={<ExpandMore/>} className={classes.accordionTitleNoSwitch}>
+        Description
+      </AccordionSummary>
+      <AccordionDetails>
+        <FormGroup className={classes.descriptionFormGroup}>
+          <DropdownFilter
+            options={[
+              {value: "both_sexes", label: "both"},
+              {value: "females", label: "female"},
+              {value: "males", label: "male"},
+            ]}
+            setFilterValue={setSexFilterValue}
+            filterValue={sexFilterValue}
+            label="Sex"
+          />
+          <DropdownFilter
+            className={classes.traitTypeFilter}
+            options={traitTypeFilterOptions}
+            setFilterValue={setTraitTypeFilterValue}
+            filterValue={traitTypeFilterValue}
+            label="Trait Type"
+          />
+          <BaseTextFilter
+            filterValue={descriptionFilterValue}
+            setFilterValue={setDescriptionFilterValue}
+            label={`Search ${recordsCount} records`}
+          />
+        </FormGroup>
+      </AccordionDetails>
+    </Accordion>
   )
+
   const downloadsFilter = (
     <Paper>
       <AccordionSummary>
@@ -179,7 +205,7 @@ export const PhenotypeFilters = (props: Props) => {
 
   const populationMetricsVibilitiesFilter = (
     <Accordion expanded={expandedAccordion === AccordionName.PerPopulationMetrics} onChange={getAccordionChangeHandler(AccordionName.PerPopulationMetrics)}>
-      <AccordionSummary expandIcon={<ExpandMore/>} className={classes.analysisAccordionTitle}>
+      <AccordionSummary expandIcon={<ExpandMore/>} className={classes.accordionTitleNoSwitch}>
         Per-Population Metrics
       </AccordionSummary>
       <AccordionDetails>
@@ -212,7 +238,7 @@ export const PhenotypeFilters = (props: Props) => {
       filters: (
         <>
           <ColumnGroupIndividualFilters
-            columns={columns.find(col => col.columnGroupName === ColumnGroupName.NCases).columns}
+            columns={[columns.find(col => col.columnGroupName === ColumnGroupName.NCases)]}
           />
           {nCasesPopulationFilterElems}
         </>
@@ -383,8 +409,8 @@ export const PhenotypeFilters = (props: Props) => {
   return (
     <div>
       {globalFilterElem}
+      {descriptionFilter}
       {populationsFilter}
-      {analysisFilter}
       {downloadsFilter}
       {populationMetricsVibilitiesFilter}
       {nCasesFilter}

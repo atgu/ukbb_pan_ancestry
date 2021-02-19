@@ -1,9 +1,9 @@
 import {matchSorter} from "match-sorter"
 
-export const fuzzyTextFilterFunction = (rows, id, filterValue) => {
+export const fuzzyTextFilterFunction = (rows, fieldName, filterValue) => {
   if (!!filterValue) {
     return matchSorter(rows, filterValue, {
-      keys: [row => row.values[id]]
+      keys: [row => row[fieldName]]
     })
   } else {
     return rows

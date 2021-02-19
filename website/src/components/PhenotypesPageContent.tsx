@@ -8,12 +8,9 @@ import { scrollbarWidth } from '../components/scrollbarWidth';
 import { Table, TableHead, TableRow, TableCell, TableBody, createMuiTheme, ThemeProvider, makeStyles, Theme, } from '@material-ui/core';
 import {  DownloadLinkCell, downloadLinkCellMaxWidth } from "../components/DownloadLinkCell";
 import {  CopyLinkCell, copyLinkCellMaxWidth } from "../components/CopyLinkCell";
-import {  customIncludesFilterFn } from "../components/customIncludesFilterFn";
 import { fuzzyTextFilterFunction, fuzzyTextGlobalFilterFunction } from '../components/fuzzyTextFilterFunction';
-import { TextColumnFilter } from '../components/TextColumnFilter';
 import data from "../data.json"
 import phenotypesStyles from "./phenotypes.module.css"
-import { TruncatedTextCell } from '../components/TruncatedTextCell';
 import { PopulationCell } from '../components/PopulationCell';
 import {  commonPopulations, PerPopulationMetrics, PopulationCode, } from "../components/populations";
 import { PhenotypeFilters} from '../components/PhenotypeFilters';
@@ -97,8 +94,29 @@ export const PhenotypesPageContent = () => {
     n_controls: nControlsFilters,
     saige_heritability: saigeHeritabilityFilters,
     lambda_gc: lambdaGcFilters,
+    sexFilterValue, traitTypeFilterValue,
+    descriptionFilterValue,
   } = state;
   const classes = useStyles()
+
+  const {filteredByDescriptionFilters, traitTypeFilterOptions} = useMemo(() => {
+    const traitTypeValues = [...new Set(data.map(row => (row["trait_type"] as string)).filter(Boolean))] as string[]
+    const traitTypeFilterOptions = traitTypeValues.map(val => ({label: val, value: val}))
+    let filtered = data
+    if (sexFilterValue !== undefined) {
+      filtered = filtered.filter(row => row["pheno_sex"] === sexFilterValue)
+    }
+    if (traitTypeFilterValue !== undefined) {
+      filtered = filtered.filter(row => row["trait_type"] === traitTypeFilterValue)
+    }
+    if (descriptionFilterValue !== undefined) {
+      filtered = fuzzyTextFilterFunction(filtered, "description", descriptionFilterValue)
+    }
+    return {
+      filteredByDescriptionFilters: filtered,
+      traitTypeFilterOptions,
+    }
+  }, [data, sexFilterValue, traitTypeFilterValue, descriptionFilterValue])
 
   const {
     globalNCasesUpperThreshold,
@@ -106,19 +124,17 @@ export const PhenotypesPageContent = () => {
     globalNControlsUpperThreshold,
     perPopulationNControlsExtremums,
     perPopulationSaigeHeritabilityExtremums,
-
-
     globalLambdaGc,
     filteredByPopulationRangeFilters,
     perPopulationLambdaGcExtremums,
   } = useMemo( () => determineExtremums({
-    data,
+    data: filteredByDescriptionFilters,
     perPopulationMetricsVisibilities,
     nCasesFilters,
     nControlsFilters,
     saigeHeritabilityFilters,
     lambdaGcFilters,
-  }) , [data, perPopulationMetricsVisibilities, nCasesFilters, nControlsFilters, saigeHeritabilityFilters, lambdaGcFilters])
+  }) , [filteredByDescriptionFilters, perPopulationMetricsVisibilities, nCasesFilters, nControlsFilters, saigeHeritabilityFilters, lambdaGcFilters])
 
   const columns = useMemo(
     () => {
@@ -126,37 +142,11 @@ export const PhenotypesPageContent = () => {
       let columns = [
         {
           Header: "Description",
-          // filter: fuzzyTextFilterFunction,
-          // Filter: TextColumnFilter,
           width: descriptionCellWidth,
           accessor: getPhenotypeDescription,
           Cell: DescriptionCell
         },
       ]
-      if (columnVisibilities.analysis) {
-        columns = [
-          ...columns,
-          {
-            Header: "Analysis",
-            columnGroupName: ColumnGroupName.Analysis,
-            columns: [
-              {
-                Header: "Trait type", accessor: "trait_type",
-                Filter: SelectColumnFilter,
-                filter: customIncludesFilterFn,
-                width: 120,
-              },
-              {
-                Header: "Phenocode", accessor: "phenocode",
-                filter: fuzzyTextFilterFunction,
-                Filter: TextColumnFilter,
-                Cell: TruncatedTextCell,
-                width: 120,
-              },
-            ]
-          },
-        ]
-      }
       if (columnVisibilities.populations) {
         columns = [
           ...columns,
@@ -175,17 +165,12 @@ export const PhenotypesPageContent = () => {
           ...columns,
           {
             Header: "N Cases",
+            ...getPerPopulationMetrics("n_cases", perPopulationMetricsVisibilities),
+            Cell: BarChartCell,
+            width: chartCellWidth,
+            upperThreshold: globalNCasesUpperThreshold,
+            labelFormatter: format(","),
             columnGroupName: ColumnGroupName.NCases,
-            columns: [
-              {
-                Header: "Per Population",
-                ...getPerPopulationMetrics("n_cases", perPopulationMetricsVisibilities),
-                Cell: BarChartCell,
-                width: chartCellWidth,
-                upperThreshold: globalNCasesUpperThreshold,
-                labelFormatter: format(","),
-              }
-            ]
           }
         ]
       }
@@ -299,9 +284,6 @@ export const PhenotypesPageContent = () => {
       filters: [
         {id: "trait_type", value: ""},
         {id: "pheno_sex", value: ""},
-        // {id: "n_cases_full_cohort_both_sexes", value: undefined},
-        // {id: "n_cases_full_cohort_females", value: undefined},
-        // {id: "n_cases_full_cohort_males", value: undefined},
       ]
     }
   }, [])
@@ -420,55 +402,76 @@ export const PhenotypesPageContent = () => {
     )
   }
 
+  const setSexFilterValue = useCallback((value: string | undefined) => dispatch({
+    type: ActionType.UPDATE_SEX_FILTER,
+    payload: {value}
+  }), [])
+  const setTraitTypeFilterValue = useCallback((value: string | undefined) => dispatch({
+    type: ActionType.UPDATE_TRAIT_TYPE_FILTER,
+    payload: {value}
+  }), [])
+  const setDescriptionFilterValue = useCallback((value: string | undefined) => dispatch({
+    type: ActionType.UPDATE_DESCRIPTION_FILTER,
+    payload: {value}
+  }), [])
+
   return (
-          <>
-            <header>
-              <div className={`container ${phenotypesStyles.titleContainer}`}>
-                <h1 className="page-title">Phenotypes</h1>
-              </div>
-            </header>
-    <BrowserOnly>
-    {
-      () => {
-        return (
-            <main>
-              <div className={`container ${phenotypesStyles.container}`}>
-                <div>
-                  <PhenotypeFilters
-                    columnVisibilities={columnGroupVisibilities}
-                    setColumnVisibilities={setColumnGroupVisibilites}
-                    columns={outputColumns}
-                    preGlobalFilteredRows={preGlobalFilteredRows}
-                    setGlobalFilter={setGlobalFilter}
-                    globalFilter={reactTableState.globalFilter}
-                    populationMetricsVisibilities={perPopulationMetricsVisibilities}
-                    setPopulationMetricsVisibilities={setPerPoulationMetricsVisibilities}
-                    nCasesFilters={nCasesFilters}
-                    nCasesPerPopulationExtremums={perPopulationNCasesExtremums}
-                    nControlsFilters={nControlsFilters}
-                    nControlsPerPopulationExtremums={perPopulationNControlsExtremums}
-                    saigeHeritabilityFilters={saigeHeritabilityFilters}
-                    saigeHeritabilityPerPopulationExtremums={perPopulationSaigeHeritabilityExtremums}
-                    lambdaGcFilters={lambdaGcFilters}
-                    lambdaGcPerPopulationExtremums={perPopulationLambdaGcExtremums}
-                    disableFilterOnePopulation={disableRangeFilterOnePopulation}
-                    updateFilterOnePopulation={updateRangeFilterOnePopulation}
-                  />
-                </div>
-                <div style={{overflowX: "auto"}}>
-                  <Table size="small" {...getTableProps()}>
-                    <TableHead>
-                      {headerGroupElems}
-                    </TableHead>
-                    {tableBody}
-                  </Table>
-                </div>
-              </div>
-            </main>
-        )
-      }
-    }
-    </BrowserOnly>
+    <>
+      <header>
+        <div className={`container ${phenotypesStyles.titleContainer}`}>
+          <h1 className="page-title">Phenotypes</h1>
+        </div>
+      </header>
+        <BrowserOnly>
+        {
+          () => {
+            return (
+                <main>
+                  <div className={`container ${phenotypesStyles.container}`}>
+                    <div>
+                      <PhenotypeFilters
+                        columnVisibilities={columnGroupVisibilities}
+                        setColumnVisibilities={setColumnGroupVisibilites}
+                        columns={outputColumns}
+                        preGlobalFilteredRows={preGlobalFilteredRows}
+                        setGlobalFilter={setGlobalFilter}
+                        globalFilter={reactTableState.globalFilter}
+                        populationMetricsVisibilities={perPopulationMetricsVisibilities}
+                        setPopulationMetricsVisibilities={setPerPoulationMetricsVisibilities}
+                        nCasesFilters={nCasesFilters}
+                        nCasesPerPopulationExtremums={perPopulationNCasesExtremums}
+                        nControlsFilters={nControlsFilters}
+                        nControlsPerPopulationExtremums={perPopulationNControlsExtremums}
+                        saigeHeritabilityFilters={saigeHeritabilityFilters}
+                        saigeHeritabilityPerPopulationExtremums={perPopulationSaigeHeritabilityExtremums}
+                        lambdaGcFilters={lambdaGcFilters}
+                        lambdaGcPerPopulationExtremums={perPopulationLambdaGcExtremums}
+                        disableFilterOnePopulation={disableRangeFilterOnePopulation}
+                        updateFilterOnePopulation={updateRangeFilterOnePopulation}
+                        sexFilterValue={sexFilterValue}
+                        setSexFilterValue={setSexFilterValue}
+                        traitTypeFilterOptions={traitTypeFilterOptions}
+                        traitTypeFilterValue={traitTypeFilterValue}
+                        setTraitTypeFilterValue={setTraitTypeFilterValue}
+                        recordsCount={filteredByPopulationRangeFilters.length}
+                        descriptionFilterValue={descriptionFilterValue}
+                        setDescriptionFilterValue={setDescriptionFilterValue}
+                      />
+                    </div>
+                    <div style={{overflowX: "auto"}}>
+                      <Table size="small" {...getTableProps()}>
+                        <TableHead>
+                          {headerGroupElems}
+                        </TableHead>
+                        {tableBody}
+                      </Table>
+                    </div>
+                  </div>
+                </main>
+            )
+          }
+        }
+      </BrowserOnly>
     </>
   )
 }
