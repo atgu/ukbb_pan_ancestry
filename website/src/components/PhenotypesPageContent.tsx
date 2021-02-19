@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import BrowserOnly from '@docusaurus/BrowserOnly';
-import {  useTable, useFilters, useBlockLayout, useGlobalFilter  } from "react-table";
+import {  useTable, useFilters, useBlockLayout, useGlobalFilter} from "react-table";
 import {  SelectColumnFilter } from "../components/SelectColumnFilter";
 import {  FixedSizeList } from "react-window";
 import { Datum } from '../components/types';
@@ -13,13 +13,11 @@ import { fuzzyTextFilterFunction, fuzzyTextGlobalFilterFunction } from '../compo
 import { TextColumnFilter } from '../components/TextColumnFilter';
 
 import data from "../data.json"
-import { rangeFilterFunction } from '../components/rangeFilterFunction';
 import phenotypesStyles from "./phenotypes.module.css"
 import { TruncatedTextCell } from '../components/TruncatedTextCell';
 import { PopulationCell } from '../components/PopulationCell';
 import {  commonPopulations, PerPopulationMetrics, PopulationCode, } from "../components/populations";
-import { NumberRangeColumnFilter } from '../components/NumberRangeColumnFilter';
-import { PhenotypeFilters, PerPopulationExtremums } from '../components/PhenotypeFilters';
+import { PhenotypeFilters} from '../components/PhenotypeFilters';
 import { PopulationsFilter } from '../components/PopulationsFilter';
 import { populationsFilterFunction } from '../components/populationsFilterFunction';
 import {  BarChartCell, width as chartCellWidth, height as chartCellHeight } from "../components/BarChartCell";
@@ -29,7 +27,6 @@ import clsx from "clsx"
 import { PopuplationHeader } from './PopulationHeader';
 import { determineExtremums, maxSaigeHeritabilityValue } from './determineExtremums';
 import { format } from 'd3-format';
-import "regenerator-runtime/runtime";
 
 const useStyles = makeStyles((theme: Theme) => ({
   oddTableRow: {
@@ -399,75 +396,80 @@ export const PhenotypesPageContent = () => {
     }
   }), [])
 
-  const scrollBarSizeRef = useRef<number | undefined>(undefined)
+  const [scrollBarSize, setScrollBarSize] = useState<number | undefined>(undefined)
   useEffect(() => {
-    if (scrollBarSizeRef.current === undefined) {
-      scrollBarSizeRef.current = scrollbarWidth()
+    if (scrollBarSize === undefined) {
+      setScrollBarSize(scrollbarWidth)
     }
-  })
+  }, [])
+  let tableBody: React.ReactNode
+  if (scrollBarSize === undefined) {
+    tableBody = null
+  } else {
+    tableBody = (
+      <div {...getTableBodyProps()}>
+        <FixedSizeList
+          height={700}
+          itemCount={rows.length}
+          itemSize={chartCellHeight}
+          width={totalColumnsWidth + scrollBarSize}
+          innerElementType={TableBody}
+        >
+          {RenderRow}
+        </FixedSizeList>
+      </div>
+    )
+  }
+
   return (
-    <>
-      <header>
-        <div className={`container ${phenotypesStyles.titleContainer}`}>
-          <h1 className="page-title">Phenotypes</h1>
-        </div>
-      </header>
-      <main>
-        <div className={`container ${phenotypesStyles.container}`}>
-          <div>
-            <PhenotypeFilters
-              columnVisibilities={columnGroupVisibilities}
-              setColumnVisibilities={setColumnGroupVisibilites}
-              columns={outputColumns}
-              preGlobalFilteredRows={preGlobalFilteredRows}
-              setGlobalFilter={setGlobalFilter}
-              globalFilter={reactTableState.globalFilter}
-              populationMetricsVisibilities={perPopulationMetricsVisibilities}
-              setPopulationMetricsVisibilities={setPerPoulationMetricsVisibilities}
-              nCasesFilters={nCasesFilters}
-              nCasesPerPopulationExtremums={perPopulationNCasesExtremums}
-              nControlsFilters={nControlsFilters}
-              nControlsPerPopulationExtremums={perPopulationNControlsExtremums}
-              saigeHeritabilityFilters={saigeHeritabilityFilters}
-              saigeHeritabilityPerPopulationExtremums={perPopulationSaigeHeritabilityExtremums}
-              lambdaGcFilters={lambdaGcFilters}
-              lambdaGcPerPopulationExtremums={perPopulationLambdaGcExtremums}
-              disableFilterOnePopulation={disableRangeFilterOnePopulation}
-              updateFilterOnePopulation={updateRangeFilterOnePopulation}
-            />
-          </div>
-          <div style={{overflowX: "auto"}}>
-            <Table size="small" {...getTableProps()}>
-              <TableHead>
-                {headerGroupElems}
-              </TableHead>
-              <BrowserOnly>
-              {
-                () => {
-                  if (scrollBarSizeRef.current === undefined) {
-                    return null
-                  } else {
-                    return (
-                      <div {...getTableBodyProps()}>
-                        <FixedSizeList
-                          height={700}
-                          itemCount={rows.length}
-                          itemSize={chartCellHeight}
-                          width={totalColumnsWidth + scrollBarSizeRef.current}
-                          innerElementType={TableBody}
-                        >
-                          {RenderRow}
-                        </FixedSizeList>
-                      </div>
-                    )
-                  }
-                }
-              }
-              </BrowserOnly>
-            </Table>
-          </div>
-        </div>
-      </main>
+          <>
+            <header>
+              <div className={`container ${phenotypesStyles.titleContainer}`}>
+                <h1 className="page-title">Phenotypes</h1>
+              </div>
+            </header>
+    <BrowserOnly>
+    {
+      () => {
+        return (
+            <main>
+              <div className={`container ${phenotypesStyles.container}`}>
+                <div>
+                  <PhenotypeFilters
+                    columnVisibilities={columnGroupVisibilities}
+                    setColumnVisibilities={setColumnGroupVisibilites}
+                    columns={outputColumns}
+                    preGlobalFilteredRows={preGlobalFilteredRows}
+                    setGlobalFilter={setGlobalFilter}
+                    globalFilter={reactTableState.globalFilter}
+                    populationMetricsVisibilities={perPopulationMetricsVisibilities}
+                    setPopulationMetricsVisibilities={setPerPoulationMetricsVisibilities}
+                    nCasesFilters={nCasesFilters}
+                    nCasesPerPopulationExtremums={perPopulationNCasesExtremums}
+                    nControlsFilters={nControlsFilters}
+                    nControlsPerPopulationExtremums={perPopulationNControlsExtremums}
+                    saigeHeritabilityFilters={saigeHeritabilityFilters}
+                    saigeHeritabilityPerPopulationExtremums={perPopulationSaigeHeritabilityExtremums}
+                    lambdaGcFilters={lambdaGcFilters}
+                    lambdaGcPerPopulationExtremums={perPopulationLambdaGcExtremums}
+                    disableFilterOnePopulation={disableRangeFilterOnePopulation}
+                    updateFilterOnePopulation={updateRangeFilterOnePopulation}
+                  />
+                </div>
+                <div style={{overflowX: "auto"}}>
+                  <Table size="small" {...getTableProps()}>
+                    <TableHead>
+                      {headerGroupElems}
+                    </TableHead>
+                    {tableBody}
+                  </Table>
+                </div>
+              </div>
+            </main>
+        )
+      }
+    }
+    </BrowserOnly>
     </>
   )
 }
