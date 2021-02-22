@@ -25,6 +25,7 @@ import { determineExtremums, maxSaigeHeritabilityValue } from './determineExtrem
 import { format } from 'd3-format';
 import { Description, DescriptionCell, width as descriptionCellWidth } from './DescriptionCell';
 import {  AutoSizer } from "react-virtualized";
+import { CenteredHeaderCell } from './CenteredHeaderCell';
 
 
 const useStyles = makeStyles((theme: Theme) => ({
@@ -148,9 +149,11 @@ export const PhenotypesPageContent = () => {
       const columnVisibilities = columnGroupVisibilities
       let columns = [
         {
-          Header: "Description",
+          Header: CenteredHeaderCell,
           width: descriptionCellWidth,
           accessor: getPhenotypeDescription,
+          id: "description",
+          columnTitle: "Description",
           Cell: DescriptionCell
         },
       ]
@@ -171,7 +174,8 @@ export const PhenotypesPageContent = () => {
         columns = [
           ...columns,
           {
-            Header: "N Cases",
+            Header: CenteredHeaderCell,
+            columnTitle: "N Cases",
             ...getPerPopulationMetrics("n_cases", perPopulationMetricsVisibilities),
             Cell: BarChartCell,
             width: chartCellWidth,
@@ -185,7 +189,8 @@ export const PhenotypesPageContent = () => {
         columns = [
           ...columns,
           {
-            Header: "N Controls",
+            Header: CenteredHeaderCell,
+            columnTitle: "N Controls",
             columnGroupName: ColumnGroupName.NControls,
             ...getPerPopulationMetrics("n_controls", perPopulationMetricsVisibilities),
             Cell: BarChartCell,
@@ -199,7 +204,8 @@ export const PhenotypesPageContent = () => {
         columns = [
           ...columns,
           {
-            Header: "Saige heritability",
+            Header: CenteredHeaderCell,
+            columnTitle: "Saige heritability",
             columnGroupName: ColumnGroupName.SaigeHeritability,
             ...getPerPopulationMetrics("saige_heritability", perPopulationMetricsVisibilities),
             Cell: BarChartCell,
@@ -213,7 +219,8 @@ export const PhenotypesPageContent = () => {
         columns = [
           ...columns,
           {
-            Header: "Lambda GC",
+            Header: CenteredHeaderCell,
+            columnTitle: "Lambda GC",
             columnGroupName: ColumnGroupName.LambdaGc,
             ...getPerPopulationMetrics("lambda_gc", perPopulationMetricsVisibilities),
             Cell: ScatterPlotCell,
@@ -233,28 +240,32 @@ export const PhenotypesPageContent = () => {
             columnGroupName: ColumnGroupName.Downloads,
             columns: [
               {
-                Header: "tsv",
+                Header: CenteredHeaderCell,
+                columnTitle: "tsv",
                 accessor: "aws_link",
                 Cell: DownloadLinkCell,
                 width: downloadLinkCellMaxWidth,
                 disableFilters: true,
               },
               {
-                Header: "tbi",
+                Header: CenteredHeaderCell,
+                columnTitle: "tbi",
                 accessor: "aws_link_tabix",
                 Cell: DownloadLinkCell,
                 width: downloadLinkCellMaxWidth,
                 disableFilters: true,
               },
               {
-                Header: "wget tsv",
+                Header: CenteredHeaderCell,
+                columnTitle: "wget tsv",
                 accessor: "wget",
                 Cell: CopyLinkCell,
                 width: copyLinkCellMaxWidth,
                 disableFilters: true,
               },
               {
-                Header: "wget tbi",
+                Header: CenteredHeaderCell,
+                columnTitle: "wget tbi",
                 accessor: "wget_tabix",
                 Cell: CopyLinkCell,
                 width: copyLinkCellMaxWidth,
@@ -272,8 +283,20 @@ export const PhenotypesPageContent = () => {
             Header: "MD5",
             columnGroupName: ColumnGroupName.Md5,
             columns: [
-              {Header: "tsv", accessor: "md5_hex", disableFilters: true, width: columnWidth},
-              {Header: "tbi", accessor: "md5_hex_tabix", disableFilters: true, width: columnWidth},
+              {
+                Header: CenteredHeaderCell,
+                columnTitle: "tsv",
+                accessor: "md5_hex",
+                disableFilters: true,
+                width: columnWidth
+              },
+              {
+                Header: CenteredHeaderCell,
+                columnTitle: "tbi",
+                accessor: "md5_hex_tabix",
+                disableFilters: true,
+                width: columnWidth
+              },
             ]
           }
         ]
