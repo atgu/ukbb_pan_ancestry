@@ -24,6 +24,8 @@ import { PopuplationHeader } from './PopulationHeader';
 import { determineExtremums, maxSaigeHeritabilityValue } from './determineExtremums';
 import { format } from 'd3-format';
 import { Description, DescriptionCell, width as descriptionCellWidth } from './DescriptionCell';
+import {  AutoSizer } from "react-virtualized";
+
 
 const useStyles = makeStyles((theme: Theme) => ({
   oddTableRow: {
@@ -32,6 +34,14 @@ const useStyles = makeStyles((theme: Theme) => ({
       backgroundColor: theme.palette.action.hover,
     }
   },
+  main: {
+    flexGrow: 1,
+    display: "flex"
+  },
+  tableContainer: {
+    overflowX: "auto",
+    height: "100%"
+  }
 }))
 
 const DefaultColumnFilter = () => null
@@ -380,24 +390,6 @@ export const PhenotypesPageContent = () => {
       setScrollBarSize(scrollbarWidth)
     }
   }, [])
-  let tableBody: React.ReactNode
-  if (scrollBarSize === undefined) {
-    tableBody = null
-  } else {
-    tableBody = (
-      <div {...getTableBodyProps()}>
-        <FixedSizeList
-          height={700}
-          itemCount={rows.length}
-          itemSize={chartCellHeight}
-          width={totalColumnsWidth + scrollBarSize}
-          innerElementType={TableBody}
-        >
-          {RenderRow}
-        </FixedSizeList>
-      </div>
-    )
-  }
 
   const setSexFilterValue = useCallback((value: string | undefined) => dispatch({
     type: ActionType.UPDATE_SEX_FILTER,
@@ -412,6 +404,9 @@ export const PhenotypesPageContent = () => {
     payload: {value}
   }), [])
 
+  // From empirical measurement:
+  const tableHeaderHeight = 54
+
   return (
     <>
       <header>
@@ -419,11 +414,11 @@ export const PhenotypesPageContent = () => {
           <h1 className="page-title">Phenotypes</h1>
         </div>
       </header>
+      <main className={classes.main}>
         <BrowserOnly>
         {
           () => {
             return (
-                <main>
                   <div className={`container ${phenotypesStyles.container}`}>
                     <div>
                       <PhenotypeFilters
@@ -455,20 +450,46 @@ export const PhenotypesPageContent = () => {
                         setDescriptionFilterValue={setDescriptionFilterValue}
                       />
                     </div>
-                    <div style={{overflowX: "auto"}}>
-                      <Table {...getTableProps()}>
-                        <TableHead>
-                          {headerGroupElems}
-                        </TableHead>
-                        {tableBody}
-                      </Table>
+                    <div className={classes.tableContainer}>
+                      <AutoSizer>
+                        {(dimensions) => {
+                            let tableBody: React.ReactNode
+                            if (scrollBarSize === undefined) {
+                              tableBody = null
+                            } else {
+                              tableBody = (
+                                <div {...getTableBodyProps()}>
+                                  <FixedSizeList
+                                    // Subtract away some extra space for safety to minimize the chance of vertical scroll bar being added:
+                                    height={dimensions.height - tableHeaderHeight - 50}
+                                    itemCount={rows.length}
+                                    itemSize={chartCellHeight}
+                                    width={totalColumnsWidth + scrollBarSize}
+                                    innerElementType={TableBody}
+                                  >
+                                    {RenderRow}
+                                  </FixedSizeList>
+                                </div>
+                              )
+                            }
+                          return (
+                            <Table {...getTableProps()} >
+                              <TableHead>
+                                {headerGroupElems}
+                              </TableHead>
+                              {tableBody}
+
+                            </Table>
+                          )
+                        }}
+                      </AutoSizer>
                     </div>
                   </div>
-                </main>
             )
           }
         }
       </BrowserOnly>
+      </main>
     </>
   )
 }

@@ -4,7 +4,7 @@
 .container {
   max-width: 95%;
   display: grid;
-  grid-template-columns: minmax(300px, 1fr) 4fr;
+  grid-template-columns: 300px 1fr;
   column-gap: 20px;
 
   --ifm-table-stripe-background: var(--ifm-table-background);
