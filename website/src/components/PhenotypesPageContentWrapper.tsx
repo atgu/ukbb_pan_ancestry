@@ -13,6 +13,13 @@ export const PhenotypesPageContentWrapper = () => {
         palette: {
           type: isDarkTheme ? 'dark' : 'light',
         },
+        overrides: {
+          MuiTableCell: {
+            root: {
+              padding: "0",
+            }
+          }
+        }
       }),
     [isDarkTheme],
   );

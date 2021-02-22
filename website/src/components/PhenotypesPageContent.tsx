@@ -32,9 +32,6 @@ const useStyles = makeStyles((theme: Theme) => ({
       backgroundColor: theme.palette.action.hover,
     }
   },
-  tableCellNoPadding: {
-    padding: "0",
-  }
 }))
 
 const DefaultColumnFilter = () => null
@@ -316,7 +313,7 @@ export const PhenotypesPageContent = () => {
   const headerGroupElems = headerGroups.map(headerGroup => {
     const headerElems = headerGroup.headers.map(column => {
       return (
-        <TableCell align="center" {...column.getHeaderProps()} className={classes.tableCellNoPadding}>
+        <TableCell align="center" {...column.getHeaderProps()} >
           {column.render("Header")}
         </TableCell>
       )
@@ -335,7 +332,7 @@ export const PhenotypesPageContent = () => {
     prepareRow(row)
     const cellElems = row.cells.map(cell => {
       return (
-        <TableCell {...cell.getCellProps()} className={classes.tableCellNoPadding}>
+        <TableCell {...cell.getCellProps()} >
           {cell.render("Cell")}
         </TableCell>
       )
@@ -459,7 +456,7 @@ export const PhenotypesPageContent = () => {
                       />
                     </div>
                     <div style={{overflowX: "auto"}}>
-                      <Table size="small" {...getTableProps()}>
+                      <Table {...getTableProps()}>
                         <TableHead>
                           {headerGroupElems}
                         </TableHead>
