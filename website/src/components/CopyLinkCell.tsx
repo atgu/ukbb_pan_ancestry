@@ -18,7 +18,12 @@ interface Props {
 export const CopyLinkCell = ({value}: Props) => {
   const classes = useStyles()
   const onClick = () => {
-    // TODO: actually copy to clipboard here
+    const copyText = async () => {
+      if ("clipboard" in navigator) {
+        await navigator.clipboard.writeText(value)
+      }
+    }
+    copyText()
   }
   return (
     <div className={classes.root}>
