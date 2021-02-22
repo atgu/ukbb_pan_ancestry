@@ -40,6 +40,7 @@ module.exports = {
         },
         { to: 'blog', label: 'News', position: 'right' },
         { to: 'downloads', label: 'Downloads', position: 'right' },
+        { to: 'phenotypes', label: 'Phenotypes', position: 'right' },
         // {to: 'results', label: 'Results', position: 'right'},
         { to: 'team', label: 'Team', position: 'right' },
         { to: 'contact', label: 'Contact', position: 'right' },
