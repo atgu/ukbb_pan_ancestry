@@ -1,4 +1,4 @@
-import { ButtonProps, makeStyles, Switch, SwitchProps, withStyles } from "@material-ui/core"
+import { makeStyles, Switch, SwitchProps} from "@material-ui/core"
 import React from "react"
 import {  lighten } from "polished";
 import {  PopulationCode, populationColorMapping } from "./populations";
@@ -6,7 +6,7 @@ import {  PopulationCode, populationColorMapping } from "./populations";
 
 // Adapted from https://material-ui.com/components/switches/#customized-switches
 // This lighten the switch's color by 50% when it's not selected:
-let perPopulationStylePairs = [...populationColorMapping.entries()].map(([populationCode, color]) => (
+const perPopulationStylePairs = [...populationColorMapping.entries()].map(([populationCode, color]) => (
   [`${populationCode}SwitchBase`, {
     color: lighten(0.2, color),
     '&$checked': {

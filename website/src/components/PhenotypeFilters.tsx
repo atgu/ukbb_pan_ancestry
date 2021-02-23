@@ -1,7 +1,7 @@
 import React, { useState } from "react"
-import { Accordion, AccordionDetails, AccordionSummary, FormControlLabel, FormGroup, FormLabel, makeStyles, Paper, Switch, Theme, Typography } from "@material-ui/core"
+import { Accordion, AccordionDetails, AccordionSummary, FormControlLabel, FormGroup, makeStyles, Paper, Switch, Theme} from "@material-ui/core"
 import { useCallback } from "react"
-import { ColumnInstance, HeaderGroup, TableInstance, UseGlobalFiltersInstanceProps } from "react-table"
+import { ColumnInstance, UseGlobalFiltersInstanceProps } from "react-table"
 import { Datum } from "./types"
 import { ExpandMore } from "@material-ui/icons"
 import { ColumnGroupIndividualFilters } from "./ColumnGroupIndividualFilters"
@@ -9,8 +9,8 @@ import {  ColumnGroupFilterGroup, FilterDisplay, preventEventPropagation } from 
 import { GlobalFilter } from "./GlobalFilter"
 import { commonPopulations, PopulationCode, populationColorMapping } from "./populations"
 import { PopulationSwitch } from "./PopulationSwitch"
-import { ColumnGroupVisibility, PerPopulationMetricsVisibility, ColumnGroupName, PerPopulationRangeFilter, RangeFilterMetric, RangeFilterValue } from "./phenotypesReducer"
-import {  NumberRangeColumnFilter } from "./NewNumberRangeColumnFilter";
+import { ColumnGroupVisibility, PerPopulationMetricsVisibility, ColumnGroupName, PerPopulationRangeFilter, RangeFilterMetric} from "./phenotypesReducer"
+import {  NumberRangeColumnFilter } from "./NumberRangeColumnFilter";
 import { DropdownFilter, Option } from "./DropdownFilter"
 import { BaseTextFilter } from "./BaseTextFilter"
 
@@ -55,7 +55,7 @@ interface Props {
   setPopulationMetricsVisibilities: (population: PopulationCode, isVisible: boolean) => void
   columns: ColumnInstance<Datum>[]
   preGlobalFilteredRows: UseGlobalFiltersInstanceProps<Datum>["preGlobalFilteredFlatRows"]
-  globalFilter: any
+  globalFilter: string | undefined
   setGlobalFilter: UseGlobalFiltersInstanceProps<Datum>["setGlobalFilter"]
   nCasesFilters: PerPopulationRangeFilter
   nCasesPerPopulationExtremums: PerPopulationExtremums
@@ -98,7 +98,7 @@ export const PhenotypeFilters = (props: Props) => {
 
   const handleColumnVisibilityChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setColumnVisibilities(event.target.name as ColumnGroupName, event.target.checked)
-  }, [columnVisibilities])
+  }, [setColumnVisibilities])
 
   const getAccordionChangeHandler = (accordionName: AccordionName) => (_: unknown, isExpanded: boolean) => setExpandedAccordion(isExpanded ? accordionName : undefined)
 

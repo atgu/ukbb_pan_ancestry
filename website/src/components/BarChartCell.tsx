@@ -1,7 +1,7 @@
-import React, { useRef, useState } from "react"
+import React  from "react"
 import {commonPopulations, PerPopulationMetrics, populationColorMapping} from "./populations";
 import {  scaleLinear } from "d3-scale";
-import { makeStyles, Tooltip } from "@material-ui/core";
+import { makeStyles} from "@material-ui/core";
 import { ColumnInstance } from "react-table";
 import { Datum } from "./types";
 
@@ -71,7 +71,7 @@ const useStyles = makeStyles({
   }
 })
 
-export const BarChartCell = ({value, column}: Props) => {
+export const BarChartCell = ({value, column}: Props): React.ReactNode => {
   const classes = useStyles()
   const {upperThreshold, labelFormatter} = column
   const minValue = 0

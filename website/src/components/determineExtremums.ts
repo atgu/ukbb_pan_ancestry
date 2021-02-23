@@ -27,9 +27,8 @@ const getBarChartExtremums = (inputs: {
   data: Datum[]
   metric_prefix: string
   perPopulationMetricsVisibilities: PerPopulationMetricsVisibility,
-  perPopulationRangeFilters: PerPopulationRangeFilter
 }) => {
-  const {data, metric_prefix, perPopulationMetricsVisibilities, perPopulationRangeFilters} = inputs;
+  const {data, metric_prefix, perPopulationMetricsVisibilities } = inputs;
   const nonEurPopulation = commonPopulations.filter(pop => pop !== PopulationCode.EUR)
   const allNonEurValues = []
   const allEurValues = []
@@ -95,7 +94,6 @@ export const determineExtremums =  (inputs: Inputs) => {
     data,
     metric_prefix: "n_cases",
     perPopulationMetricsVisibilities,
-    perPopulationRangeFilters: nCasesFilters,
   })
   const {
     threshold: globalNControlsUpperThreshold,

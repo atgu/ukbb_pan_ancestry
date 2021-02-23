@@ -22,7 +22,7 @@ export const PopulationCell = ({value}) => {
   const populationElems = expectedPopulations.map(pop => {
     if (actualPopulations.has(pop) ) {
       return (
-        <Tooltip title={pop} placement="top">
+        <Tooltip title={pop} placement="top" key={pop}>
           <FiberManualRecord style={{color: populationColorMapping.get(pop)}}/>
         </Tooltip>
       )

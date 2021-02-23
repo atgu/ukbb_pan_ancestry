@@ -1,5 +1,5 @@
 import React from "react"
-import { Accordion, AccordionDetails, AccordionProps, AccordionSummary, Checkbox, FormControlLabel, FormGroup, FormLabel, Paper, Typography } from "@material-ui/core"
+import { Accordion, AccordionDetails, AccordionProps, AccordionSummary, FormControlLabel, FormGroup, FormLabel } from "@material-ui/core"
 import { ExpandMore } from "@material-ui/icons"
 
 export const preventEventPropagation = (event: React.MouseEvent | React.FocusEvent) => event.stopPropagation()
@@ -12,14 +12,14 @@ export type FilterDisplay = {
 }
 
 interface Props {
-  visibilityControl: React.ReactElement<any>
+  visibilityControl: React.ReactNode
   label: string
   filterDisplay: FilterDisplay
   isAccordionExpanded: AccordionProps["expanded"]
   onAccordionChange: AccordionProps["onChange"]
 }
 
-export const ColumnGroupFilterGroup = (props: Props) => {
+export const ColumnGroupFilterGroup = (props: Props): React.ReactNode => {
   const {visibilityControl, filterDisplay, label, isAccordionExpanded, onAccordionChange} = props
   let accordionDetails: React.ReactNode
   if (filterDisplay.showFilter) {

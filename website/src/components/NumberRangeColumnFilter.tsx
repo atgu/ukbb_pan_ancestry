@@ -1,44 +1,50 @@
 import { Box, FormControl, FormControlLabel, Switch, TextField } from "@material-ui/core"
-import React, { ChangeEvent, useCallback, useMemo, useState } from "react"
-import min from "lodash/min"
-import max from "lodash/max"
+import React, { ChangeEvent, useCallback, useState } from "react"
 import {  useAsyncDebounce } from "react-table";
+import { RangeFilterMetric, RangeFilterValue } from "./phenotypesReducer";
+import { PopulationCode } from "./populations";
 
-export const NumberRangeColumnFilter = ({column}) => {
-  const {filterValue, setFilter, preFilteredRows, id, } = column;
-  const extremums = useMemo(() => {
-    const allValues = preFilteredRows.map(row => row.values[id])
-    return [ min(allValues), max(allValues) ] as const
-  }, [preFilteredRows, id])
+interface Props {
+  label: string
+  population: PopulationCode
+  globalMinValue: number
+  globalMaxValue: number
+  metric: RangeFilterMetric
+  filterValue: RangeFilterValue
+  disableFilter: (args: {metric: RangeFilterMetric, population: PopulationCode}) => void
+  updateFilter: (args: {metric: RangeFilterMetric, population: PopulationCode, min: number, max: number}) => void
+}
+
+export const NumberRangeColumnFilter = (props: Props) => {
+  const {
+    label, globalMinValue, globalMaxValue, metric,
+    filterValue, disableFilter, updateFilter, population
+  } = props;
   const [minVal, setMinVal] = useState(() => {
-    if (filterValue === undefined) {
-      return extremums[0]
-    } else {
-      return filterValue[0]
-    }
+    return (filterValue === undefined) ? globalMinValue : filterValue.min
   })
   const [maxVal, setMaxVal] = useState(() => {
-    if (filterValue === undefined) {
-      return extremums[1]
-    } else {
-      return filterValue[1]
-    }
+    return (filterValue === undefined) ? globalMaxValue : filterValue.max
   })
-  const debouncedSetFilterValue = useAsyncDebounce((filterValue) => {
-    setFilter(filterValue)
+  const debouncedSetFilterValue = useAsyncDebounce((minAndMax: {min: number, max: number}) => {
+    updateFilter({population, metric, min: minAndMax.min, max: minAndMax.max})
   }, 250)
   const handleMinChange = useCallback( (event: ChangeEvent<HTMLInputElement>) => {
     const value = Number(event.target.value)
-    const newFilter = [value, filterValue[1]]
     setMinVal(value)
-    debouncedSetFilterValue(newFilter)
-  }, [setFilter, filterValue])
+    if (filterValue !== undefined) {
+      // We can safely assume this because if `filterValue` is undefined, it
+      // means the input fields will not be shown at all.
+      debouncedSetFilterValue({min: value, max: filterValue.max})
+    }
+  }, [filterValue, debouncedSetFilterValue])
   const handleMaxChange = useCallback( (event: ChangeEvent<HTMLInputElement>) => {
     const value = Number(event.target.value)
-    const newFilter = [filterValue[0], value]
     setMaxVal(value)
-    debouncedSetFilterValue(newFilter)
-  }, [setFilter, filterValue])
+    if (filterValue !== undefined) {
+      debouncedSetFilterValue({min: filterValue.min, max: value})
+    }
+  }, [filterValue, debouncedSetFilterValue])
   let content: React.ReactNode
   if (filterValue === undefined) {
     content = null
@@ -70,9 +76,9 @@ export const NumberRangeColumnFilter = ({column}) => {
   const handleSwitchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const isChecked = event.target.checked
     if (isChecked) {
-      setFilter(extremums)
+      updateFilter({population, metric, min: globalMinValue, max: globalMaxValue})
     } else {
-      setFilter(undefined)
+      disableFilter({population, metric})
     }
   }
   return (
@@ -85,7 +91,7 @@ export const NumberRangeColumnFilter = ({column}) => {
               onChange={handleSwitchChange}
             />
           }
-          label={column.Header}
+          label={label}
         />
         {content}
       </FormControl>

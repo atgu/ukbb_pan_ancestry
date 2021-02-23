@@ -23,7 +23,7 @@ interface Props {
   label: string
 }
 
-export const BaseTextFilter = React.forwardRef((props: Props, ref: Ref<HTMLInputElement>) => {
+export const BaseTextFilter = React.forwardRef(function BaseTextFilter(props: Props, ref: Ref<HTMLInputElement>) {
   const {filterValue, setFilterValue, label} = props;
   const classes = useStyles()
   const [value, setValue] = useState(filterValue)

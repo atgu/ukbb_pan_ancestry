@@ -5,7 +5,7 @@ import { Datum } from "./types"
 interface Props {
   columns: ColumnInstance<Datum>[]
 }
-export const ColumnGroupIndividualFilters = ({columns}: Props) => {
+export const ColumnGroupIndividualFilters = ({columns}: Props): React.ReactNode => {
   const filters = columns.map((col, index) => col.canFilter ? (
     <div key={index}>
       {col.render("Filter")}

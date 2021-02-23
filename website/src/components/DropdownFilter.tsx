@@ -1,6 +1,5 @@
-import { MenuItem, Select, TextField } from "@material-ui/core";
-import React, { useEffect, useMemo } from "react"
-import {FilterProps} from "react-table";
+import { MenuItem, TextField } from "@material-ui/core";
+import React from "react"
 
 export interface Option {
   value: string, label: string

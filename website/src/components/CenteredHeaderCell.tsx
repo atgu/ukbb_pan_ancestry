@@ -13,7 +13,7 @@ interface Props {
   column: {columnTitle: string}
 }
 
-export const CenteredHeaderCell = ({column: {columnTitle}}: Props) => {
+export const CenteredHeaderCell = ({column: {columnTitle}}: Props): React.ReactNode => {
   const classes = useStyles()
   return (
     <div className={classes.root}><div>{columnTitle}</div></div>

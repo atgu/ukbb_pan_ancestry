@@ -1,11 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useReducer, useState } from 'react'
 import BrowserOnly from '@docusaurus/BrowserOnly';
 import {  useTable, useFilters, useBlockLayout, useGlobalFilter} from "react-table";
-import {  SelectColumnFilter } from "../components/SelectColumnFilter";
 import {  FixedSizeList } from "react-window";
 import { Datum } from '../components/types';
 import { scrollbarWidth } from '../components/scrollbarWidth';
-import { Table, TableHead, TableRow, TableCell, TableBody, createMuiTheme, ThemeProvider, makeStyles, Theme, } from '@material-ui/core';
+import { Table, TableHead, TableRow, TableCell, TableBody, makeStyles, Theme, } from '@material-ui/core';
 import {  DownloadLinkCell, downloadLinkCellMaxWidth } from "../components/DownloadLinkCell";
 import {  CopyLinkCell, copyLinkCellMaxWidth } from "../components/CopyLinkCell";
 import { fuzzyTextFilterFunction, fuzzyTextGlobalFilterFunction } from '../components/fuzzyTextFilterFunction';
@@ -46,18 +45,6 @@ const useStyles = makeStyles((theme: Theme) => ({
 }))
 
 const DefaultColumnFilter = () => null
-const numCasesColumnWidth = 100
-const decimalNumbersColumnWidth = 120
-
-// Handle columns that can have "NA" values by replacing "NA" with `null`.
-// Note: if `accessor` is a function, the `id` field must be present.
-const getNaColumnProps = (fieldName) => ({
-  id: fieldName,
-  accessor: (row) => {
-    const value = row[fieldName]
-    return (value === "NA") ? null : value
-  }
-})
 
 const getPerPopulationMetrics = (
     metric_prefix: string,
@@ -124,7 +111,7 @@ export const PhenotypesPageContent = () => {
       filteredByDescriptionFilters: filtered,
       traitTypeFilterOptions,
     }
-  }, [data, sexFilterValue, traitTypeFilterValue, descriptionFilterValue])
+  }, [sexFilterValue, traitTypeFilterValue, descriptionFilterValue])
 
   const {
     globalNCasesUpperThreshold,
@@ -329,12 +316,11 @@ export const PhenotypesPageContent = () => {
     totalColumnsWidth,
     preGlobalFilteredRows,
     setGlobalFilter,
-    visibleColumns,
     state: reactTableState,
     columns: outputColumns,
   } = useTable<Datum>({
     columns,
-    data: filteredByPopulationRangeFilters as any,
+    data: filteredByPopulationRangeFilters,
     initialState: initialReactTableState,
     defaultColumn,
     globalFilter: fuzzyTextGlobalFilterFunction,
@@ -343,16 +329,16 @@ export const PhenotypesPageContent = () => {
   useGlobalFilter,
   useBlockLayout)
 
-  const headerGroupElems = headerGroups.map(headerGroup => {
-    const headerElems = headerGroup.headers.map(column => {
+  const headerGroupElems = headerGroups.map((headerGroup, headerGroupIndex) => {
+    const headerElems = headerGroup.headers.map((column, columnIndex) => {
       return (
-        <TableCell align="center" {...column.getHeaderProps()} >
+        <TableCell align="center" {...column.getHeaderProps()} key={columnIndex}>
           {column.render("Header")}
         </TableCell>
       )
     })
     return (
-      <TableRow {...headerGroup.getHeaderGroupProps()}>
+      <TableRow {...headerGroup.getHeaderGroupProps()} key={headerGroupIndex}>
         {headerElems}
       </TableRow>
     )
@@ -363,9 +349,9 @@ export const PhenotypesPageContent = () => {
   const RenderRow = useCallback(({index, style}) => {
     const row = rows[index]
     prepareRow(row)
-    const cellElems = row.cells.map(cell => {
+    const cellElems = row.cells.map((cell, cellIndex) => {
       return (
-        <TableCell {...cell.getCellProps()} >
+        <TableCell {...cell.getCellProps()} key={cellIndex}>
           {cell.render("Cell")}
         </TableCell>
       )
@@ -380,7 +366,7 @@ export const PhenotypesPageContent = () => {
         {cellElems}
       </TableRow>
     )
-  }, [prepareRow, rows])
+  }, [prepareRow, rows, classes.oddTableRow])
 
   const setColumnGroupVisibilites = useCallback((columnGroupName: ColumnGroupName, isVisible: boolean) => dispatch({
     type: ActionType.SET_COLUMN_GROUP_VISIBILITY,
@@ -412,7 +398,7 @@ export const PhenotypesPageContent = () => {
     if (scrollBarSize === undefined) {
       setScrollBarSize(scrollbarWidth)
     }
-  }, [])
+  }, [scrollBarSize])
 
   const setSexFilterValue = useCallback((value: string | undefined) => dispatch({
     type: ActionType.UPDATE_SEX_FILTER,

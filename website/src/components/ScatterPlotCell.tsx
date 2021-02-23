@@ -1,7 +1,7 @@
-import React, { useRef, useState } from "react"
+import React  from "react"
 import {commonPopulations, PerPopulationMetrics, populationColorMapping} from "./populations";
 import {  scaleLinear } from "d3-scale";
-import { makeStyles, Tooltip } from "@material-ui/core";
+import { makeStyles } from "@material-ui/core";
 import { ColumnInstance } from "react-table";
 import { Datum } from "./types";
 import {  height, width } from "./BarChartCell";
