@@ -8,7 +8,6 @@ import { Table, TableHead, TableRow, TableCell, TableBody, makeStyles, Theme, } 
 import {  DownloadLinkCell, downloadLinkCellMaxWidth } from "../components/DownloadLinkCell";
 import {  CopyLinkCell, copyLinkCellMaxWidth } from "../components/CopyLinkCell";
 import { fuzzyTextFilterFunction, fuzzyTextGlobalFilterFunction } from '../components/fuzzyTextFilterFunction';
-import data from "../data.json"
 import phenotypesStyles from "./phenotypes.module.css"
 import { PopulationCell } from '../components/PopulationCell';
 import {  commonPopulations, PerPopulationMetrics, PopulationCode, } from "../components/populations";
@@ -25,7 +24,8 @@ import { format } from 'd3-format';
 import { Description, DescriptionCell, width as descriptionCellWidth } from './DescriptionCell';
 import {  AutoSizer } from "react-virtualized";
 import { CenteredHeaderCell } from './CenteredHeaderCell';
-
+import { Option } from './DropdownFilter';
+import Skeleton from '@material-ui/lab/Skeleton';
 
 const useStyles = makeStyles((theme: Theme) => ({
   oddTableRow: {
@@ -41,7 +41,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   tableContainer: {
     overflowX: "auto",
     height: "100%"
-  }
+  },
 }))
 
 const DefaultColumnFilter = () => null
@@ -83,6 +83,18 @@ const getPhenotypeDescription = (row): Description => {
 export const PhenotypesPageContent = () => {
 
   const [state, dispatch] = useReducer(reducer, initialState)
+  const [data, setData] = useState<Datum[] | undefined>(undefined)
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const loadedModule: {default: Datum[]} = await import( /* webpackChunkName: "data" */"../data.json")
+        setData(loadedModule.default)
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    fetchData()
+  }, [])
   const {
     columnGroupVisibilities, perPopulationMetricsVisibilities,
     n_cases: nCasesFilters,
@@ -94,206 +106,220 @@ export const PhenotypesPageContent = () => {
   } = state;
   const classes = useStyles()
 
-  const {filteredByDescriptionFilters, traitTypeFilterOptions} = useMemo(() => {
-    const traitTypeValues = [...new Set(data.map(row => (row["trait_type"] as string)).filter(Boolean))] as string[]
-    const traitTypeFilterOptions = traitTypeValues.map(val => ({label: val, value: val}))
-    let filtered = data
-    if (sexFilterValue !== undefined) {
-      filtered = filtered.filter(row => row["pheno_sex"] === sexFilterValue)
-    }
-    if (traitTypeFilterValue !== undefined) {
-      filtered = filtered.filter(row => row["trait_type"] === traitTypeFilterValue)
-    }
-    if (descriptionFilterValue !== undefined) {
-      filtered = fuzzyTextFilterFunction(filtered, "description", descriptionFilterValue)
-    }
-    return {
-      filteredByDescriptionFilters: filtered,
-      traitTypeFilterOptions,
-    }
-  }, [sexFilterValue, traitTypeFilterValue, descriptionFilterValue])
+  type DerivedValues = undefined | (
+    Omit<ReturnType<typeof determineExtremums>, "filteredByPopulationRangeFilters"> & { traitTypeFilterOptions: Option[] }
+  )
 
-  const {
-    globalNCasesUpperThreshold,
-    perPopulationNCasesExtremums,
-    globalNControlsUpperThreshold,
-    perPopulationNControlsExtremums,
-    perPopulationSaigeHeritabilityExtremums,
-    globalLambdaGc,
-    filteredByPopulationRangeFilters,
-    perPopulationLambdaGcExtremums,
-  } = useMemo( () => determineExtremums({
-    data: filteredByDescriptionFilters,
-    perPopulationMetricsVisibilities,
-    nCasesFilters,
-    nControlsFilters,
-    saigeHeritabilityFilters,
-    lambdaGcFilters,
-  }) , [filteredByDescriptionFilters, perPopulationMetricsVisibilities, nCasesFilters, nControlsFilters, saigeHeritabilityFilters, lambdaGcFilters])
+  const {filteredData, derivedValues} = useMemo(() => {
+    let derivedValues: DerivedValues
+    let filteredData: Datum[]
+    if (data === undefined) {
+      filteredData = []
+      derivedValues = undefined
+    } else {
+      const traitTypeValues = [...new Set(data.map(row => (row["trait_type"] as string)).filter(Boolean))] as string[]
+      const traitTypeFilterOptions = traitTypeValues.map(val => ({label: val, value: val}))
+      let filteredByDescriptionFilters = data
+      if (sexFilterValue !== undefined) {
+        filteredByDescriptionFilters = filteredByDescriptionFilters.filter(row => row["pheno_sex"] === sexFilterValue)
+      }
+      if (traitTypeFilterValue !== undefined) {
+        filteredByDescriptionFilters = filteredByDescriptionFilters.filter(row => row["trait_type"] === traitTypeFilterValue)
+      }
+      if (descriptionFilterValue !== undefined) {
+        filteredByDescriptionFilters = fuzzyTextFilterFunction(filteredByDescriptionFilters, "description", descriptionFilterValue)
+      }
+      const {filteredByPopulationRangeFilters, ...rest} = determineExtremums({
+        data: filteredByDescriptionFilters,
+        perPopulationMetricsVisibilities,
+        nCasesFilters,
+        nControlsFilters,
+        saigeHeritabilityFilters,
+        lambdaGcFilters,
+      })
+      derivedValues = {
+        ...rest,
+        traitTypeFilterOptions,
+      }
+      filteredData = filteredByPopulationRangeFilters
+    }
+    return {filteredData , derivedValues }
+  }, [
+    data, sexFilterValue, traitTypeFilterValue, descriptionFilterValue,
+    perPopulationMetricsVisibilities, nCasesFilters, nControlsFilters, saigeHeritabilityFilters, lambdaGcFilters
+  ])
 
   const columns = useMemo(
     () => {
-      const columnVisibilities = columnGroupVisibilities
-      let columns = [
-        {
-          Header: CenteredHeaderCell,
-          width: descriptionCellWidth,
-          accessor: getPhenotypeDescription,
-          id: "description",
-          columnTitle: "Description",
-          Cell: DescriptionCell
-        },
-      ]
-      if (columnVisibilities.populations) {
-        columns = [
-          ...columns,
+
+      if (derivedValues === undefined) {
+        return []
+      } else {
+        const {
+          globalNCasesUpperThreshold, globalNControlsUpperThreshold,
+          globalLambdaGc,
+        } = derivedValues;
+        const columnVisibilities = columnGroupVisibilities
+        let columns = [
           {
-            columnGroupName: ColumnGroupName.Populations,
-            accessor: "pops",
-            filter: populationsFilterFunction,
-            Filter: PopulationsFilter,
-            Cell: PopulationCell,
-            Header: PopuplationHeader,
+            Header: CenteredHeaderCell,
+            width: descriptionCellWidth,
+            accessor: getPhenotypeDescription,
+            id: "description",
+            columnTitle: "Description",
+            Cell: DescriptionCell
           },
         ]
+        if (columnVisibilities.populations) {
+          columns = [
+            ...columns,
+            {
+              columnGroupName: ColumnGroupName.Populations,
+              accessor: "pops",
+              filter: populationsFilterFunction,
+              Filter: PopulationsFilter,
+              Cell: PopulationCell,
+              Header: PopuplationHeader,
+            },
+          ]
+        }
+        if (columnVisibilities.nCases) {
+          columns = [
+            ...columns,
+            {
+              Header: CenteredHeaderCell,
+              columnTitle: "N Cases",
+              ...getPerPopulationMetrics("n_cases", perPopulationMetricsVisibilities),
+              Cell: BarChartCell,
+              width: chartCellWidth,
+              upperThreshold: globalNCasesUpperThreshold,
+              labelFormatter: format(","),
+              columnGroupName: ColumnGroupName.NCases,
+            }
+          ]
+        }
+        if (columnVisibilities.nControls) {
+          columns = [
+            ...columns,
+            {
+              Header: CenteredHeaderCell,
+              columnTitle: "N Controls",
+              columnGroupName: ColumnGroupName.NControls,
+              ...getPerPopulationMetrics("n_controls", perPopulationMetricsVisibilities),
+              Cell: BarChartCell,
+              width: chartCellWidth,
+              upperThreshold: globalNControlsUpperThreshold,
+              labelFormatter: format(","),
+            },
+          ]
+        }
+        if (columnVisibilities.saigeHeritability) {
+          columns = [
+            ...columns,
+            {
+              Header: CenteredHeaderCell,
+              columnTitle: "Saige heritability",
+              columnGroupName: ColumnGroupName.SaigeHeritability,
+              ...getPerPopulationMetrics("saige_heritability", perPopulationMetricsVisibilities),
+              Cell: BarChartCell,
+              width: chartCellWidth,
+              upperThreshold: maxSaigeHeritabilityValue,
+              labelFormatter: format(".3f"),
+            }
+          ]
+        }
+        if (columnVisibilities.lambdaGc) {
+          columns = [
+            ...columns,
+            {
+              Header: CenteredHeaderCell,
+              columnTitle: "Lambda GC",
+              columnGroupName: ColumnGroupName.LambdaGc,
+              ...getPerPopulationMetrics("lambda_gc", perPopulationMetricsVisibilities),
+              Cell: ScatterPlotCell,
+              width: chartCellWidth,
+              minValue: globalLambdaGc.min,
+              maxValue: globalLambdaGc.max,
+              xAxisConfig: {isShown: true, yIntercept: 1},
+              labelFormatter: format(".3f"),
+            }
+          ]
+        }
+        if (columnVisibilities.downloads) {
+          columns = [
+            ...columns,
+            {
+              Header: "Downloads",
+              columnGroupName: ColumnGroupName.Downloads,
+              columns: [
+                {
+                  Header: CenteredHeaderCell,
+                  columnTitle: "tsv",
+                  accessor: "aws_link",
+                  Cell: DownloadLinkCell,
+                  width: downloadLinkCellMaxWidth,
+                  disableFilters: true,
+                },
+                {
+                  Header: CenteredHeaderCell,
+                  columnTitle: "tbi",
+                  accessor: "aws_link_tabix",
+                  Cell: DownloadLinkCell,
+                  width: downloadLinkCellMaxWidth,
+                  disableFilters: true,
+                },
+                {
+                  Header: CenteredHeaderCell,
+                  columnTitle: "wget tsv",
+                  accessor: "wget",
+                  Cell: CopyLinkCell,
+                  width: copyLinkCellMaxWidth,
+                  disableFilters: true,
+                },
+                {
+                  Header: CenteredHeaderCell,
+                  columnTitle: "wget tbi",
+                  accessor: "wget_tabix",
+                  Cell: CopyLinkCell,
+                  width: copyLinkCellMaxWidth,
+                  disableFilters: true,
+                },
+              ]
+            }
+          ]
+        }
+        if (columnVisibilities.md5) {
+          const columnWidth = 320;
+          columns = [
+            ...columns,
+            {
+              Header: "MD5",
+              columnGroupName: ColumnGroupName.Md5,
+              columns: [
+                {
+                  Header: CenteredHeaderCell,
+                  columnTitle: "tsv",
+                  accessor: "md5_hex",
+                  disableFilters: true,
+                  width: columnWidth
+                },
+                {
+                  Header: CenteredHeaderCell,
+                  columnTitle: "tbi",
+                  accessor: "md5_hex_tabix",
+                  disableFilters: true,
+                  width: columnWidth
+                },
+              ]
+            }
+          ]
+        }
+        return columns
       }
-      if (columnVisibilities.nCases) {
-        columns = [
-          ...columns,
-          {
-            Header: CenteredHeaderCell,
-            columnTitle: "N Cases",
-            ...getPerPopulationMetrics("n_cases", perPopulationMetricsVisibilities),
-            Cell: BarChartCell,
-            width: chartCellWidth,
-            upperThreshold: globalNCasesUpperThreshold,
-            labelFormatter: format(","),
-            columnGroupName: ColumnGroupName.NCases,
-          }
-        ]
-      }
-      if (columnVisibilities.nControls) {
-        columns = [
-          ...columns,
-          {
-            Header: CenteredHeaderCell,
-            columnTitle: "N Controls",
-            columnGroupName: ColumnGroupName.NControls,
-            ...getPerPopulationMetrics("n_controls", perPopulationMetricsVisibilities),
-            Cell: BarChartCell,
-            width: chartCellWidth,
-            upperThreshold: globalNControlsUpperThreshold,
-            labelFormatter: format(","),
-          },
-        ]
-      }
-      if (columnVisibilities.saigeHeritability) {
-        columns = [
-          ...columns,
-          {
-            Header: CenteredHeaderCell,
-            columnTitle: "Saige heritability",
-            columnGroupName: ColumnGroupName.SaigeHeritability,
-            ...getPerPopulationMetrics("saige_heritability", perPopulationMetricsVisibilities),
-            Cell: BarChartCell,
-            width: chartCellWidth,
-            upperThreshold: maxSaigeHeritabilityValue,
-            labelFormatter: format(".3f"),
-          }
-        ]
-      }
-      if (columnVisibilities.lambdaGc) {
-        columns = [
-          ...columns,
-          {
-            Header: CenteredHeaderCell,
-            columnTitle: "Lambda GC",
-            columnGroupName: ColumnGroupName.LambdaGc,
-            ...getPerPopulationMetrics("lambda_gc", perPopulationMetricsVisibilities),
-            Cell: ScatterPlotCell,
-            width: chartCellWidth,
-            minValue: globalLambdaGc.min,
-            maxValue: globalLambdaGc.max,
-            xAxisConfig: {isShown: true, yIntercept: 1},
-            labelFormatter: format(".3f"),
-          }
-        ]
-      }
-      if (columnVisibilities.downloads) {
-        columns = [
-          ...columns,
-          {
-            Header: "Downloads",
-            columnGroupName: ColumnGroupName.Downloads,
-            columns: [
-              {
-                Header: CenteredHeaderCell,
-                columnTitle: "tsv",
-                accessor: "aws_link",
-                Cell: DownloadLinkCell,
-                width: downloadLinkCellMaxWidth,
-                disableFilters: true,
-              },
-              {
-                Header: CenteredHeaderCell,
-                columnTitle: "tbi",
-                accessor: "aws_link_tabix",
-                Cell: DownloadLinkCell,
-                width: downloadLinkCellMaxWidth,
-                disableFilters: true,
-              },
-              {
-                Header: CenteredHeaderCell,
-                columnTitle: "wget tsv",
-                accessor: "wget",
-                Cell: CopyLinkCell,
-                width: copyLinkCellMaxWidth,
-                disableFilters: true,
-              },
-              {
-                Header: CenteredHeaderCell,
-                columnTitle: "wget tbi",
-                accessor: "wget_tabix",
-                Cell: CopyLinkCell,
-                width: copyLinkCellMaxWidth,
-                disableFilters: true,
-              },
-            ]
-          }
-        ]
-      }
-      if (columnVisibilities.md5) {
-        const columnWidth = 320;
-        columns = [
-          ...columns,
-          {
-            Header: "MD5",
-            columnGroupName: ColumnGroupName.Md5,
-            columns: [
-              {
-                Header: CenteredHeaderCell,
-                columnTitle: "tsv",
-                accessor: "md5_hex",
-                disableFilters: true,
-                width: columnWidth
-              },
-              {
-                Header: CenteredHeaderCell,
-                columnTitle: "tbi",
-                accessor: "md5_hex_tabix",
-                disableFilters: true,
-                width: columnWidth
-              },
-            ]
-          }
-        ]
-      }
-      return columns
     }
   , [
     columnGroupVisibilities, perPopulationMetricsVisibilities,
-    globalNCasesUpperThreshold, globalNControlsUpperThreshold,
-    globalLambdaGc.min, globalLambdaGc.max,
+    derivedValues,
   ])
   const initialReactTableState = useMemo(() => {
     return {
@@ -320,7 +346,7 @@ export const PhenotypesPageContent = () => {
     columns: outputColumns,
   } = useTable<Datum>({
     columns,
-    data: filteredByPopulationRangeFilters,
+    data: filteredData,
     initialState: initialReactTableState,
     defaultColumn,
     globalFilter: fuzzyTextGlobalFilterFunction,
@@ -427,74 +453,89 @@ export const PhenotypesPageContent = () => {
         <BrowserOnly>
         {
           () => {
-            return (
-                  <div className={`container ${phenotypesStyles.container}`}>
-                    <div>
-                      <PhenotypeFilters
-                        columnVisibilities={columnGroupVisibilities}
-                        setColumnVisibilities={setColumnGroupVisibilites}
-                        columns={outputColumns}
-                        preGlobalFilteredRows={preGlobalFilteredRows}
-                        setGlobalFilter={setGlobalFilter}
-                        globalFilter={reactTableState.globalFilter}
-                        populationMetricsVisibilities={perPopulationMetricsVisibilities}
-                        setPopulationMetricsVisibilities={setPerPoulationMetricsVisibilities}
-                        nCasesFilters={nCasesFilters}
-                        nCasesPerPopulationExtremums={perPopulationNCasesExtremums}
-                        nControlsFilters={nControlsFilters}
-                        nControlsPerPopulationExtremums={perPopulationNControlsExtremums}
-                        saigeHeritabilityFilters={saigeHeritabilityFilters}
-                        saigeHeritabilityPerPopulationExtremums={perPopulationSaigeHeritabilityExtremums}
-                        lambdaGcFilters={lambdaGcFilters}
-                        lambdaGcPerPopulationExtremums={perPopulationLambdaGcExtremums}
-                        disableFilterOnePopulation={disableRangeFilterOnePopulation}
-                        updateFilterOnePopulation={updateRangeFilterOnePopulation}
-                        sexFilterValue={sexFilterValue}
-                        setSexFilterValue={setSexFilterValue}
-                        traitTypeFilterOptions={traitTypeFilterOptions}
-                        traitTypeFilterValue={traitTypeFilterValue}
-                        setTraitTypeFilterValue={setTraitTypeFilterValue}
-                        recordsCount={filteredByPopulationRangeFilters.length}
-                        descriptionFilterValue={descriptionFilterValue}
-                        setDescriptionFilterValue={setDescriptionFilterValue}
-                      />
-                    </div>
-                    <div className={classes.tableContainer}>
-                      <AutoSizer>
-                        {(dimensions) => {
-                            let tableBody: React.ReactNode
-                            if (scrollBarSize === undefined) {
-                              tableBody = null
-                            } else {
-                              tableBody = (
-                                <div {...getTableBodyProps()}>
-                                  <FixedSizeList
-                                    // Subtract away some extra space for safety to minimize the chance of vertical scroll bar being added:
-                                    height={dimensions.height - tableHeaderHeight - 50}
-                                    itemCount={rows.length}
-                                    itemSize={chartCellHeight}
-                                    width={totalColumnsWidth + scrollBarSize}
-                                    innerElementType={TableBody}
-                                  >
-                                    {RenderRow}
-                                  </FixedSizeList>
-                                </div>
-                              )
-                            }
-                          return (
-                            <Table {...getTableProps()} >
-                              <TableHead>
-                                {headerGroupElems}
-                              </TableHead>
-                              {tableBody}
+            if (derivedValues === undefined) {
+              return (
+                <div className={`container ${phenotypesStyles.container}`}>
+                  <Skeleton variant="rect" height="70vh"/>
+                  <Skeleton variant="rect" height="70vh"/>
+                </div>
+              )
+            } else {
+              const {
+                perPopulationNCasesExtremums,
+                perPopulationNControlsExtremums,
+                perPopulationSaigeHeritabilityExtremums,
+                perPopulationLambdaGcExtremums,
+              } = derivedValues;
+              return (
+                    <div className={`container ${phenotypesStyles.container}`}>
+                      <div>
+                        <PhenotypeFilters
+                          columnVisibilities={columnGroupVisibilities}
+                          setColumnVisibilities={setColumnGroupVisibilites}
+                          columns={outputColumns}
+                          preGlobalFilteredRows={preGlobalFilteredRows}
+                          setGlobalFilter={setGlobalFilter}
+                          globalFilter={reactTableState.globalFilter}
+                          populationMetricsVisibilities={perPopulationMetricsVisibilities}
+                          setPopulationMetricsVisibilities={setPerPoulationMetricsVisibilities}
+                          nCasesFilters={nCasesFilters}
+                          nCasesPerPopulationExtremums={perPopulationNCasesExtremums}
+                          nControlsFilters={nControlsFilters}
+                          nControlsPerPopulationExtremums={perPopulationNControlsExtremums}
+                          saigeHeritabilityFilters={saigeHeritabilityFilters}
+                          saigeHeritabilityPerPopulationExtremums={perPopulationSaigeHeritabilityExtremums}
+                          lambdaGcFilters={lambdaGcFilters}
+                          lambdaGcPerPopulationExtremums={perPopulationLambdaGcExtremums}
+                          disableFilterOnePopulation={disableRangeFilterOnePopulation}
+                          updateFilterOnePopulation={updateRangeFilterOnePopulation}
+                          sexFilterValue={sexFilterValue}
+                          setSexFilterValue={setSexFilterValue}
+                          traitTypeFilterOptions={derivedValues.traitTypeFilterOptions}
+                          traitTypeFilterValue={traitTypeFilterValue}
+                          setTraitTypeFilterValue={setTraitTypeFilterValue}
+                          recordsCount={filteredData.length}
+                          descriptionFilterValue={descriptionFilterValue}
+                          setDescriptionFilterValue={setDescriptionFilterValue}
+                        />
+                      </div>
+                      <div className={classes.tableContainer}>
+                        <AutoSizer>
+                          {(dimensions) => {
+                              let tableBody: React.ReactNode
+                              if (scrollBarSize === undefined) {
+                                tableBody = null
+                              } else {
+                                tableBody = (
+                                  <div {...getTableBodyProps()}>
+                                    <FixedSizeList
+                                      // Subtract away some extra space for safety to minimize the chance of vertical scroll bar being added:
+                                      height={dimensions.height - tableHeaderHeight - 50}
+                                      itemCount={rows.length}
+                                      itemSize={chartCellHeight}
+                                      width={totalColumnsWidth + scrollBarSize}
+                                      innerElementType={TableBody}
+                                    >
+                                      {RenderRow}
+                                    </FixedSizeList>
+                                  </div>
+                                )
+                              }
+                            return (
+                              <Table {...getTableProps()} >
+                                <TableHead>
+                                  {headerGroupElems}
+                                </TableHead>
+                                {tableBody}
 
-                            </Table>
-                          )
-                        }}
-                      </AutoSizer>
+                              </Table>
+                            )
+                          }}
+                        </AutoSizer>
+                      </div>
                     </div>
-                  </div>
-            )
+              )
+            }
           }
         }
       </BrowserOnly>
