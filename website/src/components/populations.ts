@@ -17,6 +17,10 @@ export const populationColorMapping = new Map<PopulationCode, string>([
 ])
 
 // These are the only populations that actually occur in the data set:
-export const commonPopulations = [...populationColorMapping.keys()]
+export const commonPopulations: PopulationCode[] = []
+for (const key of populationColorMapping.keys())  {
+  commonPopulations.push(key)
+}
+
 
 export type PerPopulationMetrics = Map<PopulationCode, number>
