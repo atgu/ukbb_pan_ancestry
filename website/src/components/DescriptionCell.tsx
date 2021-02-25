@@ -39,7 +39,6 @@ const useStyles = makeStyles((theme: Theme) => ({
     gridColumn: "1 / 4",
     gridRow: "2",
     fontSize: "0.75rem",
-    fontWeight: "bold",
   },
   small: {
     fontSize: "0.7rem",
