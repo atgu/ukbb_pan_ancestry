@@ -61,6 +61,18 @@ function prepareCodingDescriptionPhenotype(phenotype: Datum) {
   return phenotype
 }
 
+const preparePrescriptionDescriptionPhenotype = (phenotype: Datum) => {
+  const {trait_type, phenocode} = phenotype;
+  if (trait_type === "prescriptions") {
+    return {
+      ...phenotype,
+      description: phenocode,
+    }
+  } else {
+    return phenotype
+  }
+}
+
 const pipe = (...fns: ((phenotype: Datum) => Datum)[]) => (x: Datum) => fns.reduce((v, f) => f(v), x)
 
 // Replace raw description field with custom values based on other fields.
@@ -69,7 +81,8 @@ export function processPhenotypeDescription(phenotype: Datum) {
   return pipe(
     prepareIcdPhenotype,
     prepareCodingDescriptionPhenotype,
-    prepareCustomPhenotype
+    prepareCustomPhenotype,
+    preparePrescriptionDescriptionPhenotype,
   )(phenotype)
 }
 
