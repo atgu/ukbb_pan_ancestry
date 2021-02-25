@@ -28,7 +28,6 @@
     "d3-scale": "^3.2.3",
     "match-sorter": "^6.2.0",
     "mousetrap": "^1.6.5",
-    "polished": "^4.1.0",
     "react": "^16.8.4",
     "react-dom": "^16.8.4",
     "react-table": "^7.6.3",

@@ -1,6 +1,5 @@
 import { makeStyles, Switch, SwitchProps} from "@material-ui/core"
 import React from "react"
-import {  lighten } from "polished";
 import {  PopulationCode, populationColorMapping } from "./populations";
 
 // Adapted from https://material-ui.com/components/switches/#customized-switches
@@ -8,7 +7,6 @@ import {  PopulationCode, populationColorMapping } from "./populations";
 const perPopulationStyles = {}
 for (const [populationCode, color] of populationColorMapping.entries()) {
   perPopulationStyles[`${populationCode}SwitchBase`] = {
-    color: lighten(0.2, color),
     '&$checked': {
       color: color,
     },
