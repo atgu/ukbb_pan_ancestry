@@ -26,6 +26,7 @@ import {  AutoSizer } from "react-virtualized";
 import { CenteredHeaderCell } from './CenteredHeaderCell';
 import { Option } from './DropdownFilter';
 import Skeleton from '@material-ui/lab/Skeleton';
+import { processPhenotypeDescription } from './descriptionAccessor';
 
 const useStyles = makeStyles((theme: Theme) => ({
   oddTableRow: {
@@ -66,7 +67,7 @@ const getPerPopulationMetrics = (
   }
 }
 
-const getPhenotypeDescription = (row): Description => {
+const getPhenotypeDescription = (row: Datum): Description => {
   const sex = (row.pheno_sex) ? row.pheno_sex : undefined
   const code = (row.phenocode) ? row.phenocode : undefined
   const traitType = (row.trait_type) ? row.trait_type : undefined
@@ -88,7 +89,8 @@ export const PhenotypesPageContent = () => {
     const fetchData = async () => {
       try {
         const loadedModule: {default: Datum[]} = await import( /* webpackChunkName: "data" */"../data.json")
-        setData(loadedModule.default)
+        const withProcessedDescription = loadedModule.default.map(elem => processPhenotypeDescription(elem))
+        setData(withProcessedDescription)
       } catch (e) {
         console.error(e)
       }
