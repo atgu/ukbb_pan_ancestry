@@ -77,7 +77,9 @@ interface Props {
   descriptionFilterValue: string | undefined
   setDescriptionFilterValue: (value: string | undefined) => void
   recordsCount: number
+  isLargeScreen: boolean
 }
+
 
 export const PhenotypeFilters = (props: Props) => {
   const {
@@ -92,7 +94,8 @@ export const PhenotypeFilters = (props: Props) => {
     sexFilterValue, setSexFilterValue,
     traitTypeFilterOptions, traitTypeFilterValue, setTraitTypeFilterValue,
     descriptionFilterValue, setDescriptionFilterValue,
-    recordsCount
+    recordsCount,
+    isLargeScreen
   } = props;
   const classes = useStyles()
 
@@ -407,27 +410,35 @@ export const PhenotypeFilters = (props: Props) => {
     </Paper>
   )
 
+  if (isLargeScreen) {
+    return (
+      <div>
+        {globalFilterElem}
+        <Paper>
+          <AccordionSummary className={classes.accordionTitleNoSwitch}>
+            Population Colors
+          </AccordionSummary>
+          <AccordionDetails>
+            <PopulationColorLegend labelFontSize={undefined} iconFontSize={undefined}/>
+          </AccordionDetails>
+        </Paper>
+        {descriptionFilter}
+        {populationsFilter}
+        {downloadsFilter}
+        {populationMetricsVibilitiesFilter}
+        {nCasesFilter}
+        {nControlsFilter}
+        {saigeHeritabilityFilter}
+        {lambdaGcFilter}
+        {md5Filter}
+      </div>
+    )
+  } else {
+    return (
+      <div>
+        {globalFilterElem}
+      </div>
+    )
+  }
 
-  return (
-    <div>
-      {globalFilterElem}
-      <Paper>
-        <AccordionSummary className={classes.accordionTitleNoSwitch}>
-          Population Colors
-        </AccordionSummary>
-        <AccordionDetails>
-          <PopulationColorLegend labelFontSize={undefined} iconFontSize={undefined}/>
-        </AccordionDetails>
-      </Paper>
-      {descriptionFilter}
-      {populationsFilter}
-      {downloadsFilter}
-      {populationMetricsVibilitiesFilter}
-      {nCasesFilter}
-      {nControlsFilter}
-      {saigeHeritabilityFilter}
-      {lambdaGcFilter}
-      {md5Filter}
-    </div>
-  )
 }

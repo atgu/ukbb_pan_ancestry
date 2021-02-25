@@ -4,7 +4,7 @@ import {  useTable, useFilters, useBlockLayout, useGlobalFilter} from "react-tab
 import {  FixedSizeList } from "react-window";
 import { Datum } from '../components/types';
 import { scrollbarWidth } from '../components/scrollbarWidth';
-import { Table, TableHead, TableRow, TableCell, TableBody, makeStyles, Theme, } from '@material-ui/core';
+import { Table, TableHead, TableRow, TableCell, TableBody, makeStyles, Theme, useTheme, useMediaQuery, } from '@material-ui/core';
 import {  DownloadLinkCell, downloadLinkCellMaxWidth } from "../components/DownloadLinkCell";
 import {  CopyLinkCell, copyLinkCellMaxWidth } from "../components/CopyLinkCell";
 import { fuzzyTextFilterFunction, fuzzyTextGlobalFilterFunction } from '../components/fuzzyTextFilterFunction';
@@ -28,6 +28,8 @@ import { Option } from './DropdownFilter';
 import Skeleton from '@material-ui/lab/Skeleton';
 import { processPhenotypeDescription } from './descriptionAccessor';
 
+const overallPageMaxWidth = "95%"
+
 const useStyles = makeStyles((theme: Theme) => ({
   oddTableRow: {
     // Need to double up on class names to override Infima's default styling:
@@ -41,8 +43,29 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   tableContainer: {
     overflowX: "auto",
-    height: "100%"
+    height: "100%",
+    [theme.breakpoints.up("md")]: {
+      height: "100%"
+    },
+    [theme.breakpoints.down("sm")]: {
+      flexGrow: 1,
+      marginTop: theme.spacing(1),
+    }
   },
+  container: {
+    maxWidth: overallPageMaxWidth,
+    "--ifm-table-stripe-background": "var(--ifm-table-background)",
+    [theme.breakpoints.up("md")]: {
+      display: "grid",
+      gridTemplateColumns: "300px 1fr",
+      columnGap: "20px",
+    },
+    [theme.breakpoints.down("sm")]: {
+      display: "flex",
+      flexDirection: "column",
+
+    },
+  }
 }))
 
 const DefaultColumnFilter = () => null
@@ -83,6 +106,8 @@ const getPhenotypeDescription = (row: Datum): Description => {
 
 export const PhenotypesPageContent = () => {
 
+  const theme = useTheme()
+  const isLargeScreen = useMediaQuery(theme.breakpoints.up("md"))
   const [state, dispatch] = useReducer(reducer, initialState)
   const [data, setData] = useState<Datum[] | undefined>(undefined)
   useEffect(() => {
@@ -447,7 +472,7 @@ export const PhenotypesPageContent = () => {
   return (
     <>
       <header>
-        <div className={`container ${phenotypesStyles.titleContainer}`}>
+        <div className="container" style={{maxWidth: overallPageMaxWidth}}>
           <h1 className="page-title">Phenotypes</h1>
         </div>
       </header>
@@ -457,7 +482,7 @@ export const PhenotypesPageContent = () => {
           () => {
             if (derivedValues === undefined) {
               return (
-                <div className={`container ${phenotypesStyles.container}`}>
+                <div className={clsx("container", classes.container)}>
                   <Skeleton variant="rect" height="70vh"/>
                   <Skeleton variant="rect" height="70vh"/>
                 </div>
@@ -470,9 +495,10 @@ export const PhenotypesPageContent = () => {
                 perPopulationLambdaGcExtremums,
               } = derivedValues;
               return (
-                    <div className={`container ${phenotypesStyles.container}`}>
+                    <div className={clsx("container", classes.container)}>
                       <div>
                         <PhenotypeFilters
+                          isLargeScreen={isLargeScreen}
                           columnVisibilities={columnGroupVisibilities}
                           setColumnVisibilities={setColumnGroupVisibilites}
                           columns={outputColumns}
@@ -505,6 +531,9 @@ export const PhenotypesPageContent = () => {
                         <AutoSizer>
                           {(dimensions) => {
                               let tableBody: React.ReactNode
+                              const tableBodyHeight = isLargeScreen ?
+                                dimensions.height - tableHeaderHeight - 50 :
+                                dimensions.height - tableHeaderHeight - 10
                               if (scrollBarSize === undefined) {
                                 tableBody = null
                               } else {
@@ -512,7 +541,7 @@ export const PhenotypesPageContent = () => {
                                   <div {...getTableBodyProps()}>
                                     <FixedSizeList
                                       // Subtract away some extra space for safety to minimize the chance of vertical scroll bar being added:
-                                      height={dimensions.height - tableHeaderHeight - 50}
+                                      height={tableBodyHeight}
                                       itemCount={rows.length}
                                       itemSize={chartCellHeight}
                                       width={totalColumnsWidth + scrollBarSize}
