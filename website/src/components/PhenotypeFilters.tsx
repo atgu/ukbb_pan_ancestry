@@ -13,6 +13,8 @@ import { ColumnGroupVisibility, PerPopulationMetricsVisibility, ColumnGroupName,
 import {  NumberRangeColumnFilter } from "./NumberRangeColumnFilter";
 import { DropdownFilter, Option } from "./DropdownFilter"
 import { BaseTextFilter } from "./BaseTextFilter"
+import {  PopulationColorLegend } from "./PopulationColorLegend";
+
 
 const useStyles = makeStyles((theme: Theme) => ({
   accordionTitleNoSwitch: {
@@ -409,6 +411,14 @@ export const PhenotypeFilters = (props: Props) => {
   return (
     <div>
       {globalFilterElem}
+      <Paper>
+        <AccordionSummary className={classes.accordionTitleNoSwitch}>
+          Population Colors
+        </AccordionSummary>
+        <AccordionDetails>
+          <PopulationColorLegend labelFontSize={undefined} iconFontSize={undefined}/>
+        </AccordionDetails>
+      </Paper>
       {descriptionFilter}
       {populationsFilter}
       {downloadsFilter}
