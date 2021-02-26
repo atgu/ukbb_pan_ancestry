@@ -8,7 +8,6 @@ import { Table, TableHead, TableRow, TableCell, TableBody, makeStyles, Theme, us
 import {  DownloadLinkCell, downloadLinkCellMaxWidth } from "../components/DownloadLinkCell";
 import {  CopyLinkCell, copyLinkCellMaxWidth } from "../components/CopyLinkCell";
 import { fuzzyTextFilterFunction, fuzzyTextGlobalFilterFunction } from '../components/fuzzyTextFilterFunction';
-import phenotypesStyles from "./phenotypes.module.css"
 import { PopulationCell } from '../components/PopulationCell';
 import {  commonPopulations, PerPopulationMetrics, PopulationCode, } from "../components/populations";
 import { PhenotypeFilters} from '../components/PhenotypeFilters';

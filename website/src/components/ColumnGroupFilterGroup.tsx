@@ -8,7 +8,7 @@ export type FilterDisplay = {
   showFilter: false
 } | {
   showFilter: true
-  filters: React.ReactNode
+  filterElems: React.ReactNode
 }
 
 interface Props {
@@ -19,14 +19,14 @@ interface Props {
   onAccordionChange: AccordionProps["onChange"]
 }
 
-export const ColumnGroupFilterGroup = (props: Props): React.ReactNode => {
+export const ColumnGroupFilterGroup = (props: Props) => {
   const {visibilityControl, filterDisplay, label, isAccordionExpanded, onAccordionChange} = props
   let accordionDetails: React.ReactNode
   if (filterDisplay.showFilter) {
     accordionDetails = (
       <FormGroup>
         <FormLabel>Filters</FormLabel>
-        {filterDisplay.filters}
+        {filterDisplay.filterElems}
       </FormGroup>
     )
   } else {

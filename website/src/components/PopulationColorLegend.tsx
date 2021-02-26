@@ -23,8 +23,9 @@ const useStyles = makeStyles({
 interface Props {
   labelFontSize: string | undefined
   iconFontSize: string | undefined
+  gridJustifyItems: string | undefined
 }
-export const PopulationColorLegend = ({labelFontSize, iconFontSize}: Props) => {
+export const PopulationColorLegend = ({labelFontSize, iconFontSize, gridJustifyItems}: Props) => {
   const classes = useStyles()
   const populationElems = expectedPopulations.map(pop => {
     return (
@@ -38,7 +39,7 @@ export const PopulationColorLegend = ({labelFontSize, iconFontSize}: Props) => {
     )
   })
   return (
-    <div className={classes.grid}>
+    <div className={classes.grid} style={{justifyItems: gridJustifyItems}}>
       {populationElems}
     </div>
   )

@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { Accordion, AccordionDetails, AccordionSummary, FormControlLabel, FormGroup, makeStyles, Paper, Switch, Theme} from "@material-ui/core"
+import { Accordion, AccordionDetails, AccordionSummary, Card, CardContent, FormControlLabel, FormGroup, makeStyles, Paper, Switch, Theme, Typography} from "@material-ui/core"
 import { useCallback } from "react"
 import { ColumnInstance, UseGlobalFiltersInstanceProps } from "react-table"
 import { Datum } from "./types"
@@ -29,6 +29,9 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   traitTypeFilter: {
     marginTop: theme.spacing(1),
+  },
+  columnGroupCard: {
+    marginBottom: theme.spacing(1)
   }
 }))
 
@@ -108,52 +111,61 @@ export const PhenotypeFilters = (props: Props) => {
   const getAccordionChangeHandler = (accordionName: AccordionName) => (_: unknown, isExpanded: boolean) => setExpandedAccordion(isExpanded ? accordionName : undefined)
 
   const descriptionFilter = (
+    <FormGroup className={classes.descriptionFormGroup}>
+      <DropdownFilter
+        options={[
+          {value: "both_sexes", label: "both"},
+          {value: "females", label: "female"},
+          {value: "males", label: "male"},
+        ]}
+        setFilterValue={setSexFilterValue}
+        filterValue={sexFilterValue}
+        label="Sex"
+      />
+      <DropdownFilter
+        className={classes.traitTypeFilter}
+        options={traitTypeFilterOptions}
+        setFilterValue={setTraitTypeFilterValue}
+        filterValue={traitTypeFilterValue}
+        label="Trait Type"
+      />
+      <BaseTextFilter
+        filterValue={descriptionFilterValue}
+        setFilterValue={setDescriptionFilterValue}
+        label={`Search ${recordsCount} records`}
+      />
+    </FormGroup>
+
+  )
+
+  const descriptionAccordion = (
     <Accordion expanded={expandedAccordion === AccordionName.Description} onChange={getAccordionChangeHandler(AccordionName.Description)}>
       <AccordionSummary expandIcon={<ExpandMore/>} className={classes.accordionTitleNoSwitch}>
         Description
       </AccordionSummary>
       <AccordionDetails>
-        <FormGroup className={classes.descriptionFormGroup}>
-          <DropdownFilter
-            options={[
-              {value: "both_sexes", label: "both"},
-              {value: "females", label: "female"},
-              {value: "males", label: "male"},
-            ]}
-            setFilterValue={setSexFilterValue}
-            filterValue={sexFilterValue}
-            label="Sex"
-          />
-          <DropdownFilter
-            className={classes.traitTypeFilter}
-            options={traitTypeFilterOptions}
-            setFilterValue={setTraitTypeFilterValue}
-            filterValue={traitTypeFilterValue}
-            label="Trait Type"
-          />
-          <BaseTextFilter
-            filterValue={descriptionFilterValue}
-            setFilterValue={setDescriptionFilterValue}
-            label={`Search ${recordsCount} records`}
-          />
-        </FormGroup>
+        {descriptionFilter}
       </AccordionDetails>
     </Accordion>
   )
 
   const downloadsFilter = (
+    <FormControlLabel
+      onClick={preventEventPropagation}
+      onFocus={preventEventPropagation}
+      control={
+        <Switch
+          checked={columnVisibilities[ColumnGroupName.Downloads]} name={ColumnGroupName.Downloads}
+          onChange={handleColumnVisibilityChange}
+        /> }
+      label="Downloads"
+    />
+  )
+
+  const downloadsAccordion = (
     <Paper>
       <AccordionSummary>
-        <FormControlLabel
-          onClick={preventEventPropagation}
-          onFocus={preventEventPropagation}
-          control={
-            <Switch
-              checked={columnVisibilities[ColumnGroupName.Downloads]} name={ColumnGroupName.Downloads}
-              onChange={handleColumnVisibilityChange}
-            /> }
-          label="Downloads"
-        />
+        {downloadsFilter}
       </AccordionSummary>
     </Paper>
   )
@@ -208,15 +220,19 @@ export const PhenotypeFilters = (props: Props) => {
     )
   })
 
-  const populationMetricsVibilitiesFilter = (
+  const perPopulationMetricsVisibilitiesFilter = (
+    <FormGroup className={classes.populationMetricsFilterGroup}>
+      {populationMetricsVisibilitiesFilterElems}
+    </FormGroup>
+  )
+
+  const populationMetricsVibilitiesAccordion = (
     <Accordion expanded={expandedAccordion === AccordionName.PerPopulationMetrics} onChange={getAccordionChangeHandler(AccordionName.PerPopulationMetrics)}>
       <AccordionSummary expandIcon={<ExpandMore/>} className={classes.accordionTitleNoSwitch}>
         Per-Population Metrics
       </AccordionSummary>
       <AccordionDetails>
-        <FormGroup className={classes.populationMetricsFilterGroup}>
-          {populationMetricsVisibilitiesFilterElems}
-        </FormGroup>
+        {perPopulationMetricsVisibilitiesFilter}
       </AccordionDetails>
     </Accordion>
   )
@@ -240,7 +256,7 @@ export const PhenotypeFilters = (props: Props) => {
     })
     nCasesFilterDisplay = {
       showFilter: true,
-      filters: (
+      filterElems: (
         <>
           <ColumnGroupIndividualFilters
             columns={[columns.find(col => col.columnGroupName === ColumnGroupName.NCases)]}
@@ -252,13 +268,16 @@ export const PhenotypeFilters = (props: Props) => {
   } else {
     nCasesFilterDisplay = {showFilter: false}
   }
-  const nCasesFilter = (
+  const nCasesVisibilityControl = (
+    <Switch
+      checked={columnVisibilities[ColumnGroupName.NCases]} name={ColumnGroupName.NCases}
+      onChange={handleColumnVisibilityChange}
+    />
+
+  )
+  const nCasesAccordion = (
     <ColumnGroupFilterGroup
-      visibilityControl={
-        <Switch
-          checked={columnVisibilities[ColumnGroupName.NCases]} name={ColumnGroupName.NCases}
-          onChange={handleColumnVisibilityChange}
-        /> }
+      visibilityControl={nCasesVisibilityControl }
       label="N Cases"
       filterDisplay={nCasesFilterDisplay}
       isAccordionExpanded={expandedAccordion === AccordionName.NCases}
@@ -283,20 +302,22 @@ export const PhenotypeFilters = (props: Props) => {
     })
     nControlsFilterDisplay = {
       showFilter: true,
-      filters: (
+      filterElems: (
         <>{nControlsPopulationFilterElems}</>
       )
     }
   } else {
     nControlsFilterDisplay = {showFilter: false}
   }
-  const nControlsFilter = (
+  const nControlsVisibilityControl = (
+    <Switch
+      checked={columnVisibilities[ColumnGroupName.NControls]} name={ColumnGroupName.NControls}
+      onChange={handleColumnVisibilityChange}
+    />
+  )
+  const nControlsAccordion = (
     <ColumnGroupFilterGroup
-      visibilityControl={
-        <Switch
-          checked={columnVisibilities[ColumnGroupName.NControls]} name={ColumnGroupName.NControls}
-          onChange={handleColumnVisibilityChange}
-        /> }
+      visibilityControl={nControlsVisibilityControl }
       label="N Controls"
       filterDisplay={nControlsFilterDisplay}
       isAccordionExpanded={expandedAccordion === AccordionName.NControls}
@@ -321,7 +342,7 @@ export const PhenotypeFilters = (props: Props) => {
     })
     saigeHeritabilityFilterDisplay = {
       showFilter: true,
-      filters: (
+      filterElems: (
         <>{saigeHeritabilityPopulationFilterElems}</>
       )
     }
@@ -329,13 +350,15 @@ export const PhenotypeFilters = (props: Props) => {
   } else {
     saigeHeritabilityFilterDisplay = {showFilter: false}
   }
-  const saigeHeritabilityFilter = (
+  const saigeHeritabilityVisibilityControl = (
+    <Switch
+      checked={columnVisibilities[ColumnGroupName.SaigeHeritability]} name={ColumnGroupName.SaigeHeritability}
+      onChange={handleColumnVisibilityChange}
+    />
+  )
+  const saigeHeritabilityAccordion = (
     <ColumnGroupFilterGroup
-      visibilityControl={
-        <Switch
-          checked={columnVisibilities[ColumnGroupName.SaigeHeritability]} name={ColumnGroupName.SaigeHeritability}
-          onChange={handleColumnVisibilityChange}
-        /> }
+      visibilityControl={saigeHeritabilityVisibilityControl }
       label="Saige Heritability"
       filterDisplay={saigeHeritabilityFilterDisplay}
       isAccordionExpanded={expandedAccordion === AccordionName.SaigeHeritability}
@@ -360,7 +383,7 @@ export const PhenotypeFilters = (props: Props) => {
     })
     lambdaGcFilterDisplay = {
       showFilter: true,
-      filters: (
+      filterElems: (
         <> {lambdaGcPopulationFilterElems} </>
       )
     }
@@ -368,30 +391,35 @@ export const PhenotypeFilters = (props: Props) => {
   } else {
     lambdaGcFilterDisplay = {showFilter: false}
   }
-  const lambdaGcFilter = (
+  const lambdaGcVisibilityControl = (
+    <Switch
+      checked={columnVisibilities[ColumnGroupName.LambdaGc]} name={ColumnGroupName.LambdaGc}
+      onChange={handleColumnVisibilityChange}
+    />
+
+  )
+  const lambdaGcAccordion = (
     <ColumnGroupFilterGroup
-      visibilityControl={
-        <Switch
-          checked={columnVisibilities[ColumnGroupName.LambdaGc]} name={ColumnGroupName.LambdaGc}
-          onChange={handleColumnVisibilityChange}
-        /> }
+      visibilityControl={lambdaGcVisibilityControl }
       label="Lambda GC"
       filterDisplay={lambdaGcFilterDisplay}
       isAccordionExpanded={expandedAccordion === AccordionName.LambdaGc}
       onAccordionChange={getAccordionChangeHandler(AccordionName.LambdaGc)}
     />
   )
-  const md5Filter = (
+  const md5VisibilityControl = (
+    <Switch
+      checked={columnVisibilities[ColumnGroupName.Md5]} name={ColumnGroupName.Md5}
+      onChange={handleColumnVisibilityChange}
+    />
+  )
+  const md5FilterPanel = (
     <Paper>
       <AccordionSummary>
         <FormControlLabel
           onClick={preventEventPropagation}
           onFocus={preventEventPropagation}
-          control={
-            <Switch
-              checked={columnVisibilities[ColumnGroupName.Md5]} name={ColumnGroupName.Md5}
-              onChange={handleColumnVisibilityChange}
-            /> }
+          control={md5VisibilityControl }
           label="MD5"
         />
       </AccordionSummary>
@@ -419,24 +447,109 @@ export const PhenotypeFilters = (props: Props) => {
             Population Colors
           </AccordionSummary>
           <AccordionDetails>
-            <PopulationColorLegend labelFontSize={undefined} iconFontSize={undefined}/>
+            <PopulationColorLegend labelFontSize={undefined} iconFontSize={undefined} gridJustifyItems={undefined}/>
           </AccordionDetails>
         </Paper>
-        {descriptionFilter}
+        {descriptionAccordion}
         {populationsFilter}
-        {downloadsFilter}
-        {populationMetricsVibilitiesFilter}
-        {nCasesFilter}
-        {nControlsFilter}
-        {saigeHeritabilityFilter}
-        {lambdaGcFilter}
-        {md5Filter}
+        {downloadsAccordion}
+        {populationMetricsVibilitiesAccordion}
+        {nCasesAccordion}
+        {nControlsAccordion}
+        {saigeHeritabilityAccordion}
+        {lambdaGcAccordion}
+        {md5FilterPanel}
       </div>
     )
   } else {
     return (
       <div>
         {globalFilterElem}
+        <Accordion >
+          <AccordionSummary expandIcon={<ExpandMore/>}>
+            Table Controls
+          </AccordionSummary>
+          <AccordionDetails style={{flexDirection: "column"}}>
+            <Card className={classes.columnGroupCard}>
+              <CardContent>
+              <Typography >Population Colors</Typography>
+              <PopulationColorLegend labelFontSize={undefined} iconFontSize={undefined} gridJustifyItems="flex-start"/>
+              </CardContent>
+            </Card>
+
+            <Card className={classes.columnGroupCard}>
+              <CardContent>
+                <Typography>Description</Typography>
+                {descriptionFilter}
+              </CardContent>
+            </Card>
+
+            <Card className={classes.columnGroupCard}>
+              <CardContent>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={columnVisibilities[ColumnGroupName.Populations]} name={ColumnGroupName.Populations}
+                    onChange={handleColumnVisibilityChange}
+                  />
+                }
+                label="Population"
+              />
+              {populationsAccordionDetails}
+              </CardContent>
+            </Card>
+
+            <Card className={classes.columnGroupCard}>
+              <CardContent>
+                {downloadsFilter}
+              </CardContent>
+            </Card>
+
+            <Card className={classes.columnGroupCard}>
+              <CardContent>
+                <Typography>Per-Population Metrics Visibility</Typography>
+                {perPopulationMetricsVisibilitiesFilter}
+              </CardContent>
+            </Card>
+
+            <Card className={classes.columnGroupCard}>
+              <CardContent>
+                <FormControlLabel control={ nCasesVisibilityControl } label="N Cases Column"/>
+                {nCasesFilterDisplay.showFilter ? nCasesFilterDisplay.filterElems : null}
+              </CardContent>
+            </Card>
+
+            <Card className={classes.columnGroupCard}>
+              <CardContent>
+                <FormControlLabel control={ nControlsVisibilityControl } label={
+                  <Typography>N Controls Column</Typography>
+                }/>
+                {nControlsFilterDisplay.showFilter ? nControlsFilterDisplay.filterElems : null}
+              </CardContent>
+            </Card>
+
+            <Card className={classes.columnGroupCard}>
+              <CardContent>
+                <FormControlLabel control={ saigeHeritabilityVisibilityControl} label="Saige Heritability Column" />
+                {saigeHeritabilityFilterDisplay.showFilter ? saigeHeritabilityFilterDisplay.filterElems : null}
+              </CardContent>
+            </Card>
+
+            <Card className={classes.columnGroupCard}>
+              <CardContent>
+                <FormControlLabel control={ lambdaGcVisibilityControl} label="Lambda GC Column" />
+                {lambdaGcFilterDisplay.showFilter ? lambdaGcFilterDisplay.filterElems : null}
+              </CardContent>
+            </Card>
+
+            <Card className={classes.columnGroupCard}>
+              <CardContent>
+                <FormControlLabel control={ md5VisibilityControl} label="MD5 Column" />
+              </CardContent>
+            </Card>
+
+          </AccordionDetails>
+        </Accordion>
       </div>
     )
   }
