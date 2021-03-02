@@ -3,6 +3,8 @@ import { createMuiTheme, ThemeProvider } from "@material-ui/core"
 import useThemeContext from '@theme/hooks/useThemeContext';
 import { PhenotypesPageContent } from "./PhenotypesPageContent";
 
+export const docusaurusLayoutWrapperClassName = "phenotypes-docusaurus-wrapper"
+
 
 export const PhenotypesPageContentWrapper = () => {
   const {isDarkTheme} = useThemeContext();
@@ -27,7 +29,7 @@ export const PhenotypesPageContentWrapper = () => {
             root: {
               padding: "0",
             }
-          }
+          },
         }
       }),
     [isDarkTheme],

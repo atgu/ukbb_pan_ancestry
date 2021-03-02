@@ -23,6 +23,7 @@ module.exports = {
         "@typescript-eslint"
     ],
     "rules": {
+        "no-console": ["error", {"allow": ["warn", "error"]}],
         "@typescript-eslint/explicit-module-boundary-types": "off",
         "@typescript-eslint/no-non-null-assertion": "off",
         "react/prop-types": "off",

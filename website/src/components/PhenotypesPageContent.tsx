@@ -28,8 +28,20 @@ import Skeleton from '@material-ui/lab/Skeleton';
 import { processPhenotypeDescription } from './descriptionAccessor';
 
 const overallPageMaxWidth = "95%"
+export const docusaurusLayoutWrapperClassName = "phenotypes-docusaurus-wrapper"
+// How tall docusaurus's "Layout" element should be in mobile:
+const mobileMinLayoutContainerHeight = 800; // in px
 
 const useStyles = makeStyles((theme: Theme) => ({
+  "@global": {
+    [`.${docusaurusLayoutWrapperClassName}`]: {
+      display: "flex",
+      flexDirection: "column",
+      [theme.breakpoints.down("sm")]: {
+        flexBasis: `${mobileMinLayoutContainerHeight}px`,
+      }
+    }
+  },
   oddTableRow: {
     // Need to double up on class names to override Infima's default styling:
     "&&": {
@@ -38,7 +50,7 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
   main: {
     flexGrow: 1,
-    display: "flex"
+    display: "flex",
   },
   tableContainer: {
     overflowX: "auto",
@@ -529,10 +541,15 @@ export const PhenotypesPageContent = () => {
                       <div className={classes.tableContainer}>
                         <AutoSizer>
                           {(dimensions) => {
+                              const pageHeaderHeight = 106
+                              const mobileTableFilterAndCollapsedControlHeight = 122
+                              const mobileTableSeparationFromFooter = 20
                               let tableBody: React.ReactNode
                               const tableBodyHeight = isLargeScreen ?
                                 dimensions.height - tableHeaderHeight - 50 :
-                                dimensions.height - tableHeaderHeight - 10
+                                // Note: subtract 10 to give some separation between table and footer:
+                                mobileMinLayoutContainerHeight - pageHeaderHeight -
+                                  mobileTableFilterAndCollapsedControlHeight - tableHeaderHeight - mobileTableSeparationFromFooter
                               if (scrollBarSize === undefined) {
                                 tableBody = null
                               } else {

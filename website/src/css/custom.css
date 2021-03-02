@@ -93,8 +93,3 @@ html[data-theme="dark"] .alert a {
   font-weight: 700;
   margin-top: 30px;
 }
-
-.main-wrapper {
-  display: flex;
-  flex-direction: column;
-}
