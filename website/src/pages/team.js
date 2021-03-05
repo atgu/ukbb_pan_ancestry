@@ -39,6 +39,7 @@ function Contributors() {
               <ul>
                 <li>Matthew Solomonson</li>
                 <li>Konrad Karczewski</li>
+                <li>Huy Nguyen</li>
               </ul>
             </div>
             <div className="col col--4">
