@@ -22,10 +22,11 @@ import { determineExtremums, maxSaigeHeritabilityValue } from './determineExtrem
 import { format } from 'd3-format';
 import { Description, DescriptionCell, width as descriptionCellWidth } from './DescriptionCell';
 import {  AutoSizer } from "react-virtualized";
-import { CenteredHeaderCell } from './CenteredHeaderCell';
+import { CenteredHeaderCell, SaigeHeritabilityHeaderCell } from './CenteredHeaderCell';
 import { Option } from './DropdownFilter';
 import Skeleton from '@material-ui/lab/Skeleton';
 import { processPhenotypeDescription } from './descriptionAccessor';
+
 
 const overallPageMaxWidth = "95%"
 export const docusaurusLayoutWrapperClassName = "phenotypes-docusaurus-wrapper"
@@ -255,7 +256,7 @@ export const PhenotypesPageContent = () => {
           columns = [
             ...columns,
             {
-              Header: CenteredHeaderCell,
+              Header: SaigeHeritabilityHeaderCell,
               columnTitle: "Saige heritability",
               columnGroupName: ColumnGroupName.SaigeHeritability,
               ...getPerPopulationMetrics("saige_heritability", perPopulationMetricsVisibilities),
