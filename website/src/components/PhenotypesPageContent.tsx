@@ -379,19 +379,21 @@ export const PhenotypesPageContent = () => {
   const {
     getTableProps, getTableBodyProps, headerGroups, rows, prepareRow,
     totalColumnsWidth,
-    preGlobalFilteredRows,
     setGlobalFilter,
     state: reactTableState,
     columns: outputColumns,
+    // These are the ones that are filtered by filters that are registered with react-table:
+    rows: fullyFilteredRows,
   } = useTable<Datum>({
     columns,
-    data: filteredData,
     initialState: initialReactTableState,
     defaultColumn,
     globalFilter: fuzzyTextGlobalFilterFunction,
+    // These are the ones that are filtered by filteres outside of react-table:
+    data: filteredData,
   },
-  useFilters,
   useGlobalFilter,
+  useFilters,
   useBlockLayout)
 
   const headerGroupElems = headerGroups.map((headerGroup, headerGroupIndex) => {
@@ -514,7 +516,7 @@ export const PhenotypesPageContent = () => {
                           columnVisibilities={columnGroupVisibilities}
                           setColumnVisibilities={setColumnGroupVisibilites}
                           columns={outputColumns}
-                          preGlobalFilteredRows={preGlobalFilteredRows}
+                          preGlobalFilteredRows={fullyFilteredRows}
                           setGlobalFilter={setGlobalFilter}
                           globalFilter={reactTableState.globalFilter}
                           populationMetricsVisibilities={perPopulationMetricsVisibilities}
@@ -534,7 +536,7 @@ export const PhenotypesPageContent = () => {
                           traitTypeFilterOptions={derivedValues.traitTypeFilterOptions}
                           traitTypeFilterValue={traitTypeFilterValue}
                           setTraitTypeFilterValue={setTraitTypeFilterValue}
-                          recordsCount={filteredData.length}
+                          recordsCount={fullyFilteredRows.length}
                           descriptionFilterValue={descriptionFilterValue}
                           setDescriptionFilterValue={setDescriptionFilterValue}
                         />
