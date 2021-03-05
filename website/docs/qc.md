@@ -67,3 +67,7 @@ For each GWAS conducted for each phenotype and ancestry group, we included the f
 - Age<sup>2</sup>
 - Age<sup>2</sup> * Sex
 - The first 10 PCs
+
+### Quality control of summary statistics
+- We are currently developing a best practice set of quality control steps for analysis of summary statistics from a wide range of phenotypes. As with any analysis of large-scale datasets, we urge caution in interpretation especially of outliers (i.e. genetic variants, samples, and/or whole phenotypes) that can signal technical artifacts or noise.
+- Heritability: the heritability computed by SAIGE is known to be downwardly biased: see the [supplementary information](https://static-content.springer.com/esm/art%3A10.1038%2Fs41588-018-0184-y/MediaObjects/41588_2018_184_MOESM1_ESM.pdf) from the [SAIGE publication](https://www.nature.com/articles/s41588-018-0184-y). We are working to improve the heritability estimates.
