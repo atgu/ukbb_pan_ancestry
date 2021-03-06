@@ -22,10 +22,11 @@ import { determineExtremums, maxSaigeHeritabilityValue } from './determineExtrem
 import { format } from 'd3-format';
 import { Description, DescriptionCell, width as descriptionCellWidth } from './DescriptionCell';
 import {  AutoSizer } from "react-virtualized";
-import { CenteredHeaderCell } from './CenteredHeaderCell';
+import { CenteredHeaderCell, SaigeHeritabilityHeaderCell } from './CenteredHeaderCell';
 import { Option } from './DropdownFilter';
 import Skeleton from '@material-ui/lab/Skeleton';
 import { processPhenotypeDescription } from './descriptionAccessor';
+
 
 const overallPageMaxWidth = "95%"
 export const docusaurusLayoutWrapperClassName = "phenotypes-docusaurus-wrapper"
@@ -255,7 +256,7 @@ export const PhenotypesPageContent = () => {
           columns = [
             ...columns,
             {
-              Header: CenteredHeaderCell,
+              Header: SaigeHeritabilityHeaderCell,
               columnTitle: "Saige heritability",
               columnGroupName: ColumnGroupName.SaigeHeritability,
               ...getPerPopulationMetrics("saige_heritability", perPopulationMetricsVisibilities),
@@ -378,19 +379,21 @@ export const PhenotypesPageContent = () => {
   const {
     getTableProps, getTableBodyProps, headerGroups, rows, prepareRow,
     totalColumnsWidth,
-    preGlobalFilteredRows,
     setGlobalFilter,
     state: reactTableState,
     columns: outputColumns,
+    // These are the ones that are filtered by filters that are registered with react-table:
+    rows: fullyFilteredRows,
   } = useTable<Datum>({
     columns,
-    data: filteredData,
     initialState: initialReactTableState,
     defaultColumn,
     globalFilter: fuzzyTextGlobalFilterFunction,
+    // These are the ones that are filtered by filteres outside of react-table:
+    data: filteredData,
   },
-  useFilters,
   useGlobalFilter,
+  useFilters,
   useBlockLayout)
 
   const headerGroupElems = headerGroups.map((headerGroup, headerGroupIndex) => {
@@ -513,7 +516,7 @@ export const PhenotypesPageContent = () => {
                           columnVisibilities={columnGroupVisibilities}
                           setColumnVisibilities={setColumnGroupVisibilites}
                           columns={outputColumns}
-                          preGlobalFilteredRows={preGlobalFilteredRows}
+                          preGlobalFilteredRows={fullyFilteredRows}
                           setGlobalFilter={setGlobalFilter}
                           globalFilter={reactTableState.globalFilter}
                           populationMetricsVisibilities={perPopulationMetricsVisibilities}
@@ -533,7 +536,7 @@ export const PhenotypesPageContent = () => {
                           traitTypeFilterOptions={derivedValues.traitTypeFilterOptions}
                           traitTypeFilterValue={traitTypeFilterValue}
                           setTraitTypeFilterValue={setTraitTypeFilterValue}
-                          recordsCount={filteredData.length}
+                          recordsCount={fullyFilteredRows.length}
                           descriptionFilterValue={descriptionFilterValue}
                           setDescriptionFilterValue={setDescriptionFilterValue}
                         />
