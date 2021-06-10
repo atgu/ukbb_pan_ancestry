@@ -5,13 +5,13 @@ import argparse
 import logging
 import re
 
-from pcgc_pipeline import saige_phenos, get_pheno_split_names, get_famfiles, \
+from rhemc_pipeline import saige_phenos, get_pheno_split_names, get_famfiles, \
                           parse_ancestries, _read_pheno_data, get_pheno_filename, \
                           convert_pheno_id_to_potential_saige, htcheckpoint
 
 
 def compatiblify_phenotype_id(phenotype_id):
-    """PCGC throws errors on reading weird phenotype
+    """RHEmc throws errors on reading weird phenotype
     headers. This function resolves these characters.
     """
     to_replace = [' ', '|', '>', '<', '/', '\\']
