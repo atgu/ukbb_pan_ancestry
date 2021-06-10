@@ -85,7 +85,7 @@ def generate_indiv_pheno_file(phenotype_id, checkpoint, log, random=False):
 
 def generate_final_pheno_file(phenotype_id, ancestries, checkpoint, override_check, log=False, random=False):
     """ Generate a single phenotype file for each of a set of ancestries. These are in the proper
-    format for PCGC. Fam files must exist for this to work, so if they do not exist
+    format for RHEmc. Fam files must exist for this to work, so if they do not exist
     use generate_geno_annot_split.
     """
     if log:
@@ -125,9 +125,9 @@ def format_saige_phenotype(phenotype_id, anc, log):
     return tab
 
 
-def convert_saige_to_pcgc(phenotype_id, ancestries, checkpoint, override_check, log=False):
+def convert_saige_to_rhemc(phenotype_id, ancestries, checkpoint, override_check, log=False):
     """ Converts a pre-existing filtered phenotype flat file (constructed for Saige)
-    to the proper format for PCGC. The results are uploaded in the usual format dictated
+    to the proper format for RHEmc. The results are uploaded in the usual format dictated
     by `get_pheno_split_names`, allowing for use by ancestry-level workers.
     """
     if log:
@@ -156,7 +156,7 @@ def convert_saige_to_pcgc(phenotype_id, ancestries, checkpoint, override_check, 
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--phenotype-id', type=str,
-                    help='Phenotype identifier. See pcgc_pipeline.construct_phenotype_id ' + \
+                    help='Phenotype identifier. See rhemc_pipeline.construct_phenotype_id ' + \
                          'to see how these are constructed.')
 parser.add_argument('--logging', action='store_true',
                     help='If enabled, outputs a text log')
@@ -186,7 +186,7 @@ if __name__ == '__main__':
 
     if args.pull_from_saige:
         try:
-            convert_saige_to_pcgc(args.phenotype_id, ancestries,
+            convert_saige_to_rhemc(args.phenotype_id, ancestries,
                                   checkpoint=args.checkpoint, 
                                   override_check=args.override_check, 
                                   log=args.logging)

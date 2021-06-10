@@ -152,7 +152,7 @@ def obtain_nonoverlapping_h2(list_of_lines, nbins:int):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--file', type=str,
-                    help='RHE-mc (PCGC) log file to parse. This script will intuit the number of ' + \
+                    help='RHE-mc (HE) log file to parse. This script will intuit the number of ' + \
                          'bins analyzed.')
 parser.add_argument('--pheno', type=str,
                     help='Full phenotype code analyzed for reference purposes.')
