@@ -437,7 +437,7 @@ def hl_combine_str(*expressions, sep="_") -> hl.StringExpression:
 
 
 def list_precomputed_pheno_files(ancestries):
-    """ Obtain the set of phenotype files that have been pre-formatted for PCGC.
+    """ Obtain the set of phenotype files that have been pre-formatted for RHEmc.
 
     Parameters
     ----------
@@ -707,7 +707,7 @@ def get_annot_split_names(ancestries, dictout, n_annot=25, suffix_incl=True):
     
 
 def get_result_log_split_names(ancestries, phenotype_id, dictout, suffix=''):
-    """ Returns names of the raw log to output from the PCGC run.
+    """ Returns names of the raw log to output from the RHEmc run.
 
     Parameters
     ----------
@@ -820,10 +820,10 @@ def run_rhemc_job(b, phenotype_id, ancestry, phenotype_file, read_previous: bool
                  random_vectors: int, nbins: int, suffix: str, iter, sex_specific):
     # Localize all files (and pass phenotype files in from previous step)
     # This will require GCSFUSE for the annotation, covariate, and genotype files
-    # Run PCGC 
+    # Run RHEmc 
     # Collect results into a table
     iter_suffix = construct_iter_suffix(iter)
-    j = b.new_job(name=ancestry + '_' + phenotype_id + '_PCGC' + iter_suffix)
+    j = b.new_job(name=ancestry + '_' + phenotype_id + '_RHEmc' + iter_suffix)
     j.image(IMAGE)
     log_out = get_result_log_split_names([ancestry], phenotype_id, dictout=True, suffix=suffix)[ancestry] + iter_suffix
     if read_previous:
@@ -1087,7 +1087,7 @@ def _write_flat_without_key(ht, destination, delimiter, header):
 
 
 def _compatiblify_phenotype_id(phenotype_id):
-    """PCGC throws errors on reading weird phenotype
+    """RHEmc throws errors on reading weird phenotype
     headers. This function resolves these characters.
     """
     to_replace = [' ', '|', '>', '<', '/', '\\']
@@ -1134,7 +1134,7 @@ def _initialize_log(args):
     if args.phenotype_only:
         logging.info('NOTE: Running with --phenotype-only and thus will create all data files (including phenotype files).')
     if args.read_previous_rhemc:
-        logging.info('NOTE: We will read previously completed PCGC runs from ' + path_results + ' if available.')
+        logging.info('NOTE: We will read previously completed RHEmc runs from ' + path_results + ' if available.')
     if args.random_phenotypes is not None:
         logging.info('NOTE: Running random phenotypes only. Will do ' + str(args.random_phenotypes) + ' phenos per ancestry.')
     if args.n_iter is not None:
@@ -1192,12 +1192,12 @@ parser.add_argument('--store-rhemc-eur', default=20, type=int,
                     help='GB of storage allocated for each EUR RHEmc worker. It is highly recommended to enable --use-fuse ' + \
                          'if the size of the genotype files are large, rather than expanding storage via this avenue.')
 parser.add_argument('--jackknife-blocks', default=100, type=int,
-                    help='Number of jackknife blocks to use in RHE-mc. 100 (default) or 22 recommended.' + \
+                    help='Number of jackknife blocks to use in RHEmc. 100 (default) or 22 recommended.' + \
                         ' Higher values result in more memory usage.')
 parser.add_argument('--random-vectors', default=10, type=int,
-                    help='Number of random vectors to use for PCGC. 10 (default) is recommended.')
+                    help='Number of random vectors to use for RHEmc. 10 (default) is recommended.')
 parser.add_argument('--random-phenotypes', default=None, type=int,
-                    help='Construct and run PCGC on a set of random phenotypes. If this flag is used, ' +
+                    help='Construct and run RHEmc on a set of random phenotypes. If this flag is used, ' +
                          '--initialize-only, --read-previous-rhemc, and --n-only cannot be enabled. ' +
                          'Enabling this requires listing a number of random phenotypes to run. Random phenotypes ' +
                          ' are constructed from a Normal(0,1).')
@@ -1219,7 +1219,7 @@ parser.add_argument('--n-iter', default=None, type=int,
                     help='To characterize run-to-run variability, specify a number of iterations here. If specified, an integer ' + \
                     'will be appended to phenotype id as "-iter_". Cannot be specified alongside --phenotype-only or --initialize-only.')
 parser.add_argument('--phenotype-only', action='store_true',
-                    help='Only run phenotypes, without running PCGC. Cannot be enabled if ' + \
+                    help='Only run phenotypes, without running RHEmc. Cannot be enabled if ' + \
                          '--initialize-only is enabled.')
 
 
