@@ -59,24 +59,21 @@ def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = T
         mt = mt.filter_cols(hl.len(mt.pheno_data) > 0)
 
     if filter_pheno_h2_qc:
-        mt = mt.filter_cols(mt.pheno_data.any(lambda x: (~hl.is_missing(x.heritability.qcflags.pass_all)) & \
+        mt = mt.filter_cols(mt.pheno_data.any(lambda x: (hl.is_defined(x.heritability.qcflags.pass_all)) & \
                                               (x.heritability.qcflags.pass_all)))
-
+        # filter arrays
+        def filter_pop_array(mt, fields):
+            expr_dict = {}
+            for x in fields:
+                this_expr = hl.zip(mt[x], mt.tf_filt_h2).filter(lambda x: x[1]).map(lambda x: x[0])
+                expr_dict.update({x: this_expr})
+            return expr_dict
+        
         mt = mt.annotate_cols(tf_filt_h2 = mt.pheno_data.map(lambda x: x.heritability.qcflags.pass_all))
-        # filtering column arrays
-        colfields_for_filt = ['pheno_data']
-        colexpr = {}
-        for x in colfields_for_filt:
-            this_col = hl.zip(mt[x], mt.tf_filt_h2).filter(lambda x: x[1]).map(lambda x: x[0])
-            colexpr.update({x: this_col})
-        mt = mt.annotate_cols(**colexpr)
-        # filtering entry arrays
-        entryfields_for_filt = ['summary_stats']
-        entryexpr = {}
-        for x in entryfields_for_filt:
-            this_entry = hl.zip(mt[x], mt.tf_filt_h2).filter(lambda x: x[1]).map(lambda x: x[0])
-            entryexpr.update({x: this_entry})
-        mt = mt.annotate_entries(**entryexpr)
+        # column arrays
+        mt = mt.annotate_cols(**filter_pop_array(mt, ['pheno_data']))
+        # entry arrays
+        mt = mt.annotate_entries(**filter_pop_array(mt, ['summary_stats']))
         mt = mt.drop('tf_filt_h2')
 
     if filter_sumstats:
