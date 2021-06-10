@@ -1,4 +1,5 @@
 from ukbb_pan_ancestry.resources.results import *
+from ukbb_pan_ancestry.heritability.import_heritability import get_h2_ht
 P_THRESHOLDS = {'s1': 5e-8, 's2': 1e-6, 's3': 1e-4, 's4': 1e-3, 's5': 1e-2, 's6': .05, 's7': .1, 's8': .2, 's9': .5, 's10': 1.}
 
 
@@ -20,7 +21,7 @@ def filter_lambda_gc(lambda_gc):
 def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = True,
                            filter_sumstats: bool = True, separate_columns_by_pop: bool = True,
                            annotate_with_nearest_gene: bool = True, add_only_gene_symbols_as_str: bool = False,
-                           load_contig: str = None):
+                           load_contig: str = None, filter_pheno_h2_qc: bool = True):
     mt = hl.read_matrix_table(get_variant_results_path('full', 'mt')).drop('gene', 'annotation')
     if load_contig:
         mt = mt.filter_rows(mt.locus.contig == load_contig)
@@ -28,6 +29,21 @@ def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = T
     mt = mt.annotate_rows(**variant_qual_ht[mt.row_key])
     pheno_qual_ht = hl.read_table(get_analysis_data_path('lambda', 'lambdas', 'full', 'ht'))
     mt = mt.annotate_cols(**pheno_qual_ht[mt.col_key])
+    h2_qc_ht = hl.read_table(get_h2_ht())
+    mt = mt.annotate_cols(heritability = h2_qc_ht[mt.col_key].heritability)
+
+
+    def update_pheno_struct(pheno_struct, mt):
+        pheno_struct = pheno_struct.annotate(saige_heritability = pheno_struct.heritability,
+                                             heritability = mt.paired_pop_h2.get(pheno_struct.pop, 
+                                                                                 hl.missing(hl.tstruct(**mt.heritability[0].dtype))))
+        pheno_struct = pheno_struct.annotate(heritability = pheno_struct.heritability.drop('pop'))
+        return pheno_struct
+
+
+    mt = mt.annotate_cols(paired_pop_h2 = hl.dict(hl.map(lambda x: (x.pop,x), mt.heritability)))
+    mt = mt.annotate_cols(pheno_data = mt.pheno_data.map(lambda x: update_pheno_struct(x, mt)))
+    mt = mt.drop('heritability', 'paired_pop_h2')
 
     if filter_phenos:
         keep_phenos = hl.zip_with_index(mt.pheno_data).filter(
@@ -41,6 +57,27 @@ def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = T
                 lambda x: mt.pheno_indices.contains(x[0])).map(lambda x: x[1])
         ).drop('pheno_indices')
         mt = mt.filter_cols(hl.len(mt.pheno_data) > 0)
+
+    if filter_pheno_h2_qc:
+        mt = mt.filter_cols(mt.pheno_data.any(lambda x: (~hl.is_missing(x.heritability.qcflags.pass_all)) & \
+                                              (x.heritability.qcflags.pass_all)))
+
+        mt = mt.annotate_cols(tf_filt_h2 = mt.pheno_data.map(lambda x: x.heritability.qcflags.pass_all))
+        # filtering column arrays
+        colfields_for_filt = ['pheno_data']
+        colexpr = {}
+        for x in colfields_for_filt:
+            this_col = hl.zip(mt[x], mt.tf_filt_h2).filter(lambda x: x[1]).map(lambda x: x[0])
+            colexpr.update({x: this_col})
+        mt = mt.annotate_cols(**colexpr)
+        # filtering entry arrays
+        entryfields_for_filt = ['summary_stats']
+        entryexpr = {}
+        for x in entryfields_for_filt:
+            this_entry = hl.zip(mt[x], mt.tf_filt_h2).filter(lambda x: x[1]).map(lambda x: x[0])
+            entryexpr.update({x: this_entry})
+        mt = mt.annotate_entries(**entryexpr)
+        mt = mt.drop('tf_filt_h2')
 
     if filter_sumstats:
         mt = mt.annotate_entries(summary_stats=mt.summary_stats.map(
