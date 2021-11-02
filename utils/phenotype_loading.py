@@ -116,20 +116,23 @@ def load_hesin_data(overwrite: bool = False):
     delivery_ht.write(get_hesin_delivery_ht_path(), overwrite)
 
 
-def load_custom_pheno(traittype_source: str, sex: str = 'both_sexes', extension: str = 'txt'):
+def load_custom_pheno(traittype_source: str, sex: str = 'both_sexes', extension: str = 'txt', modifier_as_source: bool = False):
     trait_type, source = traittype_source.split('-')
     print(f'Loading {get_custom_pheno_path(traittype_source, extension=extension)}')
-    ht = hl.import_table(get_custom_pheno_path(traittype_source, extension=extension), impute=True)
-    inferred_sample_column = list(ht.row)[0]
-    ht = ht.key_by(userId=ht[inferred_sample_column])
-    if inferred_sample_column != 'userId':
-        ht = ht.drop(inferred_sample_column)
-    if trait_type == 'categorical':
-        ht = ht.annotate(**{x: hl.bool(ht[x]) for x in list(ht.row_value)})
+    if extension == 'ht':
+        ht = hl.read_table(get_custom_pheno_path(traittype_source, extension=extension))
+    else:
+        ht = hl.import_table(get_custom_pheno_path(traittype_source, extension=extension), impute=True)
+        inferred_sample_column = list(ht.row)[0]
+        ht = ht.key_by(userId=ht[inferred_sample_column])
+        if inferred_sample_column != 'userId':
+            ht = ht.drop(inferred_sample_column)
+        if trait_type == 'categorical':
+            ht = ht.annotate(**{x: hl.bool(ht[x]) for x in list(ht.row_value)})
 
     mt = pheno_ht_to_mt(ht, trait_type, rekey=False).annotate_cols(data_type=trait_type)
     mt = mt.key_cols_by(trait_type=trait_type, phenocode=mt.phesant_pheno, pheno_sex=sex, coding=NULL_STR_KEY,
-                        modifier=NULL_STR_KEY).drop('phesant_pheno')
+                        modifier=source if modifier_as_source else NULL_STR_KEY).drop('phesant_pheno')
     mt = mt.annotate_cols(category=source)
     return mt
 

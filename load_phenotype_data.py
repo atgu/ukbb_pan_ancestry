@@ -79,7 +79,7 @@ def main(args):
                                  get_death_data_path(wave=args.add_death_wave), wave=args.add_covid_wave).checkpoint(
                 get_ukb_pheno_mt_path(f'covid_wave{args.add_covid_wave}'), args.overwrite)
         else:
-            mt = load_custom_pheno(args.add_dataset).checkpoint(get_custom_pheno_path(args.add_dataset, extension='ht'), args.overwrite)
+            mt = load_custom_pheno(args.add_dataset, modifier_as_source=args.modifier_as_source, extension=args.add_dataset_extension).checkpoint(get_custom_pheno_path(args.add_dataset, extension='mt'), args.overwrite)
         cov_ht = get_covariates(hl.int32).persist()
         mt = combine_pheno_files_multi_sex_legacy({'custom': mt}, cov_ht)
 
@@ -137,6 +137,8 @@ if __name__ == '__main__':
     parser.add_argument('--combine_data', help='Load data', action='store_true')
     parser.add_argument('--summarize_data', help='Load data', action='store_true')
     parser.add_argument('--add_dataset', help='Load data')
+    parser.add_argument('--add_dataset_extension', help='Load data')
+    parser.add_argument('--modifier_as_source', help='Load data', action='store_true')
     parser.add_argument('--add_covid_wave', help='Load data')
     parser.add_argument('--add_hesin_wave', help='Load data')
     parser.add_argument('--add_death_wave', help='Load data')
