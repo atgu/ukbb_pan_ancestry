@@ -6,7 +6,7 @@ import uuid
 import hail as hl
 from hail.utils import hadoop_open
 from ukbb_pan_ancestry import *
-from ukb_common import *
+from ukbb_common import *
 
 
 def checkpoint_tmp(hail_obj, tmppath='gs://ukbb-diverse-temp-30day/', tmpname=None, overwrite=True):

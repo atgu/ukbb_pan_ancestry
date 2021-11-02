@@ -1,5 +1,5 @@
 from .generic import *
-from ukb_common.resources.results import *
+from ukbb_common.resources.results import *
 
 
 def get_gene_intervals_path(reference: str = 'GRCh37'):

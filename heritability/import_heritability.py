@@ -1,7 +1,7 @@
 __author__ = 'Rahul Gupta'
 
 import hail as hl
-from ukb_common.resources.generic import PHENO_KEY_FIELDS
+from ukbb_common.resources.generic import PHENO_KEY_FIELDS
 
 
 def get_h2_flat_file():

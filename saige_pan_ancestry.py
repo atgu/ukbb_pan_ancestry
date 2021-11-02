@@ -9,12 +9,12 @@ import logging
 logging.basicConfig(format="%(levelname)s (%(name)s %(lineno)s): %(message)s", level='INFO', filename='saige_pipeline.log')
 
 from gnomad.utils import slack
-from ukb_common import *
+from ukbb_common import *
 import time
 import re
 
 from ukbb_pan_ancestry import *
-from ukb_common.utils.saige_pipeline import *
+from ukbb_common.utils.saige_pipeline import *
 
 logger = logging.getLogger("saige_pan_ancestry")
 logger.addHandler(logging.StreamHandler(sys.stderr))

@@ -1,5 +1,5 @@
 import re
-from ukb_common import *
+from ukbb_common import *
 from ukbb_pan_ancestry.resources import *
 
 

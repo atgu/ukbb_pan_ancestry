@@ -11,9 +11,9 @@ Hail script for clumping GWAS results with PLINK
 import argparse
 import hail as hl
 import sys
-import ukb_common
+import ukbb_common
 from ukbb_pan_ancestry import POPS, bucket, get_clumping_results_path, get_meta_analysis_results_path #get_pheno_manifest_path
-#from ukb_common import mwzj_hts_by_tree
+#from ukbb_common import mwzj_hts_by_tree
 
 ldprune_dir = f'{bucket}/ld_prune'
 
@@ -72,7 +72,7 @@ def tsv_to_ht(args):
                                     pos=ht.pos,
                                     reference_genome='GRCh37'),
                    alleles = ht.varid.split(':')[2:4])
-    ht = ht.annotate_globals(**{k: getattr(args, k) for k in ukb_common.PHENO_KEY_FIELDS})
+    ht = ht.annotate_globals(**{k: getattr(args, k) for k in ukbb_common.PHENO_KEY_FIELDS})
     ht = ht.drop('contig','varid','pos')
     ht.describe()
 #    ht.select().show()
@@ -142,7 +142,7 @@ def mwzj_hts_by_tree(all_hts, temp_dir, globals_for_col_key,
                      debug=False, inner_mode = 'overwrite', repartition_final: int = None,
                      read_if_exists = False):
     r'''
-    Adapted from ukb_common mwzj_hts_by_tree()
+    Adapted from ukbb_common mwzj_hts_by_tree()
     Uses read_clump_ht() instead of read_table()
     '''
     chunk_size = int(len(all_hts) ** 0.5) + 1
@@ -153,7 +153,7 @@ def mwzj_hts_by_tree(all_hts, temp_dir, globals_for_col_key,
     checkpoint_kwargs = {inner_mode: not read_if_exists,
                          '_read_if_exists': read_if_exists} #
     if repartition_final is not None:
-        intervals = ukb_common.get_n_even_intervals(repartition_final)
+        intervals = ukbb_common.get_n_even_intervals(repartition_final)
         checkpoint_kwargs['_intervals'] = intervals
     
     if debug: print(f'Running chunk size {chunk_size}...')
@@ -231,7 +231,7 @@ def join_clump_hts(pop, not_pop, max_pops, high_quality=False, overwrite=False):
     temp_dir = ('gs://ukbb-diverse-temp-30day/nb-temp/'+
                 'max_pops' if max_pops else f'{"not_" if not_pop else ""}{pop}'+
                 f'{"-hq" if high_quality else ""}')
-    globals_for_col_key = ukb_common.PHENO_KEY_FIELDS
+    globals_for_col_key = ukbb_common.PHENO_KEY_FIELDS
     mt = mwzj_hts_by_tree(all_hts=all_hts,
                          temp_dir=temp_dir,
                          globals_for_col_key=globals_for_col_key)
