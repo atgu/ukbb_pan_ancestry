@@ -46,7 +46,7 @@ def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = T
     mt = mt.drop('heritability', 'paired_pop_h2')
 
     if filter_phenos:
-        keep_phenos = hl.zip_with_index(mt.pheno_data).filter(
+        keep_phenos = hl.enumerate(mt.pheno_data).filter(
             lambda x: filter_lambda_gc(x[1].lambda_gc))
 
         mt = mt.annotate_cols(
@@ -95,7 +95,7 @@ def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = T
 
 
 def separate_results_mt_by_pop(mt, col_field = 'pheno_data', entry_field = 'summary_stats', skip_drop: bool = False):
-    mt = mt.annotate_cols(col_array=hl.zip_with_index(mt[col_field])).explode_cols('col_array')
+    mt = mt.annotate_cols(col_array=hl.enumerate(mt[col_field])).explode_cols('col_array')
     mt = mt.transmute_cols(pop_index=mt.col_array[0], **{col_field: mt.col_array[1]})
     mt = mt.annotate_entries(**{entry_field: mt[entry_field][mt.pop_index]})
     if not skip_drop:
