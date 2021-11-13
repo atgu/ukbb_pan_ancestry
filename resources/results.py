@@ -17,8 +17,9 @@ def get_variant_results_qc_path(extension: str = 'ht'):
     return f'{public_bucket_free}/sumstats_qc_analysis/full_variant_qc_metrics.{extension}'
 
 
-def get_meta_analysis_results_path(extension: str = 'mt'):
-    return f'{public_bucket}/sumstats_release/meta_analysis.{extension}'
+def get_meta_analysis_results_path(filter_pheno_h2_qc: bool = True, extension: str = 'mt'):
+    qc = 'h2_qc' if filter_pheno_h2_qc else 'raw'
+    return f'{public_bucket}/sumstats_release/meta_analysis.{qc}.{extension}'
 
 
 def get_phenotype_results_qc_path(extension: str = 'ht'):
