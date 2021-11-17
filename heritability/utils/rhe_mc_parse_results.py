@@ -150,22 +150,21 @@ def obtain_nonoverlapping_h2(list_of_lines, nbins:int):
     return pd.DataFrame(final_dict).reset_index(drop=True)
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--file', type=str,
-                    help='RHE-mc (HE) log file to parse. This script will intuit the number of ' + \
-                         'bins analyzed.')
-parser.add_argument('--pheno', type=str,
-                    help='Full phenotype code analyzed for reference purposes.')
-parser.add_argument('--ancestry', type=str,
-                    help='Ancestry group analyzed for reference purposes.')
-parser.add_argument('--include-trivial-details', action='store_true',
-                    help='Include very specific details including the number of SNPs in each bin and overlapping heritability estimates.')
-parser.add_argument('--out', type=str,
-                    help='Output location for parsed table. Expects this to contain the extension. Output ' + \
-                         'is tab-delimited with a single row, but with included column headers.')
-
-
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--file', type=str,
+                        help='RHE-mc (HE) log file to parse. This script will intuit the number of ' + \
+                            'bins analyzed.')
+    parser.add_argument('--pheno', type=str,
+                        help='Full phenotype code analyzed for reference purposes.')
+    parser.add_argument('--ancestry', type=str,
+                        help='Ancestry group analyzed for reference purposes.')
+    parser.add_argument('--include-trivial-details', action='store_true',
+                        help='Include very specific details including the number of SNPs in each bin and overlapping heritability estimates.')
+    parser.add_argument('--out', type=str,
+                        help='Output location for parsed table. Expects this to contain the extension. Output ' + \
+                            'is tab-delimited with a single row, but with included column headers.')
+
     args = parser.parse_args()
 
     list_of_lines = filter_to_output(read_file(args.file))

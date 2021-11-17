@@ -5,7 +5,7 @@ from ukb_common.resources.generic import PHENO_KEY_FIELDS
 
 
 def get_h2_flat_file():
-    return 'gs://ukb-diverse-pops/rg-h2-tables/h2_estimates_all_flat.tsv'
+    return 'gs://ukb-diverse-pops/rg-h2-tables/h2_estimates_all_flat_211101.tsv'
 
 
 def get_h2_ht():

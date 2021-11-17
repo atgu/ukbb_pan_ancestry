@@ -1,7 +1,12 @@
 __author__ = 'Rahul Gupta'
 
-from ldsc_ukbb_div_pops_constants import *
+from ukbb_pan_ancestry.heritability.ldsc_ukbb_div_pops_constants import *
+from ukbb_pan_ancestry.resources.results import get_variant_results_path
+from ukbb_pan_ancestry.export_results import get_pheno_id
 import hailtop.batch as hb
+import hail as hl
+hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'AUTO',
+                    'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
 from hail import hadoop_exists, hadoop_ls
 import argparse
 import os, re, math
@@ -56,10 +61,7 @@ def read_ld_score(b, ancestries, anc_to_ldscore, expect_bgz, prefix):
     :obj: `Batch`, :obj: `Dictionary`mapping ancestries to ld score files
     """
     ldscore_file_dict = {}
-    if expect_bgz:
-        ldsc_suffix = '.ldscore.bgz'
-    else:
-        ldsc_suffix = '.ldscore.gz'
+    ldsc_suffix = f'.ldscore.{"b" if expect_bgz else ""}gz'
     for anc in ancestries:
         this_adr = anc_to_ldscore(anc)
         ig = b.read_input_group(**{'l2.ldscore.gz': this_adr + '.' + prefix + ldsc_suffix,
@@ -90,7 +92,7 @@ def preallocate_munged_stats(bucket, ancestries):
     return {anc: [item['path'] for item in hadoop_ls(bucket + anc + '/munged_sumstats/')] for anc in ancestries_keep}
 
 
-def pull_pheno_manifest(main_dir, flat_file_location, specific_pheno):
+def pull_pheno_manifest(main_dir, flat_file_location, specific_pheno, tsv_manifest):
     """ Obtain phenotype manifest from local source. This function will also produce 
     a list of prefixes corresponding to phenotype types. Further, this function pre-processes
     the table to include a column for file, which is the filename without its address. Will
@@ -101,16 +103,39 @@ def pull_pheno_manifest(main_dir, flat_file_location, specific_pheno):
     main_dir : :obj:`str`
         Local directory which contains the `phenotype_manifest.tsv`.
 
+    tsv_manifest: :obj:`bool`
+        If true, will use the .tsv file version of the manifest. Ohterwise will obtain manifest from columns of sumstat matrixtable.
+
     Returns
     -------
     :obj: `DataFrame` with the manifest, :obj: `list` containing the prefix types (indicating phenotype types)
     """
     available_files = [os.path.basename(loc['path']) for loc in hadoop_ls(flat_file_location) if not loc['is_dir']]
-    pheno_manifest = pd.read_csv(main_dir + 'phenotype_manifest.tsv', "\t")
+    
+    if tsv_manifest:
+        pheno_manifest = pd.read_csv(main_dir + 'phenotype_manifest.tsv', "\t")
+    else:
+        pheno_manifest = hl.read_matrix_table(get_variant_results_path('full')).cols()
+        annotate_dict = {}
+        annotate_dict.update({'pops': hl.str(',').join(pheno_manifest.pheno_data.pop),
+                              'num_pops': hl.len(pheno_manifest.pheno_data.pop)})
+        for field in ['n_cases','n_controls','heritability']:
+            for pop in ['AFR','AMR','CSA','EAS','EUR','MID']:
+                new_field = field if field!='heritability' else 'saige_heritability' # new field name (only applicable to saige heritability)
+                idx = pheno_manifest.pheno_data.pop.index(pop)
+                field_expr = pheno_manifest.pheno_data[field]
+                annotate_dict.update({f'{new_field}_{pop}': hl.if_else(hl.is_nan(idx),
+                                                                       hl.missing(field_expr[0].dtype),
+                                                                       field_expr[idx])})
+        annotate_dict.update({'filename': get_pheno_id(tb=pheno_manifest)+'.tsv.bgz'})
+        pheno_manifest = pheno_manifest.annotate(**annotate_dict)
+        pheno_manifest = pheno_manifest.drop(pheno_manifest.pheno_data)
+        pheno_manifest = pheno_manifest.to_pandas()
 
     if specific_pheno is not None:
         key_cols = ['trait_type', 'phenocode', 'pheno_sex', 'coding', 'modifier']
         specific_file = pd.read_csv(specific_pheno, '\t', dtype={x:str for x in key_cols})
+        specific_file = specific_file.fillna('')
         if all([x in list(specific_file.columns) for x in key_cols]):
             specific_file = specific_file[key_cols]
             pheno_manifest = specific_file.merge(pheno_manifest, on = key_cols, how='left')
@@ -251,6 +276,8 @@ def munge_sumstats(j, ancestry, ld_scores, sumstat_file, N, munging_script):
     :obj: `ResourceFile`
         Location of the munging log to be outputted.
     """
+    j = j.storage('20Gi')
+    j = j.memory('8Gi')
     command_pre_script = f"""
         gunzip -c {ld_scores}.l2.ldscore.gz > {j.extracted_ldscore}
         gunzip -c {sumstat_file} > {j.extracted_sumstats}
@@ -347,10 +374,11 @@ def run_ancestry_specific_job(b, ancestry, code, address, ld_scores, ld_weights,
     chisqsuff = '--chisq-max 9999' if rem_maxchisq else ''
     # now that the munged stats have been obtained, run LDSC
     print_coef = ' --print-coefficients' if stratified else ''
+    mode = 'stratified' if stratified else 'vanilla'
     command += f"""
         cp {local_log} {j.logout_with_ldsc}
         if [ $(python {check_script} --log {local_log}) == "Complete" ]; then
-            printf "\nNow running LDSC in vanilla mode.\n" >> {j.logout_with_ldsc}
+            printf "\nNow running LDSC in {mode} mode.\n" >> {j.logout_with_ldsc}
             python /ldsc/ldsc.py --h2 {local_stats_use} --ref-ld {ld_scores} --w-ld {ld_weights} --out {j.h2_log} {print_coef} {chisqsuff}
             cat {j.h2_log}.log >> {j.logout_with_ldsc}
         fi
@@ -415,43 +443,45 @@ def create_anc_ldscore_vanilla(args):
     return lambda anc: args.vanilla_ld.format(anc)
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--ancestries', default='AFR,AMR,CSA,EAS,EUR,MID', type=str,
-                    help='Comma-delimited set of ancestries to include. Default is all 6.')
-parser.add_argument('--suffix', default='', type=str,
-                    help='A suffix appended to all outputted results files (logs and the final file).')
-
-parser.add_argument('--vanilla-ld', default='gs://rgupta-ldsc/ld/UKBB.{}', type=str,
-                    help='This argument points to the original complete in-sample LD scores. ' + \
-                         'If stratified is disabled, these will be used for LDSC. Otherwise, for ' + \
-                         'S-LDSC these will be used as weights.')
-parser.add_argument('--stratified', default=None, type=str,
-                    help='If enabled, will use stratified LD scores for analysis. ' + \
-                    'LD scores will be obtained from the provided gs:// address. Assumes that ' + \
-                    'files are pooled across all chromosomes. The format must be ' + \
-                    'similar to those requested for LDSC, namely that the full gs address is provided ' + \
-                    'excluding the file extension suffix and {} is used for any location in the address ' + \
-                    'where ancestry code should be substituted. For example, provide "UKBB.{}" for the file family ' + \
-                    '"UKBB.AFR.l2.ldscore.gz" and "UKBB.AFR.l2.M".')
-parser.add_argument('--remove-maxchisq', action='store_true',
-                    help='If enabled, will eliminate max chisq filter by setting --chisq-max = 9999.')
-
-parser.add_argument('--n-only', default=None, type=int,
-                    help='Runs only the first n traits. Unlike the RHEmc pipeline, this ' + \
-                    'does not attempt to run n traits from each trait type.')
-parser.add_argument('--specific-pheno', default=None, type=str,
-                    help='Local path to specific phenotypes. Must contain the 5 columns: ' + \
-                         'trait_type, phenocode, pheno_sex, coding, modifier. Will be used to filter the manifest internally. ')
-
-
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--ancestries', default='AFR,AMR,CSA,EAS,EUR,MID', type=str,
+                        help='Comma-delimited set of ancestries to include. Default is all 6.')
+    parser.add_argument('--suffix', default='', type=str,
+                        help='A suffix appended to all outputted results files (logs and the final file).')
+    parser.add_argument('--use-tsv-manifest', action='store_true',
+                        help='If enabled, will use a .tsv manifest. This is a legacy option, as using cols from the sumstats ' + \
+                        'MatrixTable will be the most updated and is thus preferred.')
+
+    parser.add_argument('--vanilla-ld', default='gs://rgupta-ldsc/ld/UKBB.{}', type=str,
+                        help='This argument points to the original complete in-sample LD scores. ' + \
+                            'If stratified is disabled, these will be used for LDSC. Otherwise, for ' + \
+                            'S-LDSC these will be used as weights.')
+    parser.add_argument('--stratified', type=str,
+                        help='If enabled, will use stratified LD scores for analysis. ' + \
+                        'LD scores will be obtained from the provided gs:// address. Assumes that ' + \
+                        'files are pooled across all chromosomes. The format must be ' + \
+                        'similar to those requested for LDSC, namely that the full gs address is provided ' + \
+                        'excluding the file extension suffix and {} is used for any location in the address ' + \
+                        'where ancestry code should be substituted. For example, provide "UKBB.{}" for the file family ' + \
+                        '"UKBB.AFR.l2.ldscore.gz" and "UKBB.AFR.l2.M".')
+    parser.add_argument('--remove-maxchisq', action='store_true',
+                        help='If enabled, will eliminate max chisq filter by setting --chisq-max = 9999.')
+
+    parser.add_argument('--n-only', type=int,
+                        help='Runs only the first n traits. Unlike the RHEmc pipeline, this ' + \
+                        'does not attempt to run n traits from each trait type.')
+    parser.add_argument('--specific-pheno', type=str,
+                        help='Local path to specific phenotypes. Must contain the 5 columns: ' + \
+                            'trait_type, phenocode, pheno_sex, coding, modifier. Will be used to filter the manifest internally. ')
+
     args = parser.parse_args()
     ancestries = parse_ancestries(args)
     anc_to_ldscore = create_anc_ldscore_vanilla(args)
     map_ancestry_ldscore, stratified = create_map_anc_ldscore(args, anc_to_ldscore)
     
     # Read in data paths ancestry list per phenotype
-    pheno_manifest, unique_pref = pull_pheno_manifest(project_dir, flat_file_location, args.specific_pheno)
+    pheno_manifest, unique_pref = pull_pheno_manifest(project_dir, flat_file_location, args.specific_pheno, args.use_tsv_manifest)
 
     # Set up Batch backend and input files/scripts
     backend = hb.ServiceBackend(billing_project=PROJECT, bucket=bucket)

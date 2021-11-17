@@ -52,18 +52,17 @@ def search_column(table, string, enforce_singular = True):
     return(found_list[0])
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--sumstats', default=None, type=str,
-                    help="Filename to munge.")
-parser.add_argument('--N', default=None, type=float,
-                    help="Sample size. We assume that each SNP has the same N.")
-parser.add_argument('--out', default=None, type=str,
-                    help="Output filename. Will output as tab-delimited.")
-parser.add_argument('--logfile', default=None, type=str,
-                    help="Name of log file to output.")
-
-
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--sumstats', type=str,
+                        help="Filename to munge.")
+    parser.add_argument('--N', type=float,
+                        help="Sample size. We assume that each SNP has the same N.")
+    parser.add_argument('--out', type=str,
+                        help="Output filename. Will output as tab-delimited.")
+    parser.add_argument('--logfile', type=str,
+                        help="Name of log file to output.")
+    
     args = parser.parse_args()
     if args.sumstats is None:
         raise ValueError('--sumstats must be provided as a path to the extracted sumstats file.')

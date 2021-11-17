@@ -5,20 +5,10 @@ import argparse
 import logging
 import re
 
-from rhemc_pipeline import saige_phenos, get_pheno_split_names, get_famfiles, \
+from rhemc_pipeline import SAIGE_PHENO_LOC, get_pheno_split_names, get_famfiles, \
                           parse_ancestries, _read_pheno_data, get_pheno_filename, \
-                          convert_pheno_id_to_potential_saige, htcheckpoint
-
-
-def compatiblify_phenotype_id(phenotype_id):
-    """RHEmc throws errors on reading weird phenotype
-    headers. This function resolves these characters.
-    """
-    to_replace = [' ', '|', '>', '<', '/', '\\']
-    new_id = phenotype_id
-    for i in to_replace:
-        new_id = new_id.replace(i, '_')
-    return new_id
+                          convert_pheno_id_to_potential_saige, HT_TEMP_BUCKET, \
+                          compatiblify_phenotype_id
 
 
 def rename_phenotype_id(phenotype_id, all_phenotypes):
@@ -37,16 +27,34 @@ def rename_phenotype_id(phenotype_id, all_phenotypes):
         elif re.search(r'^prescriptions.+', phenotype_id):
             new_id = re.sub(r'/', '_', phenotype_id)
         else:
-            new_id = phenotype_id
+            raise NotImplementedError('The inputted phenotype ID was not found in the phenotype MatrixTable despite renaming.')
+            #new_id = phenotype_id
 
         return new_id
 
 
 def generate_indiv_pheno_file(phenotype_id, checkpoint, log, random=False):
     """ Create individual phenotype file. This does not merge with the fam file.
+
+    Parameters
+    ----------
+    phenotype_id: `str`
+    Phenotype_id to generate file from.
+
+    checkpoint: `bool`
+    If True, will checkpoint the phenotype MatrixTable on import. Argument is
+    passed to _read_pheno_data() which checkpoints the phenotype mt if a custom
+    version has to be generated live for faster operations.
+
+    log: `bool`
+    Enables logging.
+
+    random: `bool`
+    For QC and benchmarking, allows for the creation of random phenotypes for
+    heritability analysis. Random phenotypes are Normal(0,1) noise.
     """
     pheno_mt_string = _read_pheno_data(checkpoint)
-    this_pheno_loc = htcheckpoint + phenotype_id + '.ht'
+    this_pheno_loc = HT_TEMP_BUCKET + phenotype_id + '.ht'
 
     if log:
         logging.info(f'Phenotype MatrixTable successfully imported.')
@@ -73,6 +81,8 @@ def generate_indiv_pheno_file(phenotype_id, checkpoint, log, random=False):
             # convert to tab and output
             pheno_mt_filt = pheno_mt_string.filter_cols(pheno_mt_string.phenotype_id == new_id
                                                         ).key_cols_by()
+            if pheno_mt_filt.count()[1] == 0:
+                raise ValueError('Phenotype ' + phenotype_id + ' not found in MatrixTable.')
             pheno_tab = pheno_mt_filt.entries().drop('phenotype_id'
                                                     ).rename({'value':compatiblify_phenotype_id(phenotype_id)})
             pheno_tab = pheno_tab.cache()
@@ -100,10 +110,9 @@ def generate_final_pheno_file(phenotype_id, ancestries, checkpoint, override_che
                                        phenotype_id=compatiblify_phenotype_id(phenotype_id), 
                                        dictout=True)
     for anc in ancestries:
-        famfile_this = famfiles[anc]
-        famfile_this = famfile_this.add_index('idx').key_by('IID')
-        famfile_pheno = famfile_this.join(pheno_tab, how='left')
-        famfile_pheno = famfile_pheno.key_by('idx').order_by('idx').drop('idx')
+        # join with fam files
+        famfile_pheno = _join_pheno_with_famfile(famfile_this=famfiles[anc], pheno_tab=pheno_tab)
+
         if log:
             logging.info(f'{anc} .fam file merged with phenotype for {args.phenotype_id}.')
         famfile_pheno.export(output=pheno_dirs[anc], header=True, delimiter='\t')
@@ -115,13 +124,12 @@ def format_saige_phenotype(phenotype_id, anc, log):
     """ Imports a Saige phenotype flat file as a HailTable and formats to a similar schema
     as generate_indiv_pheno_file.
     """
-    saige_file = saige_phenos + anc + '/' + convert_pheno_id_to_potential_saige(phenotype_id)
+    saige_file = SAIGE_PHENO_LOC + anc + '/' + convert_pheno_id_to_potential_saige(phenotype_id)
     tab = hl.import_table(saige_file, impute=True).repartition(n=10).key_by('userId')
     if log:
         logging.info(f'Phenotype table imported from {saige_file}')
-    tab = tab.select('value')
-    tab = tab.annotate(value=hl.float64(tab.value))
-    tab = tab.rename({'value': compatiblify_phenotype_id(phenotype_id)})
+    
+    tab = tab.select(**{compatiblify_phenotype_id(phenotype_id): hl.float64(tab.value)})
     return tab
 
 
@@ -142,10 +150,7 @@ def convert_saige_to_rhemc(phenotype_id, ancestries, checkpoint, override_check,
         pheno_tab = format_saige_phenotype(phenotype_id, anc, log=log)
 
         # join with fam files
-        famfile_this = famfiles[anc]
-        famfile_this = famfile_this.add_index('idx').key_by('IID')
-        famfile_pheno = famfile_this.join(pheno_tab, how='left')
-        famfile_pheno = famfile_pheno.key_by('idx').order_by('idx').drop('idx')
+        famfile_pheno = _join_pheno_with_famfile(famfile_this=famfiles[anc], pheno_tab=pheno_tab)
         if log:
             logging.info(f'{anc} .fam file merged with phenotype for {args.phenotype_id}.')
         
@@ -154,31 +159,7 @@ def convert_saige_to_rhemc(phenotype_id, ancestries, checkpoint, override_check,
             logging.info(f'{pheno_dirs[anc]} written.')
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--phenotype-id', type=str,
-                    help='Phenotype identifier. See rhemc_pipeline.construct_phenotype_id ' + \
-                         'to see how these are constructed.')
-parser.add_argument('--logging', action='store_true',
-                    help='If enabled, outputs a text log')
-parser.add_argument('--ancestries', type=str,
-                    help='Comma-delimited set of ancestries to include.')
-parser.add_argument('--checkpoint', action='store_true',
-                    help='If enabled, will checkpoint all individual level data in '+ \
-                         'Hail format prior to outputting flat/binary files in check_indiv_files.')
-parser.add_argument('--override-check', action='store_true',
-                    help='If enabled, will assume that fam files in Hail Table format have been created already.')
-parser.add_argument('--pull-from-saige', action='store_true',
-                    help='If used, will assume that the file exists as a .tsv from the Saige run.  ' + \
-                         'This tool will NOT check for this, so do ensure that the file exists.  ' + \
-                         'A try catch sequence will be used; if the import fails, this will fall back ' + \
-                         'to stock import.')
-parser.add_argument('--random', action='store_true',
-                    help='If used, will generate a phenotype at random form a Normal(0,1). Draws ' + \
-                         'will be independent across ancestries.')
-
-
-if __name__ == '__main__':
-    args = parser.parse_args()
+def main(args):
     ancestries = parse_ancestries(args)
     if args.logging:
         log_name = get_pheno_filename(compatiblify_phenotype_id(args.phenotype_id), enable_suffix=False) + '.log'
@@ -203,3 +184,41 @@ if __name__ == '__main__':
                                   checkpoint=args.checkpoint, 
                                   override_check=args.override_check,
                                   log=args.logging, random=args.random)
+
+
+def _join_pheno_with_famfile(famfile_this, pheno_tab):
+    """
+    Helper function to join an ancestry-specific famfile with a phenotype ht.
+    """
+    famfile_this = famfile_this.add_index('idx').key_by('IID')
+    famfile_pheno = famfile_this.join(pheno_tab, how='left')
+    famfile_pheno = famfile_pheno.key_by('idx').order_by('idx').drop('idx')
+    return famfile_pheno
+
+
+if __name__ == '__main__':
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--phenotype-id',
+                        help='Phenotype identifier. See rhemc_pipeline.construct_phenotype_id ' + \
+                            'to see how these are constructed.')
+    parser.add_argument('--logging', action='store_true',
+                        help='If enabled, outputs a text log')
+    parser.add_argument('--ancestries',
+                        help='Comma-delimited set of ancestries to include.')
+    parser.add_argument('--checkpoint', action='store_true',
+                        help='If enabled, will checkpoint all individual level data in '+ \
+                            'Hail format prior to outputting flat/binary files in check_indiv_files.')
+    parser.add_argument('--override-check', action='store_true',
+                        help='If enabled, will assume that fam files in Hail Table format have been created already.')
+    parser.add_argument('--pull-from-saige', action='store_true',
+                        help='If used, will assume that the file exists as a .tsv from the Saige run.  ' + \
+                            'This tool will NOT check for this, so do ensure that the file exists.  ' + \
+                            'A try catch sequence will be used; if the import fails, this will fall back ' + \
+                            'to stock import.')
+    parser.add_argument('--random', action='store_true',
+                        help='If used, will generate a phenotype at random form a Normal(0,1). Draws ' + \
+                            'will be independent across ancestries.')
+
+    args = parser.parse_args()
+    main(args)

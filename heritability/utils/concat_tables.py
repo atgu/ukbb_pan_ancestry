@@ -30,16 +30,16 @@ def internal_parse_args(parser):
     return args_dict
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--tables', type=str, default=None,
-                    help='Comma delimited list of tables to import.')
-parser.add_argument('--read-list-disk', action='store_true',
-                    help='If provided, will assume that the tables argument points ' + \
-                    'to a local file in which each line is a path to a table.')
-parser.add_argument('--out', type=str, default=None,
-                    help='Output directory.')
-
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--tables', type=str,
+                        help='Comma delimited list of tables to import.')
+    parser.add_argument('--read-list-disk', action='store_true',
+                        help='If provided, will assume that the tables argument points ' + \
+                        'to a local file in which each line is a path to a table.')
+    parser.add_argument('--out', type=str,
+                        help='Output directory.')
+
     args = internal_parse_args(parser)
     tabs = [pd.read_csv(tab, sep='\t') for tab in args['tables']]
     final_table = pd.concat(tabs)

@@ -6,28 +6,13 @@ import re
 import argparse
 from parse_ldsc_log import import_log
 
-def internal_parse_args(parser):
-    """ Parse incoming arguments, catch issues, and convert to lists.
-
-    Keyword arguments:
-
-    parser -- an ArgumentParser()
-
-    Returns:
-    dict of arguments: new values
-    """
-    args = parser.parse_args()
-    if args.log is None:
-        raise ValueError('Must provide at one log file.')
-    return args
-
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--log', type=str, default=None,
-                    help='Single log to test.')
 
 if __name__ == '__main__':
-    args = internal_parse_args(parser)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--log', type=str, default=None, required=True,
+                        help='Single log to test.')
+
+    args = parser.parse_args()
     log = import_log(args.log)
     stop_str = '5 \(or 6 in the case of case\/control\) ancestry specific columns not found; exiting.'
     tf_skip = False

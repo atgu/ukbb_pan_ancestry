@@ -51,7 +51,6 @@ def import_log(log_directory):
         for line in reader:
             this_line = line.strip()
             list_of_lines.append(this_line)
-    reader.close()
     return list_of_lines
 
 
@@ -88,7 +87,7 @@ def generate_table_row(log_file, ancestry, official_only, code):
                          'ancestry_specific_ncols': num_cols})
     
     if dict_of_vals['ancestry_specific_ncols'] != 0:
-        tf_boundary = [idx for idx, l in enumerate(log_file) if re.search('Now running LDSC in vanilla mode.',l)]
+        tf_boundary = [idx for idx, l in enumerate(log_file) if re.search('Now running LDSC in (vanilla|stratified) mode.',l)]
         log_file_official = log_file[(tf_boundary[0]+1):(len(log_file)+1)]
         log_file_unofficial = log_file[0:tf_boundary[0]]
         if not official_only:
@@ -223,25 +222,26 @@ def _parse_official_log(list_lines):
     return data_dict, error_str
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--logs', type=str, default=None,
-                    help='Comma delimited list of logs to import. Must have same ' + \
-                    'number of elements as the input to --ancestry-vec.')
-parser.add_argument('--official-only', type=bool, default=False,
-                    help='Flag to enable official fields only (eg those provided directly ' +\
-                         'by ldsc itself.')
-parser.add_argument('--code', type=str, default=None,
-                    help='Single value representing the phenotype code analyzed.')
-parser.add_argument('--ancestry-vec', type=str, default=None,
-                    help='Comma delimited list of ancestries. Must have the same ' + \
-                         'number of elements as the input to --logs.')
-parser.add_argument('--out', type=str, default=None,
-                    help='Output directory.')
-
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--logs', type=str, default=None,
+                        help='Comma delimited list of logs to import. Must have same ' + \
+                        'number of elements as the input to --ancestry-vec.')
+    parser.add_argument('--official-only', type=bool, default=False,
+                        help='Flag to enable official fields only (eg those provided directly ' +\
+                            'by ldsc itself.')
+    parser.add_argument('--code', type=str, default=None,
+                        help='Single value representing the phenotype code analyzed.')
+    parser.add_argument('--ancestry-vec', type=str, default=None,
+                        help='Comma delimited list of ancestries. Must have the same ' + \
+                            'number of elements as the input to --logs.')
+    parser.add_argument('--out', type=str, default=None,
+                        help='Output directory.')
+
     args = internal_parse_args(parser)
     df_list = []
     for log, anc in zip(args['logs'], args['ancestry_vec']):
+        print(anc)
         log_file = import_log(log)
         log_tab = generate_table_row(log_file, anc, 
                                      args['official_only'], args['code'])

@@ -2,8 +2,8 @@ __author__ = 'Rahul Gupta'
 
 import hail as hl
 
-hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'AUTO',
-                    'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
+#hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'AUTO',
+#                    'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
 
 import hailtop.batch as hb
 import numpy as np
@@ -22,6 +22,7 @@ from ukbb_pan_ancestry.resources.genotypes import get_ukb_af_ht_path
 from ukbb_pan_ancestry.resources.ld import get_ld_score_ht_path
 from ukbb_pan_ancestry.resources.phenotypes import get_ukb_pheno_mt_path
 from ukb_common.resources.generic import PHENO_KEY_FIELDS
+from ukbb_pan_ancestry.resources.results import get_variant_results_path
 
 # paths
 bucket = 'ukb-diverse-pops'
@@ -32,14 +33,15 @@ path_pheno = f'gs://{bucket}/{loc}/phenos/'
 path_covar = f'gs://{bucket}/{loc}/covar/'
 path_annot = f'gs://{bucket}/{loc}/annot/'
 path_results = f'gs://{bucket}/{loc}/results/'
-saige_phenos = f'gs://{bucket}/results/pheno_export_data/'
 
 pheno_script_adr = f'gs://{bucket}/{loc}/code/rhemc_load_pheno.py'
 cat_script_adr = f'gs://{bucket}/{loc}/code/concat_tables.py'
 parsing_script_adr = f'gs://{bucket}/{loc}/code/rhe_mc_parse_results.py'
 
-mtcheckpoint = f'gs://ukbb-diverse-temp-30day/{loc}/mt/'
-htcheckpoint = f'gs://ukbb-diverse-temp-30day/{loc}/ht/'
+SAIGE_PHENO_LOC = f'gs://{bucket}/results/pheno_export_data/'
+
+MT_TEMP_BUCKET = f'gs://ukbb-diverse-temp-30day/{loc}/mt/'
+HT_TEMP_BUCKET = f'gs://ukbb-diverse-temp-30day/{loc}/ht/'
 
 # other environment variables
 IMAGE = 'gcr.io/ukbb-diversepops-neale/rgupta_rhe_mc'
@@ -182,9 +184,9 @@ def make_quantiles(expr, nq=5, approx=False, ht=None):
     pr_vec = [i/nq for i in range(0,nq+1)]
     if approx:
         if ht is None: raise TypeError('ht must be specified if using the Hail quantile approximation.')
-        lower = ht.aggregate(hl.agg.min(expr))
-        upper = ht.aggregate(hl.agg.max(expr))
-        quants = ht.aggregate(hl.agg.approx_quantiles(expr, pr_vec, 1000))
+        lower, upper, quants = ht.aggregate((hl.agg.min(expr), 
+                                             hl.agg.max(expr),
+                                             hl.agg.approx_quantiles(expr, pr_vec, 1000)))
     else:
         value_vector = [i for i in expr.collect() if i is not None]
         lower = np.min(value_vector)
@@ -314,7 +316,7 @@ def generate_geno_annot_split(path_geno, path_annot, ancestries, args, nbins):
     """
     logging.info('Generating genotype files...')
     # obtain genotype data
-    geno_full_path = mtcheckpoint + 'initial_genotypes_all_ancestry.mt'
+    geno_full_path = MT_TEMP_BUCKET + 'initial_genotypes_all_ancestry.mt'
     if hl.hadoop_exists(geno_full_path):
         logging.info('Genotype (prefiltered by pops and withdrawal) MatrixTable found and loaded.')
         mt = hl.read_matrix_table(geno_full_path)
@@ -326,11 +328,11 @@ def generate_geno_annot_split(path_geno, path_annot, ancestries, args, nbins):
 
     if args.verbose:
         print('Imported per-population genotype Ns:')
-        _ = print_pop_Ns(mt)
+        print_pop_Ns(mt)
 
     MAFRANGE = MAFRANGE_2 if args.maf_bins_2 else MAFRANGE_5
         
-    geno_filtered_path = mtcheckpoint + 'filtered_genotypes_all_ancestry.mt'
+    geno_filtered_path = MT_TEMP_BUCKET + 'filtered_genotypes_all_ancestry.mt'
     if hl.hadoop_exists(geno_filtered_path):
         logging.info('Genotype MatrixTable, filtered, loaded.')
         mt_filt = hl.read_matrix_table(geno_filtered_path)
@@ -340,11 +342,12 @@ def generate_geno_annot_split(path_geno, path_annot, ancestries, args, nbins):
         af_ht = hl.read_table(get_ukb_af_ht_path())
 
         # filter MAF > cutoff (in all populations) and is defined (all populations)
-        af_ht_f = af_ht.filter(hl.all(lambda x: (af_ht.af[x] >= args.maf) & \
-                                                (af_ht.af[x] <= (1-args.maf)) & \
-                                                (hl.is_defined(af_ht.af[x])), 
+        af_ht_f = af_ht.filter(hl.all(lambda x: hl.is_defined(af_ht.af[x]), 
                                       hl.literal(ancestries)))
-        mt_maf = mt.filter_rows(hl.is_defined(af_ht_f.index(mt['locus'], mt['alleles'])))
+        af_ht_f = af_ht_f.filter(hl.all(lambda x: (af_ht.af[x] >= args.maf) & \
+                                                  (af_ht.af[x] <= (1-args.maf))), 
+                                      hl.literal(ancestries)))
+        mt_maf = mt.filter_rows(hl.is_defined(af_ht_f[mt.row_key]))
 
         # remove relateds
         mt_nonrel = mt_maf.filter_cols(~mt_maf.related)
@@ -389,14 +392,14 @@ def generate_geno_annot_split(path_geno, path_annot, ancestries, args, nbins):
     output_files_annot_noextn = get_annot_split_names(ancestries, dictout=True, n_annot=nbins, suffix_incl=False)
     for anc in ancestries:
         ht_anc = hl.read_table(get_ld_score_ht_path(pop=anc))
-        this_tab = snps_out.annotate(ld_score = ht_anc[snps_out.locus, snps_out.alleles].ld_score,
-                                     af = ht_anc[snps_out.locus, snps_out.alleles].AF)
-        this_tab = this_tab.annotate(maf = hl.if_else(this_tab.af > 0.5, 1-this_tab.af, this_tab.af))
+        ht_anc_expr = ht_anc[snps_out.row_key]
+        this_tab = snps_out.annotate(ld_score = ht_anc_expr.ld_score,
+                                     af = ht_anc_expr.AF)
+        this_tab = this_tab.annotate(maf = 0.5 - hl.abs(0.5 - this_tab.af))
         LD_bin_anc = make_quantiles(this_tab.ld_score, nq=args.num_ld_bins, 
                                     approx=args.approx_quantiles, ht=this_tab)
-        this_tab = this_tab.annotate(maf_bin = discretize(this_tab.maf, MAFRANGE),
-                                     LD_bin = discretize(this_tab.ld_score, LD_bin_anc))
-        this_tab = this_tab.select('maf_bin', 'LD_bin')
+        this_tab = this_tab.select(maf_bin = discretize(this_tab.maf, MAFRANGE),
+                                   LD_bin = discretize(this_tab.ld_score, LD_bin_anc))
         exploded_tab = explode_bins(this_tab, ['maf_bin','LD_bin'], args.verbose)
 
         # back up annotations as a hail table
@@ -436,6 +439,17 @@ def hl_combine_str(*expressions, sep="_") -> hl.StringExpression:
     # return final_expr
 
 
+def _generate_map_anc_pheno(path_prefix, ancestries):
+    dictout = {}
+    for anc in ancestries:
+        thisdir = path_prefix + anc + '/'
+        if hl.hadoop_is_dir(thisdir):
+            dictout.update({anc: [basename(x['path']) for x in hl.hadoop_ls(thisdir)]})
+        else:
+            dictout.update({anc: []})
+    return dictout
+
+
 def list_precomputed_pheno_files(ancestries):
     """ Obtain the set of phenotype files that have been pre-formatted for RHEmc.
 
@@ -447,14 +461,7 @@ def list_precomputed_pheno_files(ancestries):
     -------
     `dict`
     """
-    dictout = {}
-    for anc in ancestries:
-        thisdir = path_pheno + anc + '/'
-        if hl.hadoop_is_dir(thisdir):
-            dictout.update({anc: [basename(x['path']) for x in hl.hadoop_ls(thisdir)]})
-        else:
-            dictout.update({anc: []})
-    return dictout
+    return _generate_map_anc_pheno(path_pheno, ancestries)
 
 
 def list_saige_pheno_files(ancestries):
@@ -468,14 +475,7 @@ def list_saige_pheno_files(ancestries):
     -------
     `dict`
     """
-    dictout = {}
-    for anc in ancestries:
-        thisdir = saige_phenos + anc + '/'
-        if hl.hadoop_is_dir(thisdir):
-            dictout.update({anc: [basename(x['path']) for x in hl.hadoop_ls(thisdir)]})
-        else:
-            dictout.update({anc: []})
-    return dictout
+    return _generate_map_anc_pheno(SAIGE_PHENO_LOC, ancestries)
 
 
 def list_completed_rhemc_logs():
@@ -507,7 +507,7 @@ def construct_phenotype_id(tab: Union[hl.Table, hl.MatrixTable]):
     #return hl.delimit([tab[x] for x in PHENO_KEY_FIELDS], '_')
 
 
-def get_famfiles(ancestries, checkpoint, override_check=False):
+def get_famfiles(ancestries, checkpoint=False, override_check=False):
     """Obtains fam files in HailTable format, trimmed to just include FID and IID.
     Throws error if not found. If fam files do not exist, run generate_geno_annot_split.
 
@@ -539,18 +539,20 @@ def get_famfiles(ancestries, checkpoint, override_check=False):
             famfiles.update({anc: hl.read_table(thisloc)})
         else:
             famtab = hl.import_table(path_geno + geno_files[anc] + '.fam', impute=True, no_header=True)
-            famtab = famtab.select('f0', 'f1').rename({'f0': 'FID', 'f1': 'IID'})
-            famtab = famtab.add_index(name='idx').key_by('idx')
-            famtab = famtab.repartition(100)
-            famtab = famtab.order_by('idx').drop('idx')
+            famtab = famtab.select(FID=famtab.f0, IID=famtab.f1
+                          ).add_index(name='idx'
+                          ).key_by('idx'
+                          ).repartition(100
+                          ).order_by('idx'
+                          ).drop('idx')
             if checkpoint:
-                famtab.write(thisloc)
+                famtab = famtab.checkpoint(thisloc)
             famfiles.update({anc: famtab})
     
     return famfiles
 
 
-def generate_covar_split(path_covar, ancestries, checkpoint, sex_specific=False):
+def generate_covar_split(path_covar, ancestries, checkpoint=False, sex_specific=False):
     """This will construct and output covariate files. This function
     guarentees that the same individuals (in the same order) are included per person
     as in the genotype files (particularly the .fam file).
@@ -751,7 +753,6 @@ def print_pop_Ns(mt):
     """
     dict_anc = mt.aggregate_cols(hl.agg.counter(mt.pop))
     _ = [print(k + ': ' + str(v)) for k,v in dict_anc.items()]
-    return None
 
 
 def convert_pheno_id_to_potential_saige(pheno_id: Union[hl.StringExpression, str]):
@@ -782,9 +783,9 @@ def run_phenotype_job(b, phenotype_id, ancestries, use_saige, checkpoint,
     j.cpu(n_threads)
     filename = get_pheno_filename(phenotype_id, enable_suffix=False)
     filename_map = get_pheno_split_names(ancestries, dictout=True, phenotype_id=phenotype_id, enable_suffix=True)
-    filename_compat = get_pheno_filename(_compatiblify_phenotype_id(phenotype_id), enable_suffix=False)
+    filename_compat = get_pheno_filename(compatiblify_phenotype_id(phenotype_id), enable_suffix=False)
     filename_map_compat = get_pheno_split_names(ancestries, dictout=True, 
-                                                phenotype_id=_compatiblify_phenotype_id(phenotype_id), 
+                                                phenotype_id=compatiblify_phenotype_id(phenotype_id), 
                                                 enable_suffix=True)
     ancestry = ','.join(ancestries)
     checkpoint_val = '--checkpoint' if checkpoint else ''
@@ -914,7 +915,7 @@ def run_ancestry_sink(b, phenotype_id, ancestry_jobs, concatter):
     return j
 
 
-def run_final_sink(b, ancestry_sinks, concatter, nlen, suffix=''):
+def run_final_sink(b, ancestry_sinks, concatter, nlen, suffix='', output_file='tab_out'):
     """ Runs final sink to collect and concatenate all results.
     Implements interim sinks of size nlen, and then has one final sink.
     This is to workaround the issue with the submitted script being too long
@@ -970,14 +971,30 @@ def _get_pheno_manifest_path_internal():
     return f'gs://ukb-diverse-pops/{loc}/phenotype_manifest.tsv.bgz'
 
 
-def _import_manifest():
-    manifest = hl.import_table(_get_pheno_manifest_path_internal())
-    manifest = manifest.annotate(pop_split = manifest.pops.split(','))
+def _import_manifest(use_tsv_manifest=True):
+    if use_tsv_manifest:
+        manifest = hl.import_table(_get_pheno_manifest_path_internal())
+    else:
+        manifest = hl.read_matrix_table(get_variant_results_path('full')).cols()
+        annotate_dict = {}
+        annotate_dict.update({'pops': hl.str(',').join(manifest.pheno_data.pop),
+                              'num_pops': hl.len(manifest.pheno_data.pop)})
+        for field in ['n_cases','n_controls','heritability']:
+            for pop in ['AFR','AMR','CSA','EAS','EUR','MID']:
+                new_field = field if field!='heritability' else 'saige_heritability' # new field name (only applicable to saige heritability)
+                idx = manifest.pheno_data.pop.index(pop)
+                field_expr = manifest.pheno_data[field]
+                annotate_dict.update({f'{new_field}_{pop}': hl.if_else(hl.is_nan(idx),
+                                                                       hl.missing(field_expr[0].dtype),
+                                                                       field_expr[idx])})
+        manifest = manifest.annotate(**annotate_dict)
+        manifest = manifest.drop(manifest.pheno_data)
     if 'phenotype_id' not in list(manifest.row):
         manifest = manifest.annotate(phenotype_id = construct_phenotype_id(manifest))
     manifest = manifest.annotate(pheno_file = get_pheno_filename(manifest.phenotype_id),
-                                 saige_file = convert_pheno_id_to_potential_saige(manifest.phenotype_id))
-    return manifest
+                                 saige_file = convert_pheno_id_to_potential_saige(manifest.phenotype_id),
+                                 pop_split = manifest.pops.split(','))
+    return manifest.cache()
 
 
 def _make_phenotype_dict(manifest, ancestries, n_include=None, random_phenos=None, suffix='', specific_pheno=None):
@@ -1022,8 +1039,8 @@ def _make_phenotype_dict(manifest, ancestries, n_include=None, random_phenos=Non
         anc_vec = [[anc for anc in anclist if anc in ancestries] 
                 for anclist in manifest.pop_split.collect()]
 
-        pheno_to_len = {phen: len(anclist) for phen, _, _, anclist in zip(phenotype_id, pheno_file, saige_file, anc_vec)}
-        zipped_vals = zip(phenotype_id, pheno_file, saige_file, anc_vec)
+        zipped_vals = list(zip(phenotype_id, pheno_file, saige_file, anc_vec))
+        pheno_to_len = {phen: len(anclist) for phen, _, _, anclist in zipped_vals}
         dct_out = {id: (file, saigefile, anclist) for id, file, saigefile, anclist in zipped_vals if len(anclist) > 0}
 
         if n_include is not None:
@@ -1059,7 +1076,7 @@ def _read_pheno_data(checkpoint, load_full=False):
     -------
     `MatrixTable`
     """
-    checkpoint_phenos = mtcheckpoint + 'filtered_phenotype_data_temporary.mt'
+    checkpoint_phenos = MT_TEMP_BUCKET + 'filtered_phenotype_data_temporary.mt'
     if load_full:
         return hl.read_matrix_table(get_ukb_pheno_mt_path())
     else:
@@ -1067,8 +1084,8 @@ def _read_pheno_data(checkpoint, load_full=False):
             pheno_mt_string = hl.read_matrix_table(checkpoint_phenos)
         else:
             pheno_mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
-            pheno_mt_string = pheno_mt.annotate_cols(phenotype_id = construct_phenotype_id(pheno_mt))
-            pheno_mt_string = pheno_mt_string.key_cols_by('phenotype_id')
+            pheno_mt_string = pheno_mt.annotate_cols(phenotype_id = construct_phenotype_id(pheno_mt)
+                                     ).key_cols_by('phenotype_id')
             pheno_mt_string = pheno_mt_string.select_entries('both_sexes'
                                             ).select_cols().select_rows(
                                             ).rename({'both_sexes':'value'})
@@ -1086,15 +1103,14 @@ def _write_flat_without_key(ht, destination, delimiter, header):
     ht2.export(output=destination, header=header, delimiter=delimiter)
 
 
-def _compatiblify_phenotype_id(phenotype_id):
+def compatiblify_phenotype_id(phenotype_id):
     """RHEmc throws errors on reading weird phenotype
     headers. This function resolves these characters.
     """
     to_replace = [' ', '|', '>', '<', '/', '\\']
-    new_id = phenotype_id
     for i in to_replace:
-        new_id = new_id.replace(i, '_')
-    return new_id
+        phenotype_id = phenotype_id.replace(i, '_')
+    return phenotype_id
 
 
 def _verify_args(args):
@@ -1147,83 +1163,88 @@ def _initialize_log(args):
             logging.info('Because specific phenotypes were not specified for this sex-specific analysis, phenotypes will be filtered to those with pheno_sex != both_sexes.')
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--ancestries', default='AFR,AMR,CSA,EAS,EUR,MID', type=str,
-                    help='Comma-delimited set of ancestries to include. Default is all 6.')
-parser.add_argument('--suffix', default='', type=str,
-                    help='A suffix appended to all outputted results files (logs and the final file).')
-parser.add_argument('--verbose', action='store_true',
-                    help='If enabled, will print status updates to std out.')
-parser.add_argument('--checkpoint', action='store_true',
-                    help='If enabled, will checkpoint all individual level data in '+ \
-                         'Hail format prior to outputting flat/binary files in check_indiv_files.')
-parser.add_argument('--read-previous-rhemc', action='store_true',
-                    help='If enabled, will check the results folder for previous results from RHE-mc.' + \
-                         ' If previous results are found, these will be pulled rather than running the full pipeline. ' +\
-                         'Cannot be enabled if --initialize-only or --phenotype-only are specified.')
-parser.add_argument('--logging', default='rhemc_pipeline.log', type=str,
-                    help='Path for pipeline log file. Note that logs will be produced when ' + \
-                         'creating phenotype files as well.')
-parser.add_argument('--use-fuse', action='store_true',
-                    help='If enabled, will localize individual level data with GCS fuse.')                    
-parser.add_argument('--approx-quantiles', action='store_true',
-                    help='If enabled, will use approximate quantiles for LD score bins.' + \
-                         'Note that this is non-deterministic.')
-parser.add_argument('--num-ld-bins', default=5, type=int,
-                    help='Number of LD bins to include. Created as quantiles.')
-parser.add_argument('--maf', default=0.01, type=float,
-                    help='Minimum MAF cutoff for pipeline.')
-parser.add_argument('--maf-bins-2', action='store_true',
-                    help='If enabled, will use two MAF bins. If disabled, will default to 5 MAF bins.')
-parser.add_argument('--sex-specific', action='store_true',
-                    help='If enabled, will exclude sex covariates. This should be enabled only if the phenotypes to be run ' +
-                    'are sex-stratified.')
-
-parser.add_argument('--n-threads-pheno', default=4, type=int,
-                    help='Number of threads per phenotype worker.')
-parser.add_argument('--mem-rhemc', default=8, type=int,
-                    help='GB of memory allocated for each RHEmc worker.')
-parser.add_argument('--mem-rhemc-eur', default=104, type=int,
-                    help='GB of memory allocated for each EUR RHEmc worker.')
-parser.add_argument('--store-rhemc', default=10, type=int,
-                    help='GB of storage allocated for each non-EUR RHEmc worker. It is highly recommended to enable --use-fuse ' + \
-                         'if the size of the genotype files are large, rather than expanding storage via this avenue.')
-parser.add_argument('--store-rhemc-eur', default=20, type=int,
-                    help='GB of storage allocated for each EUR RHEmc worker. It is highly recommended to enable --use-fuse ' + \
-                         'if the size of the genotype files are large, rather than expanding storage via this avenue.')
-parser.add_argument('--jackknife-blocks', default=100, type=int,
-                    help='Number of jackknife blocks to use in RHEmc. 100 (default) or 22 recommended.' + \
-                        ' Higher values result in more memory usage.')
-parser.add_argument('--random-vectors', default=10, type=int,
-                    help='Number of random vectors to use for RHEmc. 10 (default) is recommended.')
-parser.add_argument('--random-phenotypes', default=None, type=int,
-                    help='Construct and run RHEmc on a set of random phenotypes. If this flag is used, ' +
-                         '--initialize-only, --read-previous-rhemc, and --n-only cannot be enabled. ' +
-                         'Enabling this requires listing a number of random phenotypes to run. Random phenotypes ' +
-                         ' are constructed from a Normal(0,1).')
-
-parser.add_argument('--initialize-only', action='store_true',
-                    help='If enabled, this pipeline will only run check_indiv_files, which creates and checks for ' + \
-                    'several important helper files including genotype MatrixTables, PLINK files, ' + \
-                    '.fam file Hail Tables, the phenotype file MatrixTable, the covariate files, and ' + \
-                    'annotation files. Note that this will not initialize phenotypes. To initialize files and create ' + \
-                    'all phenotype files, enable --phenotype-only. This flag cannot be concurrently enabled with ' + \
-                    '--phenotype-only.')
-parser.add_argument('--n-only', default=None, type=int,
-                    help='Selects n of each type of trait for a test run.')
-parser.add_argument('--specific-pheno', default=None, type=str,
-                    help='Comma-delimited list of phenotypes to run. Error will be thrown if these phenotypes are not found' +\
-                         ' in the manifest. See construct_phenotype_id() to see how phenotype IDs should be formatted. ' + \
-                         'Cannot be enabled alongside --random-phenotypes, --n-only, or --initialize-only.')
-parser.add_argument('--n-iter', default=None, type=int,
-                    help='To characterize run-to-run variability, specify a number of iterations here. If specified, an integer ' + \
-                    'will be appended to phenotype id as "-iter_". Cannot be specified alongside --phenotype-only or --initialize-only.')
-parser.add_argument('--phenotype-only', action='store_true',
-                    help='Only run phenotypes, without running RHEmc. Cannot be enabled if ' + \
-                         '--initialize-only is enabled.')
-
-
 if __name__ == '__main__':
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--ancestries', default='AFR,AMR,CSA,EAS,EUR,MID',
+                        help='Comma-delimited set of ancestries to include. Default is all 6.')
+    parser.add_argument('--suffix', default='',
+                        help='A suffix appended to all outputted results files (logs and the final file).')
+    parser.add_argument('--verbose', action='store_true',
+                        help='If enabled, will print status updates to std out.')
+    parser.add_argument('--checkpoint', action='store_true',
+                        help='If enabled, will checkpoint all individual level data in '+ \
+                            'Hail format prior to outputting flat/binary files in check_indiv_files.')
+    parser.add_argument('--read-previous-rhemc', action='store_true',
+                        help='If enabled, will check the results folder for previous results from RHE-mc.' + \
+                            ' If previous results are found, these will be pulled rather than running the full pipeline. ' +\
+                            'Cannot be enabled if --initialize-only or --phenotype-only are specified.')
+    parser.add_argument('--logging', default='rhemc_pipeline.log', 
+                        help='Path for pipeline log file. Note that logs will be produced when ' + \
+                            'creating phenotype files as well.')
+    parser.add_argument('--use-fuse', action='store_true',
+                        help='If enabled, will localize individual level data with GCS fuse.')                    
+                    help='If enabled, will localize individual level data with GCS fuse.')                    
+                        help='If enabled, will localize individual level data with GCS fuse.')                    
+    parser.add_argument('--approx-quantiles', action='store_true',
+                        help='If enabled, will use approximate quantiles for LD score bins.' + \
+                            'Note that this is non-deterministic.')
+    parser.add_argument('--num-ld-bins', default=5, type=int,
+                        help='Number of LD bins to include. Created as quantiles.')
+    parser.add_argument('--maf', default=0.01, type=float,
+                        help='Minimum MAF cutoff for pipeline.')
+    parser.add_argument('--maf-bins-2', action='store_true',
+                        help='If enabled, will use two MAF bins. If disabled, will default to 5 MAF bins.')
+    parser.add_argument('--sex-specific', action='store_true',
+                        help='If enabled, will exclude sex covariates. This should be enabled only if the phenotypes to be run ' +
+                        'are sex-stratified.')
+    parser.add_argument('--use-tsv-manifest', action='store_true',
+                        help='If enabled, will use a .tsv manifest. This is a legacy option, as using cols from the sumstats ' + \
+                        'MatrixTable will be the most updated and is thus preferred.')
+
+    parser.add_argument('--n-threads-pheno', default=4, type=int,
+                        help='Number of threads per phenotype worker.')
+    parser.add_argument('--mem-rhemc', default=8, type=int,
+                        help='GB of memory allocated for each RHEmc worker.')
+    parser.add_argument('--mem-rhemc-eur', default=104, type=int,
+                        help='GB of memory allocated for each EUR RHEmc worker.')
+    parser.add_argument('--store-rhemc', default=10, type=int,
+                        help='GB of storage allocated for each non-EUR RHEmc worker. It is highly recommended to enable --use-fuse ' + \
+                            'if the size of the genotype files are large, rather than expanding storage via this avenue.')
+    parser.add_argument('--store-rhemc-eur', default=20, type=int,
+                        help='GB of storage allocated for each EUR RHEmc worker. It is highly recommended to enable --use-fuse ' + \
+                            'if the size of the genotype files are large, rather than expanding storage via this avenue.')
+    parser.add_argument('--jackknife-blocks', default=100, type=int,
+                        help='Number of jackknife blocks to use in RHEmc. 100 (default) or 22 recommended.' + \
+                            ' Higher values result in more memory usage.')
+    parser.add_argument('--random-vectors', default=10, type=int,
+                        help='Number of random vectors to use for RHEmc. 10 (default) is recommended.')
+    parser.add_argument('--random-phenotypes', type=int,
+                        help='Construct and run RHEmc on a set of random phenotypes. If this flag is used, ' +
+                            '--initialize-only, --read-previous-rhemc, and --n-only cannot be enabled. ' +
+                            'Enabling this requires listing a number of random phenotypes to run. Random phenotypes ' +
+                            ' are constructed from a Normal(0,1).')
+
+    parser.add_argument('--initialize-only', action='store_true',
+                        help='If enabled, this pipeline will only run check_indiv_files, which creates and checks for ' + \
+                        'several important helper files including genotype MatrixTables, PLINK files, ' + \
+                        '.fam file Hail Tables, the phenotype file MatrixTable, the covariate files, and ' + \
+                        'annotation files. Note that this will not initialize phenotypes. To initialize files and create ' + \
+                        'all phenotype files, enable --phenotype-only. This flag cannot be concurrently enabled with ' + \
+                        '--phenotype-only.')
+    parser.add_argument('--n-only', type=int,
+                        help='Selects n of each type of trait for a test run.')
+    parser.add_argument('--specific-pheno', 
+                        help='Comma-delimited list of phenotypes to run. Error will be thrown if these phenotypes are not found' +\
+                            ' in the manifest. See construct_phenotype_id() to see how phenotype IDs should be formatted. ' + \
+                            'Cannot be enabled alongside --random-phenotypes, --n-only, or --initialize-only.')
+    parser.add_argument('--n-iter', type=int,
+                        help='To characterize run-to-run variability, specify a number of iterations here. If specified, an integer ' + \
+                        'will be appended to phenotype id as "-iter_". Cannot be specified alongside --phenotype-only or --initialize-only.')
+    parser.add_argument('--phenotype-only', action='store_true',
+                        help='Only run phenotypes, without running RHEmc. Cannot be enabled if ' + \
+                            '--initialize-only is enabled.')
+
     args = parser.parse_args()
     _verify_args(args)
     ancestries = parse_ancestries(args)
@@ -1248,7 +1269,7 @@ if __name__ == '__main__':
         ls_previous_runs = list_completed_rhemc_logs()
 
         # Get manifest
-        manifest = _import_manifest()
+        manifest = _import_manifest(args.use_tsv_manifest)
         if args.specific_pheno is None:
             if args.sex_specific:
                 manifest = manifest.filter(manifest.pheno_sex != 'both_sexes')
