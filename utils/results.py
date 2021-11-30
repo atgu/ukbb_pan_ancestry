@@ -21,7 +21,8 @@ def filter_lambda_gc(lambda_gc):
 def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = True,
                            filter_sumstats: bool = True, separate_columns_by_pop: bool = True,
                            annotate_with_nearest_gene: bool = True, add_only_gene_symbols_as_str: bool = False,
-                           load_contig: str = None, filter_pheno_h2_qc: bool = True):
+                           load_contig: str = None, filter_pheno_h2_qc: bool = True,
+                           exponentiate_p: bool = False, check_log_per_pheno_anc: bool = False):
     mt = hl.read_matrix_table(get_variant_results_path('full', 'mt')).drop('gene', 'annotation')
     if load_contig:
         mt = mt.filter_rows(mt.locus.contig == load_contig)
@@ -88,8 +89,22 @@ def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = T
     if annotate_with_nearest_gene:
         mt = annotate_nearest_gene(mt, add_only_gene_symbols_as_str=add_only_gene_symbols_as_str)
 
+    if exponentiate_p:
+        if check_log_per_pheno_anc:
+            # Check if p-values are log transformed per pheno-ancestry pair by checking if
+            # all p-values <= 0. Slower due to two passes performed.
+            mt = mt.annotate_cols(tf_vec_log = hl.agg.array_agg(hl.agg.all, mt.summary_stats.Pvalue.map(lambda x: x < 0)))
+            mt = mt.annotate_entries(summary_stats = hl.zip(mt.summary_stats,mt.tf_vec_log
+                                                      ).map(lambda x: hl.if_else(x[1],
+                                                                                 x[0].annotate(Pvalue=hl.exp(x[0].Pvalue)),
+                                                                                 x[0])))
+            mt = mt.drop('tf_vec_log')
+        else:
+            # Assume p-values are all log-transformed. Much faster.
+            mt = mt.annotate_entries(summary_stats = mt.summary_stats.map(lambda x: x.annotate(Pvalue=hl.exp(x.Pvalue))))
+
     if separate_columns_by_pop:
-        mt = separate_results_mt_by_pop(mt)
+        mt = separate_results_mt_by_pop(mt, skip_drop=True)
 
     return mt
 
