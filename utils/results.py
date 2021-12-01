@@ -104,6 +104,7 @@ def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = T
             mt = mt.annotate_entries(summary_stats = mt.summary_stats.map(lambda x: x.annotate(Pvalue=hl.exp(x.Pvalue))))
 
     if separate_columns_by_pop:
+        # TEMPORARY: enable skip_drop to avoid a hail error
         mt = separate_results_mt_by_pop(mt, skip_drop=True)
 
     return mt
