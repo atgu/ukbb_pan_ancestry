@@ -13,11 +13,13 @@ import hail as hl
 from itertools import combinations
 from time import time
 from math import ceil
-from ukbb_pan_ancestry.utils.results import load_final_sumstats_mt, get_meta_analysis_results_path, get_pheno_manifest_path
+from ukbb_pan_ancestry.utils.results import load_final_sumstats_mt, get_meta_analysis_results_path, load_meta_analysis_results, get_pheno_manifest_path
+
 
 bucket = 'gs://ukb-diverse-pops'
 public_bucket = 'gs://ukb-diverse-pops-public'
 ldprune_dir = f'{bucket}/ld_prune'
+
 
 def get_pheno_id(tb):
     pheno_id = (tb.trait_type+'-'+tb.phenocode+'-'+tb.pheno_sex+
@@ -26,29 +28,38 @@ def get_pheno_id(tb):
                 ).replace(' ','_').replace('/','_')
     return pheno_id
 
-def get_final_sumstats_mt_for_export():
+
+def get_final_sumstats_mt_for_export(exponentiate_p):
+    """ Updated to *not* filter by QC cutoffs.
+    """
     mt0 = load_final_sumstats_mt(filter_sumstats=False,
                                  filter_variants=False,
                                  separate_columns_by_pop=False,
-                                 annotate_with_nearest_gene=False)
+                                 annotate_with_nearest_gene=False,
+                                 filter_pheno_h2_qc=False,
+                                 exponentiate_p=exponentiate_p)
     mt0 = mt0.select_rows()
     return mt0
 
+
 def export_results(num_pops, trait_types='all', batch_size=256, mt=None, 
-                   export_path_str=None, skip_binary_eur=True):
+                   export_path_str=None, skip_binary_eur=True, exponentiate_p=False,
+                   suffix=None):
     r'''
     `num_pops`: exact number of populations for which phenotype is defined
     `trait_types`: trait category (options: all, binary, quant)
     `batch_size`: batch size argument for export entries by col
+    `suffix`: if not None, adds sumstats to a specified folder rather than 'export_results'
     '''
     assert trait_types in {'all','quant','binary'}, "trait_types must be one of the following: {'all','quant','binary'}"
     print(f'\n\nExporting {trait_types} trait types for {num_pops} pops\n\n')
     if mt == None:
-        mt0 = get_final_sumstats_mt_for_export()
+        mt0 = get_final_sumstats_mt_for_export(exponentiate_p=exponentiate_p)
     else:
         mt0 = mt
         
-    meta_mt0 = hl.read_matrix_table(get_meta_analysis_results_path())
+    #meta_mt0 = hl.read_matrix_table(get_meta_analysis_results_path())
+    meta_mt0 = load_meta_analysis_results(h2_filter='both', exponentiate_p=exponentiate_p)
     
     mt0 = mt0.annotate_cols(pheno_id = get_pheno_id(tb=mt0))
     mt0 = mt0.annotate_rows(chr = mt0.locus.contig,
@@ -81,6 +92,11 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
                               'SE':'se_meta',
                               'Pvalue':'pval_meta',
                               'Pvalue_het':'pval_heterogeneity'}
+    quant_meta_hq_field_rename_dict = {'AF_Allele2':'af_meta_hq',
+                                       'BETA': 'beta_meta_hq',
+                                       'SE':'se_meta_hq',
+                                       'Pvalue':'pval_meta_hq',
+                                       'Pvalue_het':'pval_heterogeneity_hq'}
     quant_field_rename_dict = {'AF_Allele2':'af',
                          'BETA':'beta',
                          'SE':'se',
@@ -93,6 +109,12 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
                                      'AF_Cases':'af_cases_meta',
                                      'AF_Controls':'af_controls_meta',
                                      'Pvalue_het':'pval_heterogeneity'}
+    binary_meta_hq_field_rename_dict = {'BETA':'beta_meta_hq',
+                                        'SE':'se_meta_hq',
+                                        'Pvalue':'pval_meta_hq',
+                                        'AF_Cases':'af_cases_meta_hq',
+                                        'AF_Controls':'af_controls_meta_hq',
+                                        'Pvalue_het':'pval_heterogeneity_hq'}
     binary_field_rename_dict = {'AF.Cases':'af_cases',
                                 'AF.Controls':'af_controls',
                                 'BETA':'beta',
@@ -118,11 +140,13 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
             meta_fields = quant_meta_fields
             fields = quant_fields
             meta_field_rename_dict = quant_meta_field_rename_dict
+            meta_hq_field_rename_dict = quant_meta_hq_field_rename_dict
             field_rename_dict = quant_field_rename_dict
         elif trait_category == 'binary':
             meta_fields = binary_meta_fields
             fields = binary_fields
             meta_field_rename_dict = binary_meta_field_rename_dict
+            meta_hq_field_rename_dict = binary_meta_hq_field_rename_dict
             field_rename_dict = binary_field_rename_dict
     
         meta_fields += ['BETA','SE','Pvalue','Pvalue_het']
@@ -137,6 +161,7 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
             
             mt1 = mt0.filter_cols((hl.literal(trait_types).contains(mt0.trait_type))&
                                   (hl.set(mt0.pheno_data.pop)==hl.literal(pop_set)))
+            mt1 = mt1.annotate_cols(has_hq_meta_analysis = meta_mt0.cols()[mt1.col_key].has_hq_meta_analysis)
             
             col_ct = mt1.count_cols()
             if col_ct==0:
@@ -145,52 +170,50 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
             
             pop_list = sorted(pop_set)
             
-            annotate_dict = {}
-            keyed_mt = meta_mt0[mt1.row_key,mt1.col_key]
-            if len(pop_set)>1:
-                for field in meta_fields: # NOTE: Meta-analysis columns go before per-population columns
-                    field_expr = keyed_mt.meta_analysis[field][0]
-                    annotate_dict.update({f'{meta_field_rename_dict[field]}': hl.if_else(hl.is_nan(field_expr),
-                                                                              hl.str(field_expr),
-                                                                              hl.format('%.3e', field_expr))})
-        
-            for field in fields:
-                for pop_idx, pop in enumerate(pop_list):
-                    field_expr = mt1.summary_stats[field][pop_idx]
-                    annotate_dict.update({f'{field_rename_dict[field]}_{pop}': hl.if_else(hl.is_nan(field_expr),
-                                                                               hl.str(field_expr),
-                                                                               hl.str(field_expr) if field=='low_confidence' else hl.format('%.3e', field_expr))})
+            # we now split the mt into those with hq filtered meta analysis results and those without
+            mt1_hq = mt1.filter_cols(mt1.has_hq_meta_analysis).drop('has_hq_meta_analysis')
+            keyed_mt_hq_def = meta_mt0[mt1_hq.row_key,mt1_hq.col_key]
+
+            mt1_hq_undef = mt1.filter_cols(~mt1.has_hq_meta_analysis).drop('has_hq_meta_analysis')
+            keyed_mt_hq_undef = meta_mt0[mt1_hq_undef.row_key,mt1_hq_undef.col_key]
+
+            get_export_path = lambda batch_idx: f'{ldprune_dir}/{"export_results" if suffix is None else suffix}/{"" if export_path_str is None else f"{export_path_str}/"}{trait_category}/{"-".join(pop_list)}_batch{batch_idx}'
+
+
+            def _shortcut_export_keyed(keyed_mt, mt1, use_hq, batch_idx):
+                return _export_using_keyed_mt(keyed_mt, mt1=mt1, use_hq=use_hq, batch_idx=batch_idx,
+                                              get_export_path=get_export_path,
+                                              batch_size=batch_size, pop_set=pop_set,
+                                              pop_list=pop_list, meta_fields=meta_fields, fields=fields,
+                                              meta_field_rename_dict=meta_field_rename_dict,
+                                              meta_hq_field_rename_dict=meta_hq_field_rename_dict,
+                                              field_rename_dict=field_rename_dict)
             
-            mt2 = mt1.annotate_entries(**annotate_dict)
+
+            # export sumstats with hq columns
+            if (mt1_hq.count_cols() > 0):
+                batch_idx_hq = _shortcut_export_keyed(keyed_mt_hq_def, mt1=mt1_hq, use_hq=True, batch_idx=1)
+            else:
+                batch_idx_hq = 1
             
-            mt2 = mt2.filter_cols(mt2.coding != 'zekavat_20200409')
-            mt2 = mt2.key_cols_by('pheno_id')
-            mt2 = mt2.key_rows_by().drop('locus','alleles','summary_stats') # row fields that are no longer included: 'gene','annotation'
+            # export sumstats without hq columns
+            if (mt1_hq_undef.count_cols() > 0):
+                _ = _shortcut_export_keyed(keyed_mt_hq_undef, mt1=mt1_hq_undef, use_hq=False, batch_idx=batch_idx_hq)
             
-            batch_idx = 1        
-            get_export_path = lambda batch_idx: f'{ldprune_dir}/export_results/{"" if export_path_str is None else f"{export_path_str}/"}{trait_category}/{"-".join(pop_list)}_batch{batch_idx}'
-            print(mt2.describe())
-            while hl.hadoop_is_dir(get_export_path(batch_idx)):
-                batch_idx += 1
-            print(f'\nExporting {col_ct} phenos to: {get_export_path(batch_idx)}\n')
-            hl.experimental.export_entries_by_col(mt = mt2,
-                                                  path = get_export_path(batch_idx),
-                                                  bgzip = True,
-                                                  batch_size = batch_size,
-                                                  use_string_key_as_file_name = True,
-                                                  header_json_in_file = False)
             end = time()
             print(f'\nExport complete for:\n{trait_types}\n{pop_list}\ntime: {round((end-start)/3600,2)} hrs')
 
-def export_binary_eur(cluster_idx, num_clusters=10, batch_size = 256):
+
+def export_binary_eur(cluster_idx, num_clusters=10, batch_size = 256, exponentiate_p=False):
     r'''
     Export summary statistics for binary traits defined only for EUR. 
     Given the large number of such traits (4184), it makes sense to batch this 
     across `num_clusters` clusters for reduced wall time and robustness to mid-export errors.
     NOTE: `cluster_idx` is 1-indexed.
     '''
-    mt0 = get_final_sumstats_mt_for_export()
-    meta_mt0 = hl.read_matrix_table(get_meta_analysis_results_path())
+    mt0 = get_final_sumstats_mt_for_export(exponentiate_p=exponentiate_p)
+    #meta_mt0 = hl.read_matrix_table(get_meta_analysis_results_path())
+    meta_mt0 = load_meta_analysis_results(h2_filter='both', exponentiate_p=exponentiate_p)
     
     mt0 = mt0.annotate_cols(pheno_id = get_pheno_id(tb=mt0))
     mt0 = mt0.annotate_rows(chr = mt0.locus.contig,
@@ -211,6 +234,12 @@ def export_binary_eur(cluster_idx, num_clusters=10, batch_size = 256):
                                      'AF_Cases':'af_cases_meta',
                                      'AF_Controls':'af_controls_meta',
                                      'Pvalue_het':'pval_heterogeneity'}
+    meta_hq_field_rename_dict = {'BETA':'beta_meta_hq',
+                                     'SE':'se_meta_hq',
+                                     'Pvalue':'pval_meta_hq',
+                                     'AF_Cases':'af_cases_meta_hq',
+                                     'AF_Controls':'af_controls_meta_hq',
+                                     'Pvalue_het':'pval_heterogeneity_hq'}
     field_rename_dict = {'AF.Cases':'af_cases',
                                 'AF.Controls':'af_controls',
                                 'BETA':'beta',
@@ -230,6 +259,7 @@ def export_binary_eur(cluster_idx, num_clusters=10, batch_size = 256):
     
     mt1 = mt0.filter_cols((hl.literal(trait_types).contains(mt0.trait_type))&
                           (hl.set(mt0.pheno_data.pop)==hl.literal(pop_set)))
+    mt1 = mt1.annotate_cols(has_hq_meta_analysis = meta_mt0.cols()[mt1.col_key].has_hq_meta_analysis)
     
     pheno_id_list = mt1.pheno_id.collect()
     
@@ -244,50 +274,89 @@ def export_binary_eur(cluster_idx, num_clusters=10, batch_size = 256):
     mt1 = mt1.filter_cols(hl.literal(cluster_pheno_id_list).contains(mt1.pheno_id))
     
     pop_list = sorted(pop_set)
+
+    # we now split the mt into those with hq filtered meta analysis results and those without
+    mt1_hq = mt1.filter_cols(mt1.has_hq_meta_analysis).drop('has_hq_meta_analysis')
+    keyed_mt_hq_def = meta_mt0[mt1_hq.row_key,mt1_hq.col_key]
+
+    mt1_hq_undef = mt1.filter_cols(~mt1.has_hq_meta_analysis).drop('has_hq_meta_analysis')
+    keyed_mt_hq_undef = meta_mt0[mt1_hq_undef.row_key,mt1_hq_undef.col_key]
+
+    get_export_path = lambda batch_idx: f'{ldprune_dir}/release/{trait_category}/{"-".join(pop_list)}_batch{batch_idx}/subbatch{cluster_idx}'
     
+    
+    def _shortcut_export_keyed(keyed_mt, mt1, use_hq, batch_idx):
+        return _export_using_keyed_mt(keyed_mt, mt1=mt1, use_hq=use_hq, batch_idx=batch_idx,
+                                      get_export_path=get_export_path,
+                                      batch_size=batch_size, pop_set=pop_set,
+                                      pop_list=pop_list, meta_fields=meta_fields, fields=fields,
+                                      meta_field_rename_dict=meta_field_rename_dict,
+                                      meta_hq_field_rename_dict=meta_hq_field_rename_dict,
+                                      field_rename_dict=field_rename_dict)
+    
+
+    # export sumstats with hq columns
+    if (mt1_hq.count_cols() > 0):
+        batch_idx_hq = _shortcut_export_keyed(keyed_mt_hq_def, mt1=mt1_hq, use_hq=True, batch_idx=1)
+    else:
+        batch_idx_hq = 1
+    
+    # export sumstats without hq columns
+    if (mt1_hq_undef.count_cols() > 0):
+        _ = _shortcut_export_keyed(keyed_mt_hq_undef, mt1=mt1_hq_undef, use_hq=False, batch_idx=batch_idx_hq)
+
+    end = time()
+    print(f'\nExport complete for:\n{trait_types}\n{pop_list}\ntime: {round((end-start)/3600,2)} hrs')
+
+
+def _export_using_keyed_mt(keyed_mt, mt1, use_hq, batch_idx, get_export_path,
+                           batch_size, pop_set, pop_list, meta_fields, fields,
+                           meta_field_rename_dict, meta_hq_field_rename_dict,
+                           field_rename_dict):
     annotate_dict = {}
-    
-    keyed_mt = meta_mt0[mt1.row_key,mt1.col_key]
-    if len(pop_set)>1:
-        for field in meta_fields: # NOTE: Meta-analysis columns go before per-population columns
+    if len(pop_set)>1: # NOTE: Meta-analysis columns go before per-population columns
+        if use_hq:
+            for field in meta_fields:
+                field_expr = keyed_mt.meta_analysis_hq[field][0]
+                annotate_dict.update({f'{meta_hq_field_rename_dict[field]}': hl.if_else(hl.is_nan(field_expr),
+                                                                                hl.str(field_expr),
+                                                                                hl.format('%.3e', field_expr))})   
+        for field in meta_fields:
             field_expr = keyed_mt.meta_analysis[field][0]
             annotate_dict.update({f'{meta_field_rename_dict[field]}': hl.if_else(hl.is_nan(field_expr),
-                                                                      hl.str(field_expr),
-                                                                      hl.format('%.3e', field_expr))})
-
+                                                                    hl.str(field_expr),
+                                                                    hl.format('%.3e', field_expr))})
     for field in fields:
         for pop_idx, pop in enumerate(pop_list):
             field_expr = mt1.summary_stats[field][pop_idx]
             annotate_dict.update({f'{field_rename_dict[field]}_{pop}': hl.if_else(hl.is_nan(field_expr),
-                                                                       hl.str(field_expr),
-                                                                       hl.str(field_expr) if field=='low_confidence' else hl.format('%.3e', field_expr))})
+                                                                    hl.str(field_expr),
+                                                                    hl.str(field_expr) if field=='low_confidence' else hl.format('%.3e', field_expr))})
     
+    new_ncol = mt1.count_cols()
     mt2 = mt1.annotate_entries(**annotate_dict)
     
     mt2 = mt2.filter_cols(mt2.coding != 'zekavat_20200409')
     mt2 = mt2.key_cols_by('pheno_id')
     mt2 = mt2.key_rows_by().drop('locus','alleles','summary_stats') # row fields that are no longer included: 'gene','annotation'
+            
     print(mt2.describe())
-    
-    batch_idx = 1
-    get_export_path = lambda batch_idx: f'{ldprune_dir}/release/{trait_category}/{"-".join(pop_list)}_batch{batch_idx}/subbatch{cluster_idx}'
-
     while hl.hadoop_is_dir(get_export_path(batch_idx)):
         batch_idx += 1
-    print(f'\nExporting {len(cluster_pheno_id_list)} phenos to: {get_export_path(batch_idx)}\n')
+    print(f'\nExporting {new_ncol} phenos to: {get_export_path(batch_idx)}\n')
     hl.experimental.export_entries_by_col(mt = mt2,
-                                          path = get_export_path(batch_idx),
-                                          bgzip = True,
-                                          batch_size = batch_size,
-                                          use_string_key_as_file_name = True,
-                                          header_json_in_file = False)
-    end = time()
-    print(f'\nExport complete for:\n{trait_types}\n{pop_list}\ntime: {round((end-start)/3600,2)} hrs')
-    
-def export_subset(num_pops=None, phenocode=None):
-    mt0 = get_final_sumstats_mt_for_export()
+                                            path = get_export_path(batch_idx),
+                                            bgzip = True,
+                                            batch_size = batch_size,
+                                            use_string_key_as_file_name = True,
+                                            header_json_in_file = False)
+    return batch_idx
+
+
+def export_subset(num_pops=None, phenocode=None, exponentiate_p=False, suffix=None):
+    mt0 = get_final_sumstats_mt_for_export(exponentiate_p=exponentiate_p)
     if phenocode != None:
-        print('\nFiltering to traits with phenocode: {phenocode}\n')
+        print(f'\nFiltering to traits with phenocode: {phenocode}\n')
         mt0 = mt0.filter_cols(mt0.phenocode==phenocode)
     if num_pops is None:
         for num_pops in range(1,7):
@@ -295,18 +364,23 @@ def export_subset(num_pops=None, phenocode=None):
                                trait_types='all', 
                                batch_size=256, 
                                mt = mt0, 
-                               export_path_str=phenocode)
+                               export_path_str=phenocode,
+                               exponentiate_p=exponentiate_p,
+                               suffix=suffix)
     else:
         export_results(num_pops=num_pops, 
                        trait_types='all', 
                        batch_size=256, 
                        mt = mt0, 
-                       export_path_str=phenocode)
+                       export_path_str=phenocode,
+                       exponentiate_p=exponentiate_p,
+                       suffix=suffix)
                 
     
 def export_loo(batch_size=256, update=False):
     r'''
     For exporting p-values of meta-analysis of leave-one-out population sets
+    NOTE: Not updated for new hq meta analysis
     '''
     meta_mt0 = hl.read_matrix_table(get_meta_analysis_results_path())
     
@@ -360,7 +434,8 @@ def export_loo(batch_size=256, update=False):
                                           batch_size = batch_size,
                                           use_string_key_as_file_name = True,
                                           header_json_in_file = False)
-    
+
+
 def export_updated_phenos(num_pops=None):
     old_manifest = hl.import_table(get_pheno_manifest_path(),
                                    key=['trait_type','phenocode','pheno_sex',
