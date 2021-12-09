@@ -15,7 +15,51 @@ def annotate_nearest_gene(t, add_contig: bool = False, add_only_gene_symbols_as_
 
 
 def filter_lambda_gc(lambda_gc):
-    return (lambda_gc > 0.5) & (lambda_gc < 2)
+    return (lambda_gc > 0.5) & (lambda_gc < 5)
+
+
+def load_meta_analysis_results(h2_filter: str = 'both', exponentiate_p: bool = False):
+    """ Wrapper function for get_meta_analysis_results_path that returns the HailTable/MT.
+    Enables creation of a file including both the original meta analysis and the h2 qc pass
+    meta analysis.
+
+    Parameters
+    ----------
+    h2_filter: `str`
+    Can be 'both', 'none', or 'pass'. 'both' loads a merged table; 'none' loads a table with meta
+    analysis results using all phenotype-ancestry pairs; 'pass' loads meta analysis using only those
+    results that pass QC.
+    """
+    def exponentiate_p_tab(mt):
+        return mt.annotate_entries(meta_analysis = mt.meta_analysis.map(lambda x: x.annotate(Pvalue=hl.exp(x.Pvalue),
+                                                                                              Pvalue_het=hl.exp(x.Pvalue_het))))
+
+    if h2_filter.lower() in ['none','pass']:
+        filter_flag = h2_filter.lower() == 'pass'
+        meta_path = get_meta_analysis_results_path(filter_pheno_h2_qc=filter_flag, extension='mt')
+        mt = hl.read_matrix_table(meta_path)
+        
+        if exponentiate_p:
+            mt = exponentiate_p_tab(mt)
+
+        return mt
+
+    elif h2_filter.lower() == 'both':
+        # here we merge the two MTs
+        mt_true = hl.read_matrix_table(get_meta_analysis_results_path(filter_pheno_h2_qc=True, extension='mt'))
+        mt_false = hl.read_matrix_table(get_meta_analysis_results_path(filter_pheno_h2_qc=False, extension='mt'))
+        
+        if exponentiate_p:
+            mt_true = exponentiate_p_tab(mt_true)
+            mt_false = exponentiate_p_tab(mt_false)
+        
+        mt_all = mt_false.annotate_entries(meta_analysis_hq = mt_true[mt_false.row_key, mt_false.col_key].meta_analysis)
+        mt_all = mt_all.annotate_cols(meta_analysis_data_hq = mt_true.cols()[mt_all.col_key].meta_analysis_data)
+        mt_all = mt_all.annotate_cols(has_hq_meta_analysis = hl.is_defined(hl.len(mt_all.meta_analysis_data_hq[0].pop)))
+        return mt_all
+    
+    else:
+        raise NotImplementedError('Only none, pass, both implemented for meta analysis input.')
 
 
 def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = True,
