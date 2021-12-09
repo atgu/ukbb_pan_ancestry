@@ -14,7 +14,7 @@ from itertools import combinations
 from time import time
 from math import ceil
 from ukbb_pan_ancestry.utils.results import load_final_sumstats_mt, get_meta_analysis_results_path, load_meta_analysis_results, get_pheno_manifest_path
-
+from ukbb_pan_ancestry.resources import POPS
 
 bucket = 'gs://ukb-diverse-pops'
 public_bucket = 'gs://ukb-diverse-pops-public'
@@ -112,8 +112,6 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
                             ref = mt0.alleles[0],
                             alt = mt0.alleles[1])
     
-    all_pops = ['AFR', 'AMR', 'CSA', 'EAS', 'EUR', 'MID']
-    
     if trait_types == 'all':
         trait_types_to_run = ['continuous','biomarkers','categorical','phecode', 'icd10', 'prescriptions'] # list of which trait_type to run
     elif trait_types == 'quant':
@@ -121,7 +119,7 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
     elif trait_types == 'binary':
         trait_types_to_run = ['categorical','phecode', 'icd10', 'prescriptions']
 
-    pop_sets = [set(i) for i in list(combinations(all_pops, num_pops))] # list of exact set of pops for which phenotype is defined
+    pop_sets = [set(i) for i in list(combinations(POPS, num_pops))] # list of exact set of pops for which phenotype is defined
     
     quant_trait_types = all_quant_trait_types.intersection(trait_types_to_run) # get list of quant trait types to run
     binary_trait_types = all_binary_trait_types.intersection(trait_types_to_run) # get list of binary trait types to run
@@ -226,11 +224,6 @@ def export_binary_eur(cluster_idx, num_clusters=10, batch_size = 256, exponentia
     meta_fields = binary_meta_fields
     fields = binary_fields
     
-    # dictionaries for renaming fields
-    meta_field_rename_dict = binary_meta_field_rename_dict
-    meta_hq_field_rename_dict = binary_meta_hq_field_rename_dict
-    field_rename_dict = binary_field_rename_dict
-    
     meta_fields += ['BETA','SE','Pvalue','Pvalue_het']
     fields += ['BETA','SE','Pvalue','low_confidence']
 
@@ -272,9 +265,9 @@ def export_binary_eur(cluster_idx, num_clusters=10, batch_size = 256, exponentia
                                       get_export_path=get_export_path,
                                       batch_size=batch_size, pop_set=pop_set,
                                       pop_list=pop_list, meta_fields=meta_fields, fields=fields,
-                                      meta_field_rename_dict=meta_field_rename_dict,
-                                      meta_hq_field_rename_dict=meta_hq_field_rename_dict,
-                                      field_rename_dict=field_rename_dict)
+                                      meta_field_rename_dict=binary_meta_field_rename_dict,
+                                      meta_hq_field_rename_dict=binary_meta_hq_field_rename_dict,
+                                      field_rename_dict=binary_field_rename_dict)
     
 
     # export sumstats with hq columns
@@ -387,10 +380,8 @@ def export_all_loo(batch_size=256, update=False, exponentiate_p=False,
                                              meta_mt0.alleles[0]+':'+
                                              meta_mt0.alleles[1]))
 
-    all_pops = sorted(['AFR', 'AMR', 'CSA', 'EAS', 'EUR', 'MID'])
-
     for num_pops in range(n_minimum_pops,7):
-        pop_sets = [set(i) for i in list(combinations(all_pops, num_pops))]
+        pop_sets = [set(i) for i in list(combinations(sorted(POPS), num_pops))]
         for pop_set in pop_sets:
             pop_list = sorted(pop_set)
             meta_mt0_thisset = meta_mt0.filter_cols(meta_mt0.pheno_data.pop == hl.literal(pop_list))
@@ -402,7 +393,7 @@ def export_all_loo(batch_size=256, update=False, exponentiate_p=False,
 
 
 def export_loo(meta_mt0, batch_size=256,
-               pop_list=sorted(['AFR', 'AMR', 'CSA', 'EAS', 'EUR', 'MID']), 
+               pop_list=sorted(POPS), 
                suffix=None, h2_filter: bool=True):
     r'''
     For exporting p-values of meta-analysis of leave-one-out population sets.
@@ -506,7 +497,7 @@ def make_pheno_manifest(export=True):
                           'num_pops': hl.len(ht.pheno_data.pop)})
      
     for field in ['n_cases','n_controls','heritability','lambda_gc']:
-        for pop in ['AFR','AMR','CSA','EAS','EUR','MID']:
+        for pop in POPS:
             new_field = field if field!='heritability' else 'saige_heritability' # new field name (only applicable to saige heritability)
             idx = ht.pheno_data.pop.index(pop)
             field_expr = ht.pheno_data[field]
