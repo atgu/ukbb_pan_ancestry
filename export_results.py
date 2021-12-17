@@ -559,11 +559,13 @@ if __name__=="__main__":
     if args.export_results:
         export_results(num_pops=args.num_pops,
                        trait_types=args.trait_types,
-                       phenocode=args.phenocode,
                        exponentiate_p=args.exponentiate_p,
                        suffix=args.suffix)
     elif args.export_all_results:
+        # If phenocode is not provided, None will be provided below 
+        # resulting in a full export across all pop combinations
         export_subset(exponentiate_p=args.exponentiate_p,
+                      phenocode=args.phenocode,
                       suffix=args.suffix)
     elif args.export_binary_eur:
         export_binary_eur(cluster_idx=args.cluster_idx,
