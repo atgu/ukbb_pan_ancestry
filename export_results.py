@@ -551,7 +551,8 @@ if __name__=="__main__":
     parser.add_argument('--make-pheno-manifest', action='store_true')
     parser.add_argument('--export-updated-phenos', action='store_true')
     parser.add_argument('--cluster-idx',type=int, default=None, help='cluster index for splitting export of binary EUR traits')
-    parser.add_argument('--batch_size', type=int, default=256, help='max number of phenotypes per batch for export_entries_by_col')
+    parser.add_argument('--num-clusters',type=int, default=None, help='total number of clusters used in splitting export of binary EUR traits')
+    parser.add_argument('--batch-size', type=int, default=256, help='max number of phenotypes per batch for export_entries_by_col')
     parser.add_argument('--exponentiate-p', action='store_true', help='enables regular scale p-values')
     parser.add_argument('--suffix', type=str, default=None, help='if provided, will export to a folder specificed by suffix (added to default directory, so just give a folder name here')
     args = parser.parse_args()
@@ -559,6 +560,7 @@ if __name__=="__main__":
     if args.export_results:
         export_results(num_pops=args.num_pops,
                        trait_types=args.trait_types,
+                       batch_size=args.batch_size,
                        exponentiate_p=args.exponentiate_p,
                        suffix=args.suffix)
     elif args.export_all_results:
@@ -568,7 +570,9 @@ if __name__=="__main__":
                       phenocode=args.phenocode,
                       suffix=args.suffix)
     elif args.export_binary_eur:
-        export_binary_eur(cluster_idx=args.cluster_idx,
+        export_binary_eur(batch_size=args.batch_size,
+                          cluster_idx=args.cluster_idx,
+                          num_clusters=args.num_clusters,
                           exponentiate_p=args.exponentiate_p,
                           suffix=args.suffix)
     elif args.make_pheno_manifest:
