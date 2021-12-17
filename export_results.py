@@ -9,6 +9,8 @@ Export flat file summary statistics from matrix tables
 """
 
 import argparse
+import os, re
+from sys import path
 import hail as hl
 from itertools import combinations
 from time import time
@@ -89,7 +91,7 @@ def get_final_sumstats_mt_for_export(exponentiate_p):
 
 def export_results(num_pops, trait_types='all', batch_size=256, mt=None, 
                    export_path_str=None, skip_binary_eur=True, exponentiate_p=False,
-                   suffix=None):
+                   suffix=None, skip_existing_folders=False):
     r'''
     `num_pops`: exact number of populations for which phenotype is defined
     `trait_types`: trait category (options: all, binary, quant)
@@ -148,7 +150,19 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
         meta_fields += ['BETA','SE','Pvalue','Pvalue_het']
         fields += ['BETA','SE','Pvalue','low_confidence']
             
-        for pop_set in pop_sets:    
+        for pop_set in pop_sets:
+            
+            get_export_path = lambda batch_idx: f'{ldprune_dir}/{"export_results" if suffix is None else suffix}/{"" if export_path_str is None else f"{export_path_str}/"}{trait_category}/{"-".join(pop_list)}_batch{batch_idx}'
+            
+            if skip_existing_folders:
+                # We check if there are any folders with this set of ancestries; if so, skip
+                path_to_export = os.path.dirname(get_export_path(1))
+                paths_found = [x['path'] for x in hl.hadoop_ls(path_to_export) if x['is_dir']]
+                anc_found = [re.sub('_batch[0-9]{1,}$','',os.path.dirname(x)) for x in paths_found]
+                if "-".join(pop_list) in anc_found:
+                    print(f'\nSkipping {"-".join(pop_list)} as its export folder was found\n')
+                    continue
+            
             start = time()
             
             if (pop_set == {'EUR'} and trait_category == 'binary') and skip_binary_eur: # run EUR-only binary traits separately
@@ -172,8 +186,6 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
 
             mt1_hq_undef = mt1.filter_cols(~mt1.has_hq_meta_analysis).drop('has_hq_meta_analysis')
             keyed_mt_hq_undef = meta_mt0[mt1_hq_undef.row_key,mt1_hq_undef.col_key]
-
-            get_export_path = lambda batch_idx: f'{ldprune_dir}/{"export_results" if suffix is None else suffix}/{"" if export_path_str is None else f"{export_path_str}/"}{trait_category}/{"-".join(pop_list)}_batch{batch_idx}'
 
 
             def _shortcut_export_keyed(keyed_mt, mt1, use_hq, batch_idx):
@@ -328,7 +340,8 @@ def _export_using_keyed_mt(keyed_mt, mt1, use_hq, batch_idx, get_export_path,
     return batch_idx
 
 
-def export_subset(num_pops=None, phenocode=None, exponentiate_p=False, suffix=None):
+def export_subset(num_pops=None, phenocode=None, exponentiate_p=False, suffix=None,
+                  skip_existing_folders=False):
     mt0 = get_final_sumstats_mt_for_export(exponentiate_p=exponentiate_p)
     if phenocode != None:
         print(f'\nFiltering to traits with phenocode: {phenocode}\n')
@@ -341,7 +354,8 @@ def export_subset(num_pops=None, phenocode=None, exponentiate_p=False, suffix=No
                                mt = mt0, 
                                export_path_str=phenocode,
                                exponentiate_p=exponentiate_p,
-                               suffix=suffix)
+                               suffix=suffix,
+                               skip_existing_folders=skip_existing_folders)
     else:
         export_results(num_pops=num_pops, 
                        trait_types='all', 
@@ -349,7 +363,8 @@ def export_subset(num_pops=None, phenocode=None, exponentiate_p=False, suffix=No
                        mt = mt0, 
                        export_path_str=phenocode,
                        exponentiate_p=exponentiate_p,
-                       suffix=suffix)
+                       suffix=suffix,
+                       skip_existing_folders=skip_existing_folders)
 
 
 def export_all_loo(batch_size=256, update=False, exponentiate_p=False, 
@@ -555,6 +570,7 @@ if __name__=="__main__":
     parser.add_argument('--batch-size', type=int, default=256, help='max number of phenotypes per batch for export_entries_by_col')
     parser.add_argument('--exponentiate-p', action='store_true', help='enables regular scale p-values')
     parser.add_argument('--suffix', type=str, default=None, help='if provided, will export to a folder specificed by suffix (added to default directory, so just give a folder name here')
+    parser.add_argument('--skip-existing-folders', action='store_true', help='for export_results and export_all_results, will skip a particular export if it exists (e.g., if quant/AFR_batch* exists, it is assumed the quant trait AFR export completed and it is skipped)')
     args = parser.parse_args()
 
     if args.export_results:
@@ -562,13 +578,15 @@ if __name__=="__main__":
                        trait_types=args.trait_types,
                        batch_size=args.batch_size,
                        exponentiate_p=args.exponentiate_p,
-                       suffix=args.suffix)
+                       suffix=args.suffix, 
+                       skip_existing_folders=args.skip_existing_folders)
     elif args.export_all_results:
         # If phenocode is not provided, None will be provided below 
         # resulting in a full export across all pop combinations
         export_subset(exponentiate_p=args.exponentiate_p,
                       phenocode=args.phenocode,
-                      suffix=args.suffix)
+                      suffix=args.suffix, 
+                      skip_existing_folders=args.skip_existing_folders)
     elif args.export_binary_eur:
         export_binary_eur(batch_size=args.batch_size,
                           cluster_idx=args.cluster_idx,

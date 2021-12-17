@@ -1,0 +1,4 @@
+2021-12-17 18:40:38 Hail: INFO: Running Hail version 0.2.77-684f32d73643
+2021-12-17 18:40:39 SparkContext: WARN: Using an existing SparkContext; some configuration may not take effect.
+2021-12-17 18:40:44 GoogleCloudStorageImpl: INFO: Repairing batch of 1 missing directories.
+2021-12-17 18:40:44 GoogleCloudStorageImpl: INFO: Successfully repaired 1/1 implicit directories.
