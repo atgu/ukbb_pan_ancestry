@@ -153,6 +153,7 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
         for pop_set in pop_sets:
             
             get_export_path = lambda batch_idx: f'{ldprune_dir}/{"export_results" if suffix is None else suffix}/{"" if export_path_str is None else f"{export_path_str}/"}{trait_category}/{"-".join(pop_list)}_batch{batch_idx}'
+            pop_list = sorted(pop_set)
             
             if skip_existing_folders:
                 # We check if there are any folders with this set of ancestries; if so, skip
@@ -177,8 +178,6 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
             if col_ct==0:
                 print(f'\nSkipping {trait_types},{sorted(pop_set)}, no phenotypes found\n')
                 continue
-            
-            pop_list = sorted(pop_set)
             
             # we now split the mt into those with hq filtered meta analysis results and those without
             mt1_hq = mt1.filter_cols(mt1.has_hq_meta_analysis).drop('has_hq_meta_analysis')
