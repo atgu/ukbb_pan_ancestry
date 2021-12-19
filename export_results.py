@@ -201,7 +201,7 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
             if (mt1_hq.count_cols() > 0):
                 batch_idx_hq = _shortcut_export_keyed(keyed_mt_hq_def, mt1=mt1_hq, use_hq=True, batch_idx=1)
             else:
-                batch_idx_hq = 1
+                batch_idx_hq = 0
             
             # export sumstats without hq columns
             if (mt1_hq_undef.count_cols() > 0):
@@ -285,11 +285,11 @@ def export_binary_eur(cluster_idx, num_clusters=10, batch_size = 256, exponentia
     if (mt1_hq.count_cols() > 0):
         batch_idx_hq = _shortcut_export_keyed(keyed_mt_hq_def, mt1=mt1_hq, use_hq=True, batch_idx=1)
     else:
-        batch_idx_hq = 1
+        batch_idx_hq = 0
     
     # export sumstats without hq columns
     if (mt1_hq_undef.count_cols() > 0):
-        _ = _shortcut_export_keyed(keyed_mt_hq_undef, mt1=mt1_hq_undef, use_hq=False, batch_idx=batch_idx_hq)
+        _ = _shortcut_export_keyed(keyed_mt_hq_undef, mt1=mt1_hq_undef, use_hq=False, batch_idx=batch_idx_hq+1)
 
     end = time()
     print(f'\nExport complete for:\n{trait_types}\n{pop_list}\ntime: {round((end-start)/3600,2)} hrs')
