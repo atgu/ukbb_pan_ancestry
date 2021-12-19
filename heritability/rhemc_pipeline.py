@@ -2,8 +2,11 @@ __author__ = 'Rahul Gupta'
 
 import hail as hl
 
-#hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'AUTO',
-#                    'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
+# hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'AUTO',
+#                     'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
+
+# import sys
+# sys.path.append('/Users/rahulgupta/Desktop/')
 
 import hailtop.batch as hb
 import numpy as np
@@ -346,7 +349,7 @@ def generate_geno_annot_split(path_geno, path_annot, ancestries, args, nbins):
                                       hl.literal(ancestries)))
         af_ht_f = af_ht_f.filter(hl.all(lambda x: (af_ht.af[x] >= args.maf) & \
                                                   (af_ht.af[x] <= (1-args.maf))), 
-                                      hl.literal(ancestries)))
+                                      hl.literal(ancestries))
         mt_maf = mt.filter_rows(hl.is_defined(af_ht_f[mt.row_key]))
 
         # remove relateds
@@ -1183,9 +1186,7 @@ if __name__ == '__main__':
                         help='Path for pipeline log file. Note that logs will be produced when ' + \
                             'creating phenotype files as well.')
     parser.add_argument('--use-fuse', action='store_true',
-                        help='If enabled, will localize individual level data with GCS fuse.')                    
-                    help='If enabled, will localize individual level data with GCS fuse.')                    
-                        help='If enabled, will localize individual level data with GCS fuse.')                    
+                        help='If enabled, will localize individual level data with GCS fuse.')                 
     parser.add_argument('--approx-quantiles', action='store_true',
                         help='If enabled, will use approximate quantiles for LD score bins.' + \
                             'Note that this is non-deterministic.')

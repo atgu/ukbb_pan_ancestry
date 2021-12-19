@@ -154,12 +154,12 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
             
             get_export_path = lambda batch_idx: f'{ldprune_dir}/{"export_results" if suffix is None else suffix}/{"" if export_path_str is None else f"{export_path_str}/"}{trait_category}/{"-".join(pop_list)}_batch{batch_idx}'
             pop_list = sorted(pop_set)
-            
+
             if skip_existing_folders:
                 # We check if there are any folders with this set of ancestries; if so, skip
                 path_to_export = os.path.dirname(get_export_path(1))
                 paths_found = [x['path'] for x in hl.hadoop_ls(path_to_export) if x['is_dir']]
-                anc_found = [re.sub('_batch[0-9]{1,}$','',os.path.dirname(x)) for x in paths_found]
+                anc_found = [re.sub('_batch[0-9]{1,}$','',os.path.basename(x)) for x in paths_found]
                 if "-".join(pop_list) in anc_found:
                     print(f'\nSkipping {"-".join(pop_list)} as its export folder was found\n')
                     continue
@@ -205,7 +205,7 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
             
             # export sumstats without hq columns
             if (mt1_hq_undef.count_cols() > 0):
-                _shortcut_export_keyed(keyed_mt_hq_undef, mt1=mt1_hq_undef, use_hq=False, batch_idx=batch_idx_hq)
+                _shortcut_export_keyed(keyed_mt_hq_undef, mt1=mt1_hq_undef, use_hq=False, batch_idx=batch_idx_hq+1)
             
             end = time()
             print(f'\nExport complete for:\n{trait_types}\n{pop_list}\ntime: {round((end-start)/3600,2)} hrs')
@@ -331,11 +331,11 @@ def _export_using_keyed_mt(keyed_mt, mt1, use_hq, batch_idx, get_export_path,
         batch_idx += 1
     print(f'\nExporting {new_ncol} phenos to: {get_export_path(batch_idx)}\n')
     hl.experimental.export_entries_by_col(mt = mt2,
-                                            path = get_export_path(batch_idx),
-                                            bgzip = True,
-                                            batch_size = batch_size,
-                                            use_string_key_as_file_name = True,
-                                            header_json_in_file = False)
+                                          path = get_export_path(batch_idx),
+                                          bgzip = True,
+                                          batch_size = batch_size,
+                                          use_string_key_as_file_name = True,
+                                          header_json_in_file = False)
     return batch_idx
 
 
