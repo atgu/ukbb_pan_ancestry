@@ -232,11 +232,8 @@ def export_binary_eur(cluster_idx, num_clusters=10, batch_size = 256, exponentia
     trait_types_to_run = ['categorical','phecode', 'icd10', 'prescriptions'] # list of which trait_type to run
         
     # fields specific to each category of trait    
-    meta_fields = binary_meta_fields
-    fields = binary_fields
-    
-    meta_fields += ['BETA','SE','Pvalue','Pvalue_het']
-    fields += ['BETA','SE','Pvalue','low_confidence']
+    meta_fields = binary_meta_fields + ['BETA','SE','Pvalue','Pvalue_het']
+    fields = binary_fields + ['BETA','SE','Pvalue','low_confidence']
 
     trait_category = 'binary'        
     trait_types = all_binary_trait_types.intersection(trait_types_to_run) # get list of binary trait types to run
