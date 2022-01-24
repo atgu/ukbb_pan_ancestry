@@ -21,8 +21,8 @@ logger.addHandler(logging.StreamHandler(sys.stderr))
 bucket = 'gs://ukb-diverse-pops'
 root = f'{bucket}/results'
 
-HAIL_DOCKER_IMAGE = 'gcr.io/ukbb-diversepops-neale/hail_utils:5.7'
-SAIGE_DOCKER_IMAGE = 'wzhou88/saige:0.36.6'
+HAIL_DOCKER_IMAGE = 'gcr.io/ukbb-diversepops-neale/hail_utils:6.1'
+SAIGE_DOCKER_IMAGE = 'gcr.io/ukbb-diversepops-neale/saige:0.5'
 QQ_DOCKER_IMAGE = 'konradjk/saige_qq:0.2'
 
 
@@ -104,7 +104,8 @@ def main(args):
                 fit_null_task = fit_null_glmm(p, null_glmm_root, pheno_exports[stringify_pheno_key_dict(pheno_key_dict)],
                                               pheno_key_dict['trait_type'], covariates,
                                               get_ukb_grm_plink_path(pop, iteration, window), SAIGE_DOCKER_IMAGE,
-                                              inv_normalize=False, n_threads=n_threads, min_covariate_count=1)
+                                              inv_normalize=False, n_threads=n_threads, min_covariate_count=1,
+                                              non_pre_emptible=args.non_pre_emptible, storage='100Gi')
                 fit_null_task.attributes.update({'pop': pop})
                 fit_null_task.attributes.update(copy.deepcopy(pheno_key_dict))
                 model_file = fit_null_task.null_glmm.rda
@@ -155,6 +156,7 @@ def main(args):
 
         result_dir = f'{root}/result/{pop}'
         overwrite_results = args.overwrite_results
+        log_pvalue = True
         for i, pheno_key_dict in enumerate(phenos_to_run):
             if stringify_pheno_key_dict(pheno_key_dict) not in null_models: continue
             model_file, variance_ratio_file = null_models[stringify_pheno_key_dict(pheno_key_dict)]
@@ -182,7 +184,7 @@ def main(args):
                         samples_file = p.read_input(get_ukb_samples_file_path(pop, iteration))
                         saige_task = run_saige(p, results_path, model_file, variance_ratio_file, vcf_file, samples_file,
                                                SAIGE_DOCKER_IMAGE, trait_type=pheno_key_dict['trait_type'], use_bgen=use_bgen,
-                                               chrom=chromosome)
+                                               chrom=chromosome, log_pvalue=log_pvalue)
                         saige_task.attributes.update({'interval': interval, 'pop': pop})
                         saige_task.attributes.update(copy.deepcopy(pheno_key_dict))
                         saige_tasks.append(saige_task)
@@ -207,7 +209,8 @@ def main(args):
                                                    saige_tasks, get_ukb_vep_path(), HAIL_DOCKER_IMAGE,
                                                    saige_log=saige_log, analysis_type=analysis_type,
                                                    n_threads=n_threads, null_glmm_log=null_glmm_root,
-                                                   reference=reference, legacy_annotations=True)
+                                                   reference=reference, legacy_annotations=True,
+                                                   log_pvalue=log_pvalue)
                 load_task.attributes['pop'] = pop
                 res_tasks.append(load_task)
                 qq_export, qq_plot = qq_plot_results(p, pheno_results_dir, res_tasks, HAIL_DOCKER_IMAGE, QQ_DOCKER_IMAGE, n_threads=n_threads)
@@ -236,6 +239,7 @@ if __name__ == '__main__':
     parser.add_argument('--overwrite_results', help='Force run of SAIGE tests', action='store_true')
     parser.add_argument('--overwrite_hail_results', help='Force run of results loading', action='store_true')
     parser.add_argument('--local_test', help='Local test of pipeline', action='store_true')
+    parser.add_argument('--non_pre_emptible', help='Local test of pipeline', action='store_true')
     parser.add_argument('--skip_case_count_filter', help='Skip running SAIGE tests', action='store_true')
     parser.add_argument('--phenos', help='Comma-separated list of trait_type-phenocode-pheno_sex-coding-modifier regexes '
                                          '(e.g. continuous-50-both_sexes--,icd10-E1.*,brain_mri-.* )')

@@ -85,10 +85,11 @@ def generate_sumstats_mt(all_variant_outputs, heritability_dict, pheno_dict, tem
     mt = patch_mt_keys(mt)
     key = mt.col_key.annotate(phenocode=format_pheno_dir(mt.phenocode))
     mt = check_and_annotate_with_dict(mt, pheno_dict, key)
+    if mt.inv_normalized.dtype == hl.tstr:
+        mt = mt.annotate_cols(inv_normalized=hl.bool(mt.inv_normalized))
     key = mt.col_key.annotate(phenocode=format_pheno_dir(mt.phenocode))
     mt = check_and_annotate_with_dict(mt, heritability_dict, key)
-    mt = mt.filter_cols(mt.phenocode != "").drop('varT', 'varTstar', 'Is.SPA.converge',
-                                                 'AC_Allele2', 'N', 'Tstat')
+    mt = mt.filter_cols(mt.phenocode != "").drop('Is.SPA.converge', 'AC_Allele2')
     mt = mt.key_rows_by('locus', 'alleles')
     return mt
 
@@ -97,6 +98,8 @@ def write_full_mt(overwrite):
     mts = []
     for pop in POPS:
         mt = hl.read_matrix_table(get_variant_results_path(pop, 'mt')).annotate_cols(pop=pop)
+        mt = mt.annotate_cols(_logged=hl.agg.any(mt.Pvalue < 0))
+        mt = mt.annotate_entries(Pvalue=hl.if_else(mt._logged, mt.Pvalue, hl.log(mt.Pvalue))).drop('_logged')
 
         mt = mt.filter_cols((mt.coding != 'zekavat_20200409') & ~mt.phenocode.contains('covid'))
         mt = apply_qc(mt)
@@ -108,6 +111,15 @@ def write_full_mt(overwrite):
         mt = re_colkey_mt(mt)
         mt = mt.select_cols(pheno_data=mt.col_value)
         mt = mt.select_entries(summary_stats=mt.entry)
+        # Fix for doubled phenos (new runs)
+        mt = mt.collect_cols_by_key()
+        def get_index(mt):
+            return hl.sorted(hl.enumerate(mt.pheno_data), key=lambda x: x[1].saige_version.split('_')[1], reverse=True)[0][0]
+        mt = mt.select_entries(summary_stats=mt.summary_stats[get_index(mt)])
+        mt = mt.select_cols(pheno_data=mt.pheno_data[get_index(mt)])
+        if pop == 'EUR':
+            x = mt.filter_cols(mt.phenocode == '30610')
+            print(x.aggregate_entries(hl.agg.counter(x.summary_stats.SE == 0)))
         mts.append(mt)
 
     full_mt = mts[0]
@@ -123,6 +135,7 @@ def write_full_mt(overwrite):
     full_mt.write(get_variant_results_path('full'), overwrite)
     print('Pops per pheno:')
     pprint(dict(Counter(full_mt.aggregate_cols(hl.agg.counter(hl.len(full_mt.pheno_data))))))
+
 
 
 def reannotate_cols(mt, pop):
@@ -189,13 +202,17 @@ def main(args):
             def _matches_any_pheno(pheno_path, phenos_to_match):
                 return any(x for x in phenos_to_match if f'/{x}/variant_results.ht' in pheno_path)
 
-            all_variant_outputs = [x for x in all_variant_outputs if not _matches_any_pheno(x, loaded_phenos)]
-
-            if args.load_only:
-                pheno_matches = set(args.load_only.split(','))
-                if '' in pheno_matches:
-                    print('WARNING: Empty string in pheno_matches. Might reload more than expected')
+            if args.force_reload:
+                pheno_matches = set(args.force_reload.split(','))
                 all_variant_outputs = [x for x in all_variant_outputs if _matches_any_pheno(x, pheno_matches)]
+            else:
+                all_variant_outputs = [x for x in all_variant_outputs if not _matches_any_pheno(x, loaded_phenos)]
+
+                if args.load_only:
+                    pheno_matches = set(args.load_only.split(','))
+                    if '' in pheno_matches:
+                        print('WARNING: Empty string in pheno_matches. Might reload more than expected')
+                    all_variant_outputs = [x for x in all_variant_outputs if _matches_any_pheno(x, pheno_matches)]
 
             print(f'Loading {len(all_variant_outputs)} additional HTs...')
             if len(all_variant_outputs) < 20:
@@ -206,10 +223,15 @@ def main(args):
                 continue
 
             mt = generate_sumstats_mt(all_variant_outputs, heritability_dict, pheno_dict,
-                                      f'{temp_bucket}/{pop}/variant_{today}', inner_mode)
+                                      f'{temp_bucket}/{pop}/variant_{today}', inner_mode, checkpoint=True)
 
             original_mt = hl.read_matrix_table(get_variant_results_path(pop, 'mt'))
             original_mt = original_mt.checkpoint(f'{temp_bucket}/{pop}/variant_before_{today}.mt', overwrite=True)
+            if args.force_reload:
+                original = original_mt.count_cols()
+                original_mt = original_mt.filter_cols(
+                    hl.literal(pheno_matches).contains(hl.delimit(list(original_mt.col_key.values()), '-')), keep=False)
+                print(f'\n\nGoing from {original} to {original_mt.count_cols()}...\n\n')
             mt = re_colkey_mt(mt)
             original_mt = re_colkey_mt(original_mt)
             mt = original_mt.union_cols(mt, row_join_type='outer')
@@ -233,6 +255,8 @@ if __name__ == '__main__':
     parser.add_argument('--run_combine_load', help='Overwrite everything', action='store_true')
     parser.add_argument('--dry_run', help='Overwrite everything', action='store_true')
     parser.add_argument('--load_only', help='Comma-separated list of trait_type-pheno-coding to run'
+                                            '(e.g. continuous-50-irnt,icd_all-E10-icd10 )')
+    parser.add_argument('--force_reload', help='Comma-separated list of trait_type-pheno-coding to force reload'
                                             '(e.g. continuous-50-irnt,icd_all-E10-icd10 )')
     parser.add_argument('--find_errors', help='Overwrite everything', action='store_true')
     parser.add_argument('--pops', help='comma-separated list')

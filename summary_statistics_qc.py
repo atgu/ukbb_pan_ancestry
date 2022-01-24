@@ -13,6 +13,7 @@ from ukbb_pan_ancestry import *
 def generate_qc_lambdas(overwrite):
     # This function could eventually read the full MT, but runs out of memory even for just EUR, so leaving split for now
     for pop in POPS:
+        if pop not in ('MID', ): continue
         if pop != 'EUR':
             mt = hl.read_matrix_table(get_variant_results_path(pop, 'mt'))
             ht = generate_lambda_ht_by_freq(mt)
@@ -40,9 +41,9 @@ def generate_final_lambdas(overwrite):
     ht = mt.annotate_cols(
         pheno_data=hl.zip(mt.pheno_data, hl.agg.array_agg(
             lambda ss: hl.agg.filter(~ss.low_confidence & mt.high_quality,
-                hl.struct(lambda_gc=hl.methods.statgen._lambda_gc_agg(ss.Pvalue),
+                hl.struct(lambda_gc=hl.methods.statgen._lambda_gc_agg(hl.exp(ss.Pvalue)),
                           n_variants=hl.agg.count_where(hl.is_defined(ss.Pvalue)),
-                          n_sig_variants=hl.agg.count_where(ss.Pvalue < 5e-8))),
+                          n_sig_variants=hl.agg.count_where(hl.exp(ss.Pvalue) < 5e-8))),
             mt.summary_stats)).map(lambda x: x[0].annotate(**x[1]))
     ).cols()
     ht = ht.checkpoint(get_analysis_data_path('lambda', 'lambdas', 'full', 'ht'), overwrite=overwrite, _read_if_exists=not overwrite)
@@ -240,18 +241,13 @@ def main(args):
         generate_final_lambdas(args.overwrite)
 
     if args.gwas_run_stats:
-        mt = hl.read_matrix_table(get_variant_results_path('full'))
+        # mt = hl.read_matrix_table(get_variant_results_path('full'))
+        # print_gwas_summary(mt)
+        mt = load_final_sumstats_mt(separate_columns_by_pop=False)
+        # print_gwas_summary(mt)
         ht = mt.cols()
         pprint(f'Phenos by number of pops: {ht.aggregate(hl.agg.counter(hl.len(ht.pheno_data)))}')
-        ht = ht.explode('pheno_data')
-        pprint(f'Total GWAS: {ht.count()}')
-
-        ht.group_by('trait_type', pop=ht.pheno_data.pop).aggregate(n_phenos=hl.agg.count()).show()
-        trait_types = ht.aggregate(hl.agg.collect_as_set(ht.trait_type))
-        ht.group_by(pop=ht.pheno_data.pop).aggregate(
-            n_samples=hl.agg.max(ht.pheno_data.n_cases + hl.or_else(ht.pheno_data.n_controls, 0)),
-            total_n_phenos=hl.agg.count(),
-            **{trait_type: hl.agg.count_where(ht.trait_type == trait_type) for trait_type in trait_types}).show()
+        return
 
         # Confirmed that the overall number matches those with genotype+phenotype data:
         # genotyped_samples = get_filtered_mt('22').cols()
@@ -277,6 +273,18 @@ def main(args):
                                      total_variants=hl.agg.sum(ht.pheno_data.n_variants)))
         print(f'Got {res.total_sig_variants:,} significant hits (out of {res.total_variants:,} total tests)')
 
+
+def print_gwas_summary(mt):
+    ht = mt.cols()
+    pprint(f'Phenos by number of pops: {ht.aggregate(hl.agg.counter(hl.len(ht.pheno_data)))}')
+    ht = ht.explode('pheno_data')
+    pprint(f'Total GWAS: {ht.count()}')
+    ht.group_by('trait_type', pop=ht.pheno_data.pop).aggregate(n_phenos=hl.agg.count()).show()
+    trait_types = ht.aggregate(hl.agg.collect_as_set(ht.trait_type))
+    ht.group_by(pop=ht.pheno_data.pop).aggregate(
+        n_samples=hl.agg.max(ht.pheno_data.n_cases + hl.or_else(ht.pheno_data.n_controls, 0)),
+        total_n_phenos=hl.agg.count(),
+        **{trait_type: hl.agg.count_where(ht.trait_type == trait_type) for trait_type in trait_types}).show()
 
 
 if __name__ == '__main__':
