@@ -12,6 +12,20 @@ def get_h2_ht():
     return 'gs://ukb-diverse-pops/rg-h2-tables/ht/h2_estimates_all.ht'
 
 
+def qc_to_flags(qc_struct):
+    map_flags_opposite = {'GWAS_run': 'GWAS_not_run',
+                          'defined_h2': 'h2_not_defined',
+                          'significant_z': 'h2_z_insignificant',
+                          'in_bounds_h2': 'out_of_bounds_h2',
+                          'normal_lambda': 'out_of_bounds_lambda',
+                          'normal_ratio': 'fail_ratio',
+                          'EUR_plus_1': 'not_EUR_plus_1'}
+    qc_struct = qc_struct.rename(map_flags_opposite)
+    qc_flags = [x for x in qc_struct.keys() if x not in ["pass_all"]]
+    first_failed_qc = hl.zip(qc_flags, [~qc_struct[x] for x in qc_flags]).filter(lambda x: x[1]).first()[0]
+    return hl.if_else(qc_struct.pass_all, 'PASS', first_failed_qc)
+
+
 def import_h2_flat_file(save_to_ht, overwrite):
     ht = hl.import_table(get_h2_flat_file(), 
                          delimiter='\t', 

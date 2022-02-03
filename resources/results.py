@@ -55,6 +55,10 @@ def get_pheno_manifest_path():
     return f'{public_bucket}/sumstats_release/phenotype_manifest.tsv.bgz'
 
 
+def get_h2_manifest_path():
+    return f'{public_bucket}/sumstats_release/h2_manifest.tsv.bgz'
+
+
 def get_clumping_results_path(pop: str = 'full', high_quality: bool = False, 
                               not_pop: bool = True, max_pops: bool = False):
     mt_name = 'max_pops' if max_pops else (f'{"not_" if not_pop else ""}{pop}' if pop in POPS else 'full_clump_results')

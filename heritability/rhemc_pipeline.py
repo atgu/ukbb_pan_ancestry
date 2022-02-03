@@ -111,8 +111,8 @@ def check_indiv_files(ancestries, args, nbins):
 
 def gscopy(source, dest):
     """Copies a blob from one bucket to another with a new name."""
-    match_source = re.search(r'gs://([A-Za-z\-]{1,})/(.+)',source)
-    match_dest = re.search(r'gs://([A-Za-z\-]{1,})/(.+)',dest)
+    match_source = re.search(r'gs://([A-Za-z1-9\-]{1,})/(.+)',source)
+    match_dest = re.search(r'gs://([A-Za-z1-9\-]{1,})/(.+)',dest)
     src_bucket = match_source.group(1)
     src_blob = match_source.group(2)
     dest_bucket = match_dest.group(1)
