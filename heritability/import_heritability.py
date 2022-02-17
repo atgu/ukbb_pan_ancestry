@@ -5,11 +5,13 @@ from ukb_common.resources.generic import PHENO_KEY_FIELDS
 
 
 def get_h2_flat_file():
-    return 'gs://ukb-diverse-pops/rg-h2-tables/h2_estimates_all_flat_211101.tsv'
+    return 'gs://ukb-diverse-pops-public-free/h2/h2_estimates_all_flat_211101.tsv'
+    #return 'gs://ukb-diverse-pops/rg-h2-tables/h2_estimates_all_flat_211101.tsv'
 
 
 def get_h2_ht():
-    return 'gs://ukb-diverse-pops/rg-h2-tables/ht/h2_estimates_all.ht'
+    return 'gs://ukb-diverse-pops-public-free/h2/h2_estimates_all.ht'
+    #return 'gs://ukb-diverse-pops/rg-h2-tables/ht/h2_estimates_all.ht'
 
 
 def qc_to_flags(qc_struct):
