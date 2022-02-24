@@ -5,7 +5,7 @@ Created on Thu May 14 21:32:56 2020
 
 Export flat file summary statistics from matrix tables
 
-@author: nbaya
+@author: nbaya, rahulg
 """
 
 import argparse
@@ -510,16 +510,53 @@ def make_per_population_n_cases():
     path_loc = f'{bucket}/combined_results/per_pop_per_sex_case_counts.ht'
     ht_saige = hl.read_matrix_table(get_variant_results_path('full')).cols()
     ht_saige = ht_saige.explode('pheno_data')
-    ht_saige = ht_saige.annotate(pop = ht_saige.pheno_data.pop).key_by(*PHENO_KEY_FIELDS, 'pop')
+    ht_saige = ht_saige.key_by(*PHENO_KEY_FIELDS, pop = ht_saige.pheno_data.pop)
 
-    if hl.hadoop_exists(path_loc):
+    if hl.hadoop_is_file(f'{path_loc}/_SUCCESS'):
         ht_per_pop = hl.read_table(path_loc)
     else:
         samples_keep = get_filtered_mt(chrom='22').cols()
+
+        # number of samples
+        # samples_keep.group_by(samples_keep.pop).aggregate(ct = hl.agg.count()).show()
+        # +-------+--------+
+        # | pop   |     ct |
+        # +-------+--------+
+        # | str   |  int64 |
+        # +-------+--------+
+        # | "AFR" |   6637 |
+        # | "AMR" |    982 |
+        # | "CSA" |   8876 |
+        # | "EAS" |   2709 |
+        # | "EUR" | 420542 |
+        # | "MID" |   1599 |
+        # +-------+--------+
+        
         mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
-        mt = mt.annotate_rows(s = hl.str(mt.userId)).key_rows_by('s')
+        mt = mt.key_rows_by(s = hl.str(mt.userId))
         mt = mt.semi_join_rows(samples_keep)
+
+        # number of samples with phenotypes
+        # ht_test = mt.rows()
+        # ht_test.group_by(ht_test.pop).aggregate(ct = hl.agg.count()).show()
+        # +-------+--------+
+        # | pop   |     ct |
+        # +-------+--------+
+        # | str   |  int64 |
+        # +-------+--------+
+        # | "AFR" |   6636 |
+        # | "AMR" |    980 |
+        # | "CSA" |   8876 |
+        # | "EAS" |   2709 |
+        # | "EUR" | 420519 |
+        # | "MID" |   1597 |
+        # | NA    |     14 |
+        # +-------+--------+
+        # note this is almost identical to https://pan.ukbb.broadinstitute.org/docs/technical-overview with 12 fewer EUR and 2 fewer MID
+        # except the 14 missing individuals are now "NA"; these seem like they were withdrawn as they are fully NA'd
+
         avoid_geq_0 = ['biomarkers', 'continuous', 'icd_first_occurrence']
+        # if continuous, simply check if the entry is defined; if categorical, we also check if != 0 because we want to count cases
         mt = mt.annotate_cols(avoid_geq_0 = hl.literal(avoid_geq_0).contains(mt.trait_type))
         mt = mt.annotate_entries(**{f'count_{sex}': hl.is_defined(mt[sex]) & hl.if_else(mt.avoid_geq_0, True, mt[sex] != 0) for sex in SEX})
         ht_per_pop = mt.group_rows_by(mt.pop
@@ -737,11 +774,11 @@ def make_pheno_manifest(export=True, export_flattened_h2_table=False):
         ht_h2.describe()
 
     if export:
-        #ht.export(get_pheno_manifest_path())
-        ht.export(f'{bucket}/combined_results/220202_phenotype_manifest.tsv.bgz')
+        ht.export(get_pheno_manifest_path())
+        #ht.export(f'{bucket}/combined_results/220224_phenotype_manifest.tsv.bgz')
         if export_flattened_h2_table:
-            ht_h2.export(f'{bucket}/combined_results/220202_h2_manifest.tsv.bgz')
-            #ht_h2.export(get_h2_manifest_path())
+            #ht_h2.export(f'{bucket}/combined_results/220224_h2_manifest.tsv.bgz')
+            ht_h2.export(get_h2_manifest_path())
     else:
         return ht
     

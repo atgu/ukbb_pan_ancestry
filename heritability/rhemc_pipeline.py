@@ -2,7 +2,8 @@ __author__ = 'Rahul Gupta'
 
 import hail as hl
 
-# hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'AUTO',
+# hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'CUSTOM',
+#                     'spark.hadoop.fs.gs.requester.pays.buckets': 'ukb-diverse-pops-public',
 #                     'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
 
 import hailtop.batch as hb
