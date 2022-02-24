@@ -137,7 +137,7 @@ def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = T
         if check_log_per_pheno_anc:
             # Check if p-values are log transformed per pheno-ancestry pair by checking if
             # all p-values <= 0. Slower due to two passes performed.
-            mt = mt.annotate_cols(tf_vec_log = hl.agg.array_agg(hl.agg.all, mt.summary_stats.Pvalue.map(lambda x: x < 0)))
+            mt = mt.annotate_cols(tf_vec_log = hl.agg.array_agg(hl.agg.all, mt.summary_stats.Pvalue.map(lambda x: x <= 0)))
             mt = mt.annotate_entries(summary_stats = hl.zip(mt.summary_stats,mt.tf_vec_log
                                                       ).map(lambda x: hl.if_else(x[1],
                                                                                  x[0].annotate(Pvalue=hl.exp(x[0].Pvalue)),

@@ -2,8 +2,9 @@ __author__ = 'Rahul Gupta'
 
 import hail as hl
 
-#hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'AUTO',
-#                    'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
+# hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'CUSTOM',
+#                     'spark.hadoop.fs.gs.requester.pays.buckets': 'ukb-diverse-pops-public',
+#                     'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
 
 import hailtop.batch as hb
 import numpy as np
@@ -111,8 +112,8 @@ def check_indiv_files(ancestries, args, nbins):
 
 def gscopy(source, dest):
     """Copies a blob from one bucket to another with a new name."""
-    match_source = re.search(r'gs://([A-Za-z\-]{1,})/(.+)',source)
-    match_dest = re.search(r'gs://([A-Za-z\-]{1,})/(.+)',dest)
+    match_source = re.search(r'gs://([A-Za-z1-9\-]{1,})/(.+)',source)
+    match_dest = re.search(r'gs://([A-Za-z1-9\-]{1,})/(.+)',dest)
     src_bucket = match_source.group(1)
     src_blob = match_source.group(2)
     dest_bucket = match_dest.group(1)
@@ -345,7 +346,7 @@ def generate_geno_annot_split(path_geno, path_annot, ancestries, args, nbins):
         af_ht_f = af_ht.filter(hl.all(lambda x: hl.is_defined(af_ht.af[x]), 
                                       hl.literal(ancestries)))
         af_ht_f = af_ht_f.filter(hl.all(lambda x: (af_ht.af[x] >= args.maf) & \
-                                                  (af_ht.af[x] <= (1-args.maf))), 
+                                                  (af_ht.af[x] <= (1-args.maf)), 
                                       hl.literal(ancestries)))
         mt_maf = mt.filter_rows(hl.is_defined(af_ht_f[mt.row_key]))
 
@@ -1183,9 +1184,7 @@ if __name__ == '__main__':
                         help='Path for pipeline log file. Note that logs will be produced when ' + \
                             'creating phenotype files as well.')
     parser.add_argument('--use-fuse', action='store_true',
-                        help='If enabled, will localize individual level data with GCS fuse.')                    
-                    help='If enabled, will localize individual level data with GCS fuse.')                    
-                        help='If enabled, will localize individual level data with GCS fuse.')                    
+                        help='If enabled, will localize individual level data with GCS fuse.')                 
     parser.add_argument('--approx-quantiles', action='store_true',
                         help='If enabled, will use approximate quantiles for LD score bins.' + \
                             'Note that this is non-deterministic.')

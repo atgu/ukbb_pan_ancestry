@@ -5,22 +5,32 @@ Created on Thu May 14 21:32:56 2020
 
 Export flat file summary statistics from matrix tables
 
-@author: nbaya
+@author: nbaya, rahulg
 """
 
 import argparse
+from multiprocessing.sharedctypes import Value
+import os, re
+from sys import path
 import hail as hl
 from itertools import combinations
 from time import time
 from math import ceil
-from ukbb_pan_ancestry.utils.results import load_final_sumstats_mt, get_meta_analysis_results_path, load_meta_analysis_results, get_pheno_manifest_path
+from ukbb_pan_ancestry.utils.results import load_final_sumstats_mt, load_meta_analysis_results
 from ukbb_pan_ancestry.resources import POPS
+from ukbb_pan_ancestry.resources.results import get_variant_results_path, get_pheno_manifest_path, get_h2_manifest_path
+from ukbb_pan_ancestry.resources.genotypes import get_filtered_mt
+from ukbb_pan_ancestry.resources.phenotypes import get_ukb_pheno_mt_path
+from ukbb_pan_ancestry.heritability.import_heritability import qc_to_flags, get_h2_flat_file
+from ukbb_pan_ancestry.get_timings_null_model import format_pheno_dir
+from ukb_common.resources.generic import PHENO_KEY_FIELDS
 
 bucket = 'gs://ukb-diverse-pops'
 public_bucket = 'gs://ukb-diverse-pops-public'
 ldprune_dir = f'{bucket}/ld_prune'
 all_quant_trait_types = {'continuous','biomarkers'}
 all_binary_trait_types = {'categorical','phecode', 'icd10', 'prescriptions'}
+SEX = ['both_sexes','females','males']
 
 # fields specific to each category of trait
 quant_meta_fields = ['AF_Allele2']
@@ -89,7 +99,7 @@ def get_final_sumstats_mt_for_export(exponentiate_p):
 
 def export_results(num_pops, trait_types='all', batch_size=256, mt=None, 
                    export_path_str=None, skip_binary_eur=True, exponentiate_p=False,
-                   suffix=None):
+                   suffix=None, skip_existing_folders=False):
     r'''
     `num_pops`: exact number of populations for which phenotype is defined
     `trait_types`: trait category (options: all, binary, quant)
@@ -148,7 +158,20 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
         meta_fields += ['BETA','SE','Pvalue','Pvalue_het']
         fields += ['BETA','SE','Pvalue','low_confidence']
             
-        for pop_set in pop_sets:    
+        for pop_set in pop_sets:
+            
+            get_export_path = lambda batch_idx: f'{ldprune_dir}/{"export_results" if suffix is None else suffix}/{"" if export_path_str is None else f"{export_path_str}/"}{trait_category}/{"-".join(pop_list)}_batch{batch_idx}'
+            pop_list = sorted(pop_set)
+
+            if skip_existing_folders:
+                # We check if there are any folders with this set of ancestries; if so, skip
+                path_to_export = os.path.dirname(get_export_path(1))
+                paths_found = [x['path'] for x in hl.hadoop_ls(path_to_export) if x['is_dir']]
+                anc_found = [re.sub('_batch[0-9]{1,}$','',os.path.basename(x)) for x in paths_found]
+                if "-".join(pop_list) in anc_found:
+                    print(f'\nSkipping {"-".join(pop_list)} as its export folder was found\n')
+                    continue
+            
             start = time()
             
             if (pop_set == {'EUR'} and trait_category == 'binary') and skip_binary_eur: # run EUR-only binary traits separately
@@ -164,16 +187,12 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
                 print(f'\nSkipping {trait_types},{sorted(pop_set)}, no phenotypes found\n')
                 continue
             
-            pop_list = sorted(pop_set)
-            
             # we now split the mt into those with hq filtered meta analysis results and those without
             mt1_hq = mt1.filter_cols(mt1.has_hq_meta_analysis).drop('has_hq_meta_analysis')
             keyed_mt_hq_def = meta_mt0[mt1_hq.row_key,mt1_hq.col_key]
 
             mt1_hq_undef = mt1.filter_cols(~mt1.has_hq_meta_analysis).drop('has_hq_meta_analysis')
             keyed_mt_hq_undef = meta_mt0[mt1_hq_undef.row_key,mt1_hq_undef.col_key]
-
-            get_export_path = lambda batch_idx: f'{ldprune_dir}/{"export_results" if suffix is None else suffix}/{"" if export_path_str is None else f"{export_path_str}/"}{trait_category}/{"-".join(pop_list)}_batch{batch_idx}'
 
 
             def _shortcut_export_keyed(keyed_mt, mt1, use_hq, batch_idx):
@@ -190,11 +209,11 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
             if (mt1_hq.count_cols() > 0):
                 batch_idx_hq = _shortcut_export_keyed(keyed_mt_hq_def, mt1=mt1_hq, use_hq=True, batch_idx=1)
             else:
-                batch_idx_hq = 1
+                batch_idx_hq = 0
             
             # export sumstats without hq columns
             if (mt1_hq_undef.count_cols() > 0):
-                _shortcut_export_keyed(keyed_mt_hq_undef, mt1=mt1_hq_undef, use_hq=False, batch_idx=batch_idx_hq)
+                _shortcut_export_keyed(keyed_mt_hq_undef, mt1=mt1_hq_undef, use_hq=False, batch_idx=batch_idx_hq+1)
             
             end = time()
             print(f'\nExport complete for:\n{trait_types}\n{pop_list}\ntime: {round((end-start)/3600,2)} hrs')
@@ -221,11 +240,8 @@ def export_binary_eur(cluster_idx, num_clusters=10, batch_size = 256, exponentia
     trait_types_to_run = ['categorical','phecode', 'icd10', 'prescriptions'] # list of which trait_type to run
         
     # fields specific to each category of trait    
-    meta_fields = binary_meta_fields
-    fields = binary_fields
-    
-    meta_fields += ['BETA','SE','Pvalue','Pvalue_het']
-    fields += ['BETA','SE','Pvalue','low_confidence']
+    meta_fields = binary_meta_fields + ['BETA','SE','Pvalue','Pvalue_het']
+    fields = binary_fields + ['BETA','SE','Pvalue','low_confidence']
 
     trait_category = 'binary'        
     trait_types = all_binary_trait_types.intersection(trait_types_to_run) # get list of binary trait types to run
@@ -274,11 +290,11 @@ def export_binary_eur(cluster_idx, num_clusters=10, batch_size = 256, exponentia
     if (mt1_hq.count_cols() > 0):
         batch_idx_hq = _shortcut_export_keyed(keyed_mt_hq_def, mt1=mt1_hq, use_hq=True, batch_idx=1)
     else:
-        batch_idx_hq = 1
+        batch_idx_hq = 0
     
     # export sumstats without hq columns
     if (mt1_hq_undef.count_cols() > 0):
-        _ = _shortcut_export_keyed(keyed_mt_hq_undef, mt1=mt1_hq_undef, use_hq=False, batch_idx=batch_idx_hq)
+        _ = _shortcut_export_keyed(keyed_mt_hq_undef, mt1=mt1_hq_undef, use_hq=False, batch_idx=batch_idx_hq+1)
 
     end = time()
     print(f'\nExport complete for:\n{trait_types}\n{pop_list}\ntime: {round((end-start)/3600,2)} hrs')
@@ -320,15 +336,16 @@ def _export_using_keyed_mt(keyed_mt, mt1, use_hq, batch_idx, get_export_path,
         batch_idx += 1
     print(f'\nExporting {new_ncol} phenos to: {get_export_path(batch_idx)}\n')
     hl.experimental.export_entries_by_col(mt = mt2,
-                                            path = get_export_path(batch_idx),
-                                            bgzip = True,
-                                            batch_size = batch_size,
-                                            use_string_key_as_file_name = True,
-                                            header_json_in_file = False)
+                                          path = get_export_path(batch_idx),
+                                          bgzip = True,
+                                          batch_size = batch_size,
+                                          use_string_key_as_file_name = True,
+                                          header_json_in_file = False)
     return batch_idx
 
 
-def export_subset(num_pops=None, phenocode=None, exponentiate_p=False, suffix=None):
+def export_subset(num_pops=None, phenocode=None, exponentiate_p=False, suffix=None,
+                  skip_existing_folders=False):
     mt0 = get_final_sumstats_mt_for_export(exponentiate_p=exponentiate_p)
     if phenocode != None:
         print(f'\nFiltering to traits with phenocode: {phenocode}\n')
@@ -341,7 +358,8 @@ def export_subset(num_pops=None, phenocode=None, exponentiate_p=False, suffix=No
                                mt = mt0, 
                                export_path_str=phenocode,
                                exponentiate_p=exponentiate_p,
-                               suffix=suffix)
+                               suffix=suffix,
+                               skip_existing_folders=skip_existing_folders)
     else:
         export_results(num_pops=num_pops, 
                        trait_types='all', 
@@ -349,7 +367,8 @@ def export_subset(num_pops=None, phenocode=None, exponentiate_p=False, suffix=No
                        mt = mt0, 
                        export_path_str=phenocode,
                        exponentiate_p=exponentiate_p,
-                       suffix=suffix)
+                       suffix=suffix,
+                       skip_existing_folders=skip_existing_folders)
 
 
 def export_all_loo(batch_size=256, update=False, exponentiate_p=False, 
@@ -484,29 +503,237 @@ def export_updated_phenos(num_pops=None):
                        skip_binary_eur=False)
 
 
-def make_pheno_manifest(export=True):    
+def make_per_population_n_cases():
+    """
+    This function computes per-population and per-sex case count for each phenotype.
+    """
+    path_loc = f'{bucket}/combined_results/per_pop_per_sex_case_counts.ht'
+    ht_saige = hl.read_matrix_table(get_variant_results_path('full')).cols()
+    ht_saige = ht_saige.explode('pheno_data')
+    ht_saige = ht_saige.key_by(*PHENO_KEY_FIELDS, pop = ht_saige.pheno_data.pop)
+
+    if hl.hadoop_is_file(f'{path_loc}/_SUCCESS'):
+        ht_per_pop = hl.read_table(path_loc)
+    else:
+        samples_keep = get_filtered_mt(chrom='22').cols()
+
+        # number of samples
+        # samples_keep.group_by(samples_keep.pop).aggregate(ct = hl.agg.count()).show()
+        # +-------+--------+
+        # | pop   |     ct |
+        # +-------+--------+
+        # | str   |  int64 |
+        # +-------+--------+
+        # | "AFR" |   6637 |
+        # | "AMR" |    982 |
+        # | "CSA" |   8876 |
+        # | "EAS" |   2709 |
+        # | "EUR" | 420542 |
+        # | "MID" |   1599 |
+        # +-------+--------+
+        
+        mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
+        mt = mt.key_rows_by(s = hl.str(mt.userId))
+        mt = mt.semi_join_rows(samples_keep)
+
+        # number of samples with phenotypes
+        # ht_test = mt.rows()
+        # ht_test.group_by(ht_test.pop).aggregate(ct = hl.agg.count()).show()
+        # +-------+--------+
+        # | pop   |     ct |
+        # +-------+--------+
+        # | str   |  int64 |
+        # +-------+--------+
+        # | "AFR" |   6636 |
+        # | "AMR" |    980 |
+        # | "CSA" |   8876 |
+        # | "EAS" |   2709 |
+        # | "EUR" | 420519 |
+        # | "MID" |   1597 |
+        # | NA    |     14 |
+        # +-------+--------+
+        # note this is almost identical to https://pan.ukbb.broadinstitute.org/docs/technical-overview with 12 fewer EUR and 2 fewer MID
+        # except the 14 missing individuals are now "NA"; these seem like they were withdrawn as they are fully NA'd
+
+        avoid_geq_0 = ['biomarkers', 'continuous', 'icd_first_occurrence']
+        # if continuous, simply check if the entry is defined; if categorical, we also check if != 0 because we want to count cases
+        mt = mt.annotate_cols(avoid_geq_0 = hl.literal(avoid_geq_0).contains(mt.trait_type))
+        mt = mt.annotate_entries(**{f'count_{sex}': hl.is_defined(mt[sex]) & hl.if_else(mt.avoid_geq_0, True, mt[sex] != 0) for sex in SEX})
+        ht_per_pop = mt.group_rows_by(mt.pop
+                      ).aggregate(**{f'custom_n_cases_{sex}': hl.agg.count_where(mt[f'count_{sex}']) for sex in SEX}
+                      ).entries(
+                      ).drop('avoid_geq_0'
+                      ).key_by(*PHENO_KEY_FIELDS, 'pop')
+        ht_per_pop = ht_per_pop.persist()
+
+        # now dealing with naming issues
+        # - reverse "format_pheno_dir"
+        # - add IRNT to biomarkers
+        # - remove coding and modifier for specific continuous traits that are 3-keyed only in the saige cols table
+        ht_per_pop_mapper = ht_per_pop.group_by(*PHENO_KEY_FIELDS).aggregate().key_by()
+        saige_phenocode_mapper = ht_saige.group_by(*PHENO_KEY_FIELDS).aggregate().key_by()
+        saige_phenocode_mapper = saige_phenocode_mapper.annotate(phenocode_new = format_pheno_dir(saige_phenocode_mapper.phenocode))
+        saige_phenocode_mapper = saige_phenocode_mapper.key_by('phenocode_new')
+        ht_per_pop_mapper = ht_per_pop_mapper.annotate(phenocode_updated=hl.case(missing_false=True)
+                                                                           .when(hl.is_defined(saige_phenocode_mapper[ht_per_pop_mapper.phenocode]), 
+                                                                                 saige_phenocode_mapper[ht_per_pop_mapper.phenocode].phenocode)
+                                                                           .default(ht_per_pop_mapper.phenocode),
+                                                modifier_updated=hl.case(missing_false=True)
+                                                                   .when(ht_per_pop_mapper.trait_type == "biomarkers", "irnt")
+                                                                   .when((ht_per_pop_mapper.trait_type == 'continuous') & (ht_per_pop_mapper.phenocode == 'random') & (ht_per_pop_mapper.modifier == 'random'), "")
+                                                                   .default(ht_per_pop_mapper.modifier)).key_by(*PHENO_KEY_FIELDS)
+        still_missing = saige_phenocode_mapper.key_by(*PHENO_KEY_FIELDS).anti_join(ht_per_pop_mapper.key_by('trait_type','phenocode_updated','pheno_sex','coding','modifier_updated'))
+        # at this stage the only thing left should be continuous traits which have no coding or modifier in saige table
+        if still_missing.filter((still_missing.trait_type != 'continuous') | (still_missing.modifier != "") | (still_missing.coding != "")).count() > 0:
+            raise ValueError('ERROR: at this stage the only entries not mapping should be continuous with no modifier and no coding.')
+        # now we just have to get rid of coding and modifier for these phenotypes
+        ht_per_pop_mapper = ht_per_pop_mapper.key_by('trait_type', 'phenocode_updated', 'pheno_sex')
+        still_missing = still_missing.key_by('trait_type', 'phenocode', 'pheno_sex')
+        ht_per_pop_mapper_miss = ht_per_pop_mapper.semi_join(still_missing)
+        # check that no keys are redundant
+        if (ht_per_pop_mapper_miss.count() != ht_per_pop_mapper_miss.distinct().count()) | (still_missing.count() != still_missing.distinct().count()):
+            raise ValueError('ERROR: in fixing names from phenotype table, some keys became duplicated.')
+        # since we have 1:1 mapping from missing records to ht_per_pop_mapper, now just remove coding and modifier
+        ht_per_pop_mapper = ht_per_pop_mapper.annotate(coding_updated=hl.case(missing_false=True)
+                                                                        .when(hl.is_defined(still_missing[ht_per_pop_mapper.key]), "")
+                                                                        .default(ht_per_pop_mapper.coding),
+                                                       modifier_updated=hl.case(missing_false=True)
+                                                                          .when(hl.is_defined(still_missing[ht_per_pop_mapper.key]), "")
+                                                                          .default(ht_per_pop_mapper.modifier_updated))
+        ht_per_pop_mapper_test = ht_per_pop_mapper.key_by('trait_type','phenocode_updated','pheno_sex','coding_updated','modifier_updated')
+        # verify that there are no redundant keys
+        if ht_per_pop_mapper_test.count() != ht_per_pop_mapper_test.distinct().count():
+            raise ValueError('ERROR: in fixing names from phenotype table, some keys became duplicated.')
+
+        originally_dupe_keys = ht_per_pop.group_by(**ht_per_pop.key).aggregate(ct= hl.agg.count())
+        originally_dupe_keys = originally_dupe_keys.filter(originally_dupe_keys.ct > 1)
+        
+        ht_per_pop = ht_per_pop.key_by(*PHENO_KEY_FIELDS)
+        ht_per_pop = ht_per_pop.annotate(fixed_keys = ht_per_pop_mapper.key_by(*PHENO_KEY_FIELDS)[ht_per_pop.key])
+        ht_per_pop = ht_per_pop.key_by()
+        ht_per_pop = ht_per_pop.annotate(phenocode = ht_per_pop.fixed_keys.phenocode_updated,
+                                         coding = ht_per_pop.fixed_keys.coding_updated,
+                                         modifier = ht_per_pop.fixed_keys.modifier_updated).key_by(*PHENO_KEY_FIELDS,'pop').drop('fixed_keys')
+        
+        newly_dupe_keys = ht_per_pop.group_by(**ht_per_pop.key).aggregate(ct= hl.agg.count())
+        newly_dupe_keys = newly_dupe_keys.filter(newly_dupe_keys.ct > 1)
+        new_dupes = originally_dupe_keys.anti_join(newly_dupe_keys.filter(hl.is_defined(newly_dupe_keys.pop)))
+
+        if new_dupes.filter(hl.is_defined(new_dupes.pop)).count() > 0:
+            raise ValueError('ERROR: there are new duplicate keys (including pop as a key, without undefined pop')
+        if ht_saige.semi_join(newly_dupe_keys).count() > 0:
+            raise ValueError('ERROR: duplicate keys should not be also found in Saige table as this could lead to problematic mapping.')
+        if ht_saige.anti_join(ht_per_pop).count() > 0:
+            raise ValueError('ERROR: not all records in saige table were found in the phenotype MatrixTable despite remapping efforts.')
+        
+        ht_per_pop = ht_per_pop.checkpoint(path_loc)
+
+
+    ht_saige = ht_saige.select(n_cases_both_sexes = ht_saige.pheno_data.n_cases)
+    ht = ht_saige.annotate(**{f'pre_qc_full_cohort_n_cases_{sex}': ht_per_pop[ht_saige.key][f'n_cases_{sex}'] for sex in SEX})
+    ht = ht.annotate(**{f'recomputed_n_cases_{sex}': ht_per_pop[ht.key][f'custom_n_cases_{sex}'] for sex in SEX})
+    
+    # note that ht_saige had columns for n_cases_full_cohort_{sex}, but these are verifiably identical to those in ht_per_pop
+    # run the following before dropping fields from ht_saige:
+    # [ht.filter(ht[f'n_cases_full_cohort_{sex}'] != ht[f'pre_qc_full_cohort_n_cases_{sex}']).count() for sex in SEX]
+    # >> [0, 0, 0]
+
+    # below code can be used as a sanity check, since n_cases_both_sexes came from saige and recomputed_n_cases_both_sexes is from phenotype table
+    # ht.filter(ht.n_cases_both_sexes != (ht.recomputed_n_cases_males + ht.recomputed_n_cases_females)).count()
+    # >> 3121
+    # ht.filter(ht.n_cases_both_sexes != (ht.recomputed_n_cases_both_sexes)).count()
+    # >> 2116
+    # ht.filter(~hl.is_defined(ht.pre_qc_full_cohort_n_cases_both_sexes)).count()
+    # >> 0
+    # ht.filter((ht.recomputed_n_cases_males == 0) & (ht.recomputed_n_cases_females == 0)).count()
+    # >> 437
+    # ht.filter((ht.recomputed_n_cases_males == 0) & (ht.recomputed_n_cases_females == 0) & ((ht.pre_qc_full_cohort_n_cases_males != 0) | (ht.pre_qc_full_cohort_n_cases_females != 0))).count()
+    # >> 0
+    
+    return ht
+
+
+def make_pheno_manifest(export=True, export_flattened_h2_table=False):    
     mt0 = load_final_sumstats_mt(filter_sumstats=False,
                                  filter_variants=False,
                                  separate_columns_by_pop=False,
-                                 annotate_with_nearest_gene=False)
+                                 annotate_with_nearest_gene=False,
+                                 filter_pheno_h2_qc=False)       
     
     ht = mt0.cols()
+    ht = ht.annotate(phenotype_qc = hl.map(qc_to_flags, ht.pheno_data.heritability.qcflags))
+    # DELETE BELOW TWO ROWS ONCE DONE VERIFYING THIS FUNCTION
+    # ht = ht.rename({f'n_cases_full_cohort_{sex}': f'orig_n_cases_full_cohort_{sex}' for sex in SEX})
+    # ht = ht.annotate(**{f'n_cases_full_cohort_{sex}': 1 for sex in SEX})
+    #########
+    ht = ht.annotate(**{f'n_cases_hq_cohort_{sex}': 1 for sex in SEX})
     annotate_dict = {}
-    
+
+    # pops passing QC are the same as pops in hq meta, so just keep pops passing QC
+    #mt_meta = load_meta_analysis_results(h2_filter='pass')
+    #ht_meta = mt_meta.cols()
+    #ht_meta = ht_meta.annotate(pops_in_hq_meta = ht_meta.meta_analysis_data.pop[0])
+
+    ht_max_indep = hl.read_table('gs://ukb-diverse-pops/Cross-Pop-GWAS-comparison/Max_indep_set_phenos_h2QC_10_tiebreakCasenum.ht').annotate(in_max_independent_set=True)
+
     annotate_dict.update({'pops': hl.delimit(ht.pheno_data.pop),
-                          'num_pops': hl.len(ht.pheno_data.pop)})
-     
-    for field in ['n_cases','n_controls','heritability','lambda_gc']:
+                          'num_pops': hl.len(ht.pheno_data.pop),
+                          'pops_pass_qc': "",
+                          'num_pops_pass_qc': 0})
+
+    h2_fields = ['h2_observed','h2_observed_se','h2_liability','h2_liability_se','h2_z']
+    for field in ['n_cases','n_controls',*h2_fields, 'lambda_gc', 'phenotype_qc']: # move saige h2 to the h2 table
         for pop in POPS:
-            new_field = field if field!='heritability' else 'saige_heritability' # new field name (only applicable to saige heritability)
+            new_field = field if field!='saige_heritability' else 'saige_h2' # new field name (only applicable to saige heritability)
+            prefix = ('sldsc_25bin_' if pop == 'EUR' else 'rhemc_25bin_50rv_') if new_field in h2_fields else ''
+            new_field = prefix + new_field
+            new_field = 'final_' + new_field if new_field in h2_fields else new_field
             idx = ht.pheno_data.pop.index(pop)
-            field_expr = ht.pheno_data[field]
+            if field == 'phenotype_qc':
+                field_expr = ht[field]
+            elif field in h2_fields:
+                field_expr = ht.pheno_data.heritability.estimates.final[field]
+            else:
+                field_expr = ht.pheno_data[field]
+            if (pop == 'AMR') and (field == 'phenotype_qc'):
+                to_assn = hl.if_else(field_expr[idx] != 'GWAS_not_run', 'n_too_low', 'GWAS_not_run')
+            else:
+                to_assn = field_expr[idx]
             annotate_dict.update({f'{new_field}_{pop}': hl.if_else(hl.is_nan(idx),
-                                                               hl.null(field_expr[0].dtype),
-                                                               field_expr[idx])})
-    annotate_dict.update({'filename': get_pheno_id(tb=ht)+'.tsv.bgz'})
+                                                                   hl.null(field_expr[0].dtype),
+                                                                   to_assn)})
     ht = ht.annotate(**annotate_dict)
-    
+    #ht = ht.annotate(pops_in_hq_meta = hl.delimit(ht_meta[ht.key].pops_in_hq_meta))
+    #ht = ht.annotate(pops_in_hq_meta = hl.if_else(~hl.is_defined(ht.pops_in_hq_meta), "", ht.pops_in_hq_meta))
+    ht = ht.annotate(pops_pass_qc_arr = hl.map(lambda y: y[0], hl.zip(ht.pheno_data.pop, ht.phenotype_qc).filter(lambda x: x[1] == 'PASS')))
+    ht = ht.annotate(num_pops_pass_qc = hl.len(ht.pops_pass_qc_arr))
+    ht = ht.annotate(pops_pass_qc = hl.delimit(ht.pops_pass_qc_arr))
+    ht = ht.annotate(in_max_independent_set = ht_max_indep[ht.key].in_max_independent_set)
+    ht = ht.annotate(in_max_independent_set = hl.if_else(hl.is_defined(ht.in_max_independent_set), ht.in_max_independent_set, False))
+    ht = ht.annotate(filename = get_pheno_id(tb=ht)+'.tsv.bgz')
+
+    # now create a table containing per-ancestry, per-sex case counts
+    ht_counts = make_per_population_n_cases()
+    ht_full_cohort = ht_counts.group_by(*PHENO_KEY_FIELDS
+                             ).aggregate(n_cases_full_cohort_both_sexes = hl.agg.sum(ht_counts.n_cases_both_sexes), 
+                                         n_cases_full_cohort_females = hl.agg.sum(ht_counts.recomputed_n_cases_females), 
+                                         n_cases_full_cohort_males = hl.agg.sum(ht_counts.recomputed_n_cases_males))
+    if ht.anti_join(ht_full_cohort).count() > 0:
+        raise ValueError('ERROR: All keys in manifest should be found in the per-trait n_cases file.')
+    ht = ht.annotate(**{f'n_cases_full_cohort_{sex}': ht_full_cohort[ht.key][f'n_cases_full_cohort_{sex}'] for sex in SEX})
+
+    # do the same thing, now for the hq pops
+    hq_pops_per_pheno = ht.select('pops_pass_qc_arr').explode('pops_pass_qc_arr').key_by(*PHENO_KEY_FIELDS, 'pops_pass_qc_arr')
+    if hq_pops_per_pheno.anti_join(ht_counts).count() > 0:
+        raise ValueError('ERROR: All hq population-trait should be found in the per-trait, per-population n_cases file.')
+    ht_counts_f = ht_counts.semi_join(hq_pops_per_pheno)
+    ht_counts_f.count()
+    ht_hq_cohort = ht_counts_f.group_by(*PHENO_KEY_FIELDS
+                             ).aggregate(n_cases_hq_cohort_both_sexes = hl.agg.sum(ht_counts_f.n_cases_both_sexes), 
+                                         n_cases_hq_cohort_females = hl.agg.sum(ht_counts_f.recomputed_n_cases_females), 
+                                         n_cases_hq_cohort_males = hl.agg.sum(ht_counts_f.recomputed_n_cases_males))
+    ht = ht.annotate(**{f'n_cases_hq_cohort_{sex}': ht_hq_cohort[ht.key][f'n_cases_hq_cohort_{sex}'] for sex in SEX})
+
     dropbox_manifest = hl.import_table(f'{ldprune_dir}/UKBB_Pan_Populations-Manifest_20200615-manifest_info.tsv',
                                        impute=True,
                                        key='File') # no need to filter table for duplicates because dropbox links are the same for updated phenos
@@ -527,11 +754,31 @@ def make_pheno_manifest(export=True):
                                            else field.replace(' ','_')
                                            )+suffix:tb[ht.filename][field]})
     ht = ht.annotate(**dropbox_annotate_dict)
-    ht = ht.drop('pheno_data')
+    ht = ht.drop('pheno_data', 'phenotype_qc', 'pops_pass_qc_arr')
     ht.describe()
-    ht.show()
+    
+    if export_flattened_h2_table:
+        # now make h2 table
+        ht_h2 = hl.import_table(get_h2_flat_file(), 
+                                delimiter='\t', 
+                                impute=True, 
+                                key=PHENO_KEY_FIELDS)
+        ht_h2 = ht_h2.rename({'ancestry':'pop'})
+        ht_h2 = ht_h2.drop('phenotype_id')
+        ht_h2 = ht_h2.key_by(*PHENO_KEY_FIELDS, 'pop')
+        ht_annotate_saige = mt0.cols().explode('pheno_data')
+        ht_annotate_saige = ht_annotate_saige.select(pop = ht_annotate_saige.pheno_data.pop,
+                                                     saige_heritability = ht_annotate_saige.pheno_data.saige_heritability)
+        ht_annotate_saige = ht_annotate_saige.key_by(*PHENO_KEY_FIELDS, 'pop')
+        ht_h2 = ht_h2.annotate(**{'estimates.saige.h2': ht_annotate_saige[ht_h2.key].saige_heritability})
+        ht_h2.describe()
+
     if export:
         ht.export(get_pheno_manifest_path())
+        #ht.export(f'{bucket}/combined_results/220224_phenotype_manifest.tsv.bgz')
+        if export_flattened_h2_table:
+            #ht_h2.export(f'{bucket}/combined_results/220224_h2_manifest.tsv.bgz')
+            ht_h2.export(get_h2_manifest_path())
     else:
         return ht
     
@@ -551,22 +798,31 @@ if __name__=="__main__":
     parser.add_argument('--make-pheno-manifest', action='store_true')
     parser.add_argument('--export-updated-phenos', action='store_true')
     parser.add_argument('--cluster-idx',type=int, default=None, help='cluster index for splitting export of binary EUR traits')
-    parser.add_argument('--batch_size', type=int, default=256, help='max number of phenotypes per batch for export_entries_by_col')
+    parser.add_argument('--num-clusters',type=int, default=None, help='total number of clusters used in splitting export of binary EUR traits')
+    parser.add_argument('--batch-size', type=int, default=256, help='max number of phenotypes per batch for export_entries_by_col')
     parser.add_argument('--exponentiate-p', action='store_true', help='enables regular scale p-values')
     parser.add_argument('--suffix', type=str, default=None, help='if provided, will export to a folder specificed by suffix (added to default directory, so just give a folder name here')
+    parser.add_argument('--skip-existing-folders', action='store_true', help='for export_results and export_all_results, will skip a particular export if it exists (e.g., if quant/AFR_batch* exists, it is assumed the quant trait AFR export completed and it is skipped)')
     args = parser.parse_args()
 
     if args.export_results:
         export_results(num_pops=args.num_pops,
                        trait_types=args.trait_types,
-                       phenocode=args.phenocode,
+                       batch_size=args.batch_size,
                        exponentiate_p=args.exponentiate_p,
-                       suffix=args.suffix)
+                       suffix=args.suffix, 
+                       skip_existing_folders=args.skip_existing_folders)
     elif args.export_all_results:
+        # If phenocode is not provided, None will be provided below 
+        # resulting in a full export across all pop combinations
         export_subset(exponentiate_p=args.exponentiate_p,
-                      suffix=args.suffix)
+                      phenocode=args.phenocode,
+                      suffix=args.suffix, 
+                      skip_existing_folders=args.skip_existing_folders)
     elif args.export_binary_eur:
-        export_binary_eur(cluster_idx=args.cluster_idx,
+        export_binary_eur(batch_size=args.batch_size,
+                          cluster_idx=args.cluster_idx,
+                          num_clusters=args.num_clusters,
                           exponentiate_p=args.exponentiate_p,
                           suffix=args.suffix)
     elif args.make_pheno_manifest:
