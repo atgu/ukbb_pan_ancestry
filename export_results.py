@@ -24,7 +24,7 @@ hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'CUSTOM',
 
 from ukbb_pan_ancestry.utils.results import load_final_sumstats_mt, load_meta_analysis_results
 from ukbb_pan_ancestry.resources import POPS
-from ukbb_pan_ancestry.resources.results import get_variant_results_path, get_pheno_manifest_path, get_h2_manifest_path
+from ukbb_pan_ancestry.resources.results import get_variant_results_path, get_pheno_manifest_path, get_h2_manifest_path, get_maximal_indepenedent_set_ht
 from ukbb_pan_ancestry.resources.genotypes import get_filtered_mt
 from ukbb_pan_ancestry.resources.phenotypes import get_ukb_pheno_mt_path
 from ukbb_pan_ancestry.heritability.import_heritability import qc_to_flags, get_h2_flat_file
@@ -704,7 +704,7 @@ def make_pheno_manifest(export=True, export_flattened_h2_table=False, web_versio
     #ht_meta = mt_meta.cols()
     #ht_meta = ht_meta.annotate(pops_in_hq_meta = ht_meta.meta_analysis_data.pop[0])
 
-    ht_max_indep = hl.read_table(path_max_indep_set).annotate(in_max_independent_set=True)
+    ht_max_indep = get_maximal_indepenedent_set_ht()
 
     annotate_dict.update({'pops': hl.delimit(ht.pheno_data.pop),
                           'num_pops': hl.len(ht.pheno_data.pop),

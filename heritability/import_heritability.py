@@ -2,16 +2,7 @@ __author__ = 'Rahul Gupta'
 
 import hail as hl
 from ukb_common.resources.generic import PHENO_KEY_FIELDS
-
-
-def get_h2_flat_file():
-    return 'gs://ukb-diverse-pops-public-free/h2/h2_estimates_all_flat_220317.tsv'
-    #return 'gs://ukb-diverse-pops/rg-h2-tables/h2_estimates_all_flat_211101.tsv'
-
-
-def get_h2_ht():
-    return 'gs://ukb-diverse-pops-public-free/h2/h2_estimates_all.ht'
-    #return 'gs://ukb-diverse-pops/rg-h2-tables/ht/h2_estimates_all.ht'
+from ukbb_pan_ancestry.resources.results import get_h2_ht_path, get_h2_flat_file_path
 
 
 def qc_to_flags(qc_struct):
@@ -30,7 +21,7 @@ def qc_to_flags(qc_struct):
 
 
 def import_h2_flat_file(save_to_ht, overwrite):
-    ht = hl.import_table(get_h2_flat_file(), 
+    ht = hl.import_table(get_h2_flat_file_path(),
                          delimiter='\t', 
                          impute=True, 
                          key=PHENO_KEY_FIELDS)
@@ -74,6 +65,6 @@ def import_h2_flat_file(save_to_ht, overwrite):
     ht_collect_sorted = ht_collect_sorted.repartition(250)
 
     if save_to_ht:
-        ht_collect_sorted.write(get_h2_ht(), overwrite=overwrite)
+        ht_collect_sorted.write(get_h2_ht_path(), overwrite=overwrite)
 
     return ht_collect_sorted

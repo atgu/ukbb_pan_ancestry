@@ -66,7 +66,8 @@ def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = T
                            filter_sumstats: bool = True, separate_columns_by_pop: bool = True,
                            annotate_with_nearest_gene: bool = True, add_only_gene_symbols_as_str: bool = False,
                            load_contig: str = None, filter_pheno_h2_qc: bool = True,
-                           exponentiate_p: bool = False, check_log_per_pheno_anc: bool = False):
+                           exponentiate_p: bool = False, check_log_per_pheno_anc: bool = False,
+                           filter_to_max_indep_set: bool = False):
     mt = hl.read_matrix_table(get_variant_results_path('full', 'mt')).drop('gene', 'annotation')
     if load_contig:
         mt = mt.filter_rows(mt.locus.contig == load_contig)
@@ -77,6 +78,9 @@ def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = T
     h2_qc_ht = hl.read_table(get_h2_ht())
     mt = mt.annotate_cols(heritability = h2_qc_ht[mt.col_key].heritability)
 
+    if filter_to_max_indep_set:
+        mis_ht = get_maximal_indepenedent_set_ht()
+        mt = mt.filter_cols(mis_ht[mt.col_key].in_max_independent_set)
 
     def update_pheno_struct(pheno_struct, mt):
         pheno_struct = pheno_struct.annotate(saige_heritability = pheno_struct.heritability,

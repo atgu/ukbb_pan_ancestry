@@ -26,6 +26,22 @@ def get_phenotype_results_qc_path(extension: str = 'ht'):
     return f'{bucket}/combined_results/full_phenotype_qc_metrics.{extension}'
 
 
+def get_h2_flat_file_path():
+    return f'{public_bucket_free}/h2/h2_estimates_all_flat_211101.tsv'
+
+
+def get_h2_ht_path():
+    return f'{public_bucket_free}/h2/h2_estimates_all.ht'
+
+
+def get_maximal_independent_set_path():
+    return f'{public_bucket_free}/qc/Max_indep_set_phenos_h2QC_10_tiebreakCasenum.ht'
+
+
+def get_maximal_indepenedent_set_ht():
+    return hl.read_table(get_maximal_independent_set_path()).annotate(in_max_independent_set=True)
+
+
 def get_analysis_data_path(subdir: str, dataset: str, pop: str, extension: str = 'txt.bgz'):
     return f'{public_bucket_free}/sumstats_qc_analysis/{subdir}/{dataset}_{pop}.{extension}'
 
