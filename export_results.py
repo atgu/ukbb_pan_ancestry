@@ -13,9 +13,15 @@ from multiprocessing.sharedctypes import Value
 import os, re
 from sys import path
 import hail as hl
+import hailtop.batch as hb
 from itertools import combinations
 from time import time
 from math import ceil
+
+#hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'CUSTOM',
+#                    'spark.hadoop.fs.gs.requester.pays.buckets': 'ukb-diverse-pops-public',
+#                    'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
+
 from ukbb_pan_ancestry.utils.results import load_final_sumstats_mt, load_meta_analysis_results
 from ukbb_pan_ancestry.resources import POPS
 from ukbb_pan_ancestry.resources.results import get_variant_results_path, get_pheno_manifest_path, get_h2_manifest_path
@@ -653,7 +659,7 @@ def make_per_population_n_cases():
     return ht
 
 
-def make_pheno_manifest(export=True, export_flattened_h2_table=False):    
+def make_pheno_manifest(export=True, export_flattened_h2_table=False, web_version=False):    
     mt0 = load_final_sumstats_mt(filter_sumstats=False,
                                  filter_variants=False,
                                  separate_columns_by_pop=False,
@@ -711,6 +717,13 @@ def make_pheno_manifest(export=True, export_flattened_h2_table=False):
     ht = ht.annotate(in_max_independent_set = ht_max_indep[ht.key].in_max_independent_set)
     ht = ht.annotate(in_max_independent_set = hl.if_else(hl.is_defined(ht.in_max_independent_set), ht.in_max_independent_set, False))
     ht = ht.annotate(filename = get_pheno_id(tb=ht)+'.tsv.bgz')
+    ht = ht.annotate(filename_tabix = get_pheno_id(tb=ht)+'.tsv.bgz.tbi')
+    if web_version:
+        ht = ht.annotate(aws_link = 'https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_flat_files/' + ht.filename)
+        ht = ht.annotate(aws_link_tabix = 'https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_flat_files/' + ht.filename_tabix)
+    else:
+        ht = ht.annotate(aws_path = 's3://pan-ukb-us-east-1/sumstats_flat_files/' + ht.filename)
+        ht = ht.annotate(aws_path_tabix = 's3://pan-ukb-us-east-1/sumstats_flat_files/' + ht.filename_tabix)
 
     # now create a table containing per-ancestry, per-sex case counts
     ht_counts = make_per_population_n_cases()
@@ -734,26 +747,27 @@ def make_pheno_manifest(export=True, export_flattened_h2_table=False):
                                          n_cases_hq_cohort_males = hl.agg.sum(ht_counts_f.recomputed_n_cases_males))
     ht = ht.annotate(**{f'n_cases_hq_cohort_{sex}': ht_hq_cohort[ht.key][f'n_cases_hq_cohort_{sex}'] for sex in SEX})
 
-    dropbox_manifest = hl.import_table(f'{ldprune_dir}/UKBB_Pan_Populations-Manifest_20200615-manifest_info.tsv',
-                                       impute=True,
-                                       key='File') # no need to filter table for duplicates because dropbox links are the same for updated phenos
-    bgz = dropbox_manifest.filter(~dropbox_manifest.File.contains('.tbi'))
-    bgz = bgz.rename({'File':'filename'})
-    tbi = dropbox_manifest.filter(dropbox_manifest.File.contains('.tbi'))
-    tbi = tbi.annotate(filename = tbi.File.replace('.tbi','')).key_by('filename')
+    # no longer using dropbox for distribution of sumstats
+    # dropbox_manifest = hl.import_table(f'{ldprune_dir}/UKBB_Pan_Populations-Manifest_20200615-manifest_info.tsv',
+    #                                    impute=True,
+    #                                    key='File') # no need to filter table for duplicates because dropbox links are the same for updated phenos
+    # bgz = dropbox_manifest.filter(~dropbox_manifest.File.contains('.tbi'))
+    # bgz = bgz.rename({'File':'filename'})
+    # tbi = dropbox_manifest.filter(dropbox_manifest.File.contains('.tbi'))
+    # tbi = tbi.annotate(filename = tbi.File.replace('.tbi','')).key_by('filename')
         
-    dropbox_annotate_dict = {}
+    # dropbox_annotate_dict = {}
     
-    rename_dict = {'dbox link':'dropbox_link',
-                   'size (bytes)':'size_in_bytes'}
+    # rename_dict = {'dbox link':'dropbox_link',
+    #                'size (bytes)':'size_in_bytes'}
     
-    dropbox_annotate_dict.update({'filename_tabix':tbi[ht.filename].File})
-    for field in ['dbox link','wget', 'size (bytes)','md5 hex']:
-        for tb, suffix in [(bgz, ''), (tbi, '_tabix')]:
-            dropbox_annotate_dict.update({(rename_dict[field] if field in rename_dict 
-                                           else field.replace(' ','_')
-                                           )+suffix:tb[ht.filename][field]})
-    ht = ht.annotate(**dropbox_annotate_dict)
+    # dropbox_annotate_dict.update({'filename_tabix':tbi[ht.filename].File})
+    # for field in ['dbox link','wget', 'size (bytes)','md5 hex']:
+    #     for tb, suffix in [(bgz, ''), (tbi, '_tabix')]:
+    #         dropbox_annotate_dict.update({(rename_dict[field] if field in rename_dict 
+    #                                        else field.replace(' ','_')
+    #                                        )+suffix:tb[ht.filename][field]})
+    # ht = ht.annotate(**dropbox_annotate_dict)
     ht = ht.drop('pheno_data', 'phenotype_qc', 'pops_pass_qc_arr')
     ht.describe()
     
@@ -774,14 +788,43 @@ def make_pheno_manifest(export=True, export_flattened_h2_table=False):
         ht_h2.describe()
 
     if export:
-        ht.export(get_pheno_manifest_path())
-        #ht.export(f'{bucket}/combined_results/220224_phenotype_manifest.tsv.bgz')
+        #ht.export(get_pheno_manifest_path(web_version))
+        ht.export(f'{bucket}/combined_results/220316_phenotype_manifest{"_web" if web_version else ""}.tsv.bgz')
         if export_flattened_h2_table:
-            #ht_h2.export(f'{bucket}/combined_results/220224_h2_manifest.tsv.bgz')
-            ht_h2.export(get_h2_manifest_path())
+            ht_h2.export(f'{bucket}/combined_results/220316_h2_manifest.tsv.bgz')
+            #ht_h2.export(get_h2_manifest_path())
     else:
         return ht
+
+
+def make_tabix(folder, sumstats_folder, suffix):
+    if suffix is not None:
+        folder = folder + suffix + '/'
+        sumstats_folder = sumstats_folder + suffix + '/'
     
+    backend = hb.ServiceBackend(billing_project='ukb_diverse_pops', bucket='ukb_diverse_pops')
+    bserv = hb.Batch(name="tabix_pan_ancestry", backend=backend)
+    if hl.hadoop_is_dir(sumstats_folder):
+        items = [x['path'] for x in hl.hadoop_ls(sumstats_folder) if not x['is_dir']]
+    else:
+        raise ValueError('Sumstats folder does not exist.')
+    if hl.hadoop_is_dir(folder):
+        items_tabix = [x['path'] for x in hl.hadoop_ls(folder) if not x['is_dir']]
+    else:
+        items_tabix = []
+    for sumstat in items:
+        if folder + os.path.basename(sumstat) + '.tbi' not in items_tabix:
+            j = bserv.new_job('tabix_' + os.path.basename(sumstat))
+            j.image('gcr.io/ukbb-diversepops-neale/nbaya_tabix:latest')
+            sumstat_file = bserv.read_input_group(**{'tsv.bgz': sumstat})
+            command = f"""
+                tabix -S1 -s1 -b2 -e2 {sumstat_file['tsv.bgz']}
+                cp {sumstat_file['tsv.bgz']}.tbi {j.tbout}
+            """
+            j.command(command)
+            bserv.write_output(j.tbout, folder + os.path.basename(sumstat) + '.tbi')
+    bserv.run(verbose=False)
+
 
 if __name__=="__main__":
     
@@ -789,13 +832,22 @@ if __name__=="__main__":
     parser.add_argument('--num-pops', type=int, default=None, help='number of defined pops (options: 6,5,...,2,1)')
     parser.add_argument('--trait-types', type=str, default='all', help='trait types to export (options: all, quant, binary)')
     parser.add_argument('--phenocode', type=str, default=None, help='phenocode to filter to for exporting results')
+
     parser.add_argument('--export-all-results', action='store_true', help='exports all results (except EUR binary) for all pops')
     parser.add_argument('--export-results', action='store_true')
     parser.add_argument('--export-binary_eur', action='store_true')
     parser.add_argument('--export-loo', action='store_true')
     parser.add_argument('--export-loo-minpops', type=int, default=3, help='smallest number of populations for which to output loo phenotypes')
     parser.add_argument('--export-loo-hq', action='store_true', help='if enabled along with --export-loo, will output only the hq loo results')
+
     parser.add_argument('--make-pheno-manifest', action='store_true')
+    parser.add_argument('--export-h2-manifest', action='store_true')
+    parser.add_argument('--export-web-manifest', action='store_true')
+
+    parser.add_argument('--make-tabix', action='store_true')
+    parser.add_argument('--tabix-folder', type=str, default='gs://ukb-diverse-pops/ld_prune/export_results/2112_final_results_tabix/')
+    parser.add_argument('--sumstats-folder', type=str, default='gs://ukb-diverse-pops/ld_prune/export_results/2112_final_results/')
+    
     parser.add_argument('--export-updated-phenos', action='store_true')
     parser.add_argument('--cluster-idx',type=int, default=None, help='cluster index for splitting export of binary EUR traits')
     parser.add_argument('--num-clusters',type=int, default=None, help='total number of clusters used in splitting export of binary EUR traits')
@@ -826,7 +878,7 @@ if __name__=="__main__":
                           exponentiate_p=args.exponentiate_p,
                           suffix=args.suffix)
     elif args.make_pheno_manifest:
-        make_pheno_manifest()
+        make_pheno_manifest(export_flattened_h2_table=args.export_h2_manifest, web_version=args.export_web_manifest)
     elif args.export_loo:
         export_all_loo(batch_size=args.batch_size,
                        exponentiate_p=args.exponentiate_p,
@@ -835,3 +887,5 @@ if __name__=="__main__":
                        h2_filter=args.export_loo_hq)
     elif args.export_updated_phenos:
         export_updated_phenos(num_pops=args.num_pops)
+    elif args.make_tabix:
+        make_tabix(args.tabix_folder, args.sumstats_folder, args.suffix)
