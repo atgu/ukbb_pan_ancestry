@@ -720,10 +720,10 @@ def make_pheno_manifest(export=True, export_flattened_h2_table=False, web_versio
     ht = ht.annotate(filename_tabix = get_pheno_id(tb=ht)+'.tsv.bgz.tbi')
     if web_version:
         ht = ht.annotate(aws_link = 'https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_flat_files/' + ht.filename)
-        ht = ht.annotate(aws_link_tabix = 'https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_flat_files/' + ht.filename_tabix)
+        ht = ht.annotate(aws_link_tabix = 'https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_flat_files_tabix/' + ht.filename_tabix)
     else:
         ht = ht.annotate(aws_path = 's3://pan-ukb-us-east-1/sumstats_flat_files/' + ht.filename)
-        ht = ht.annotate(aws_path_tabix = 's3://pan-ukb-us-east-1/sumstats_flat_files/' + ht.filename_tabix)
+        ht = ht.annotate(aws_path_tabix = 's3://pan-ukb-us-east-1/sumstats_flat_files_tabix/' + ht.filename_tabix)
 
     # now create a table containing per-ancestry, per-sex case counts
     ht_counts = make_per_population_n_cases()
