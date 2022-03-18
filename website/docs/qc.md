@@ -69,5 +69,33 @@ For each GWAS conducted for each phenotype and ancestry group, we included the f
 - The first 10 PCs
 
 ### Quality control of summary statistics
-- We are currently developing a best practice set of quality control steps for analysis of summary statistics from a wide range of phenotypes. As with any analysis of large-scale datasets, we urge caution in interpretation especially of outliers (i.e. genetic variants, samples, and/or whole phenotypes) that can signal technical artifacts or noise.
-- Heritability: the heritability computed by SAIGE is known to be downwardly biased: see the [supplementary information](https://static-content.springer.com/esm/art%3A10.1038%2Fs41588-018-0184-y/MediaObjects/41588_2018_184_MOESM1_ESM.pdf) from the [SAIGE publication](https://www.nature.com/articles/s41588-018-0184-y). We are working to improve the heritability estimates.
+
+We have recently developed a best practice set of quality control steps for analysis of summary statistics from a wide range of phenotypes using the following *sequential* filters:
+
+1. `GWAS_run`: if the GWAS was performed for the ancestry-trait pair
+2. `defined_h2`: if the heritability estimate is non-missing
+3. `significant_z`: if the ancestry-trait pair shows $h^2$ z-score $> 0$ and if the ancestry-trait pair is not part of the AMR group (due to very limited sample size; labeled `n_too_low` in manifest)
+4. `in_bounds_h2`: if, for all ancestries for a given trait, observed-scale heritability estimates $\in (0,1)$
+5. `normal_lambda`: if, for all ancestries for a given trait, $\lambda_{GC} > 0.9$
+6. `normal_ratio`: if, for the top three best powered ancestry groups (EUR, CSA, AFR), the S-LDSC ratio, given by $\frac{intercept-1}{mean \text{ } \chi^2  - 1}$, $< 0.3$ or the ratio z-score $< 4$
+7. `EUR_plus_1`: if the trait passes all above filters in EUR and at least 1 other ancestry group
+
+More detailed documentation on these filters is forthcoming. The number of traits passing all QC per-ancestry are:
+
+| Population   | Total phenotypes | Categorical | Continuous | Phecode | ICD-10 | Biomarkers | Prescriptions |
+|-------|----------------|------------|---------|-------|-------------|------------|---------------|
+| AFR |          111 |        45 |     46 |   8 |        5  |         3 |           4 |
+| CSA |          442 |       133 |     182 |   53 |        28  |         23 |           23 |
+| EAS |          35 |        14 |      13 |    5 |        3  |         0 |           0 |
+| EUR |          520 |       177 |    201 |   64 |        34  |         23 |           21 |
+| MID |          196 |        68 |      82 |    19 |        14  |         10 |           3 |
+
+As with any analysis of large-scale datasets, we urge caution in interpretation especially of outliers (i.e. genetic variants, samples, and/or whole phenotypes) that can signal technical artifacts or noise.
+
+## Heritability estimation
+
+- We have recently released new heritability estimates using summary statistics with LD-score regression and stratified LD-score regression as well as genotype-level data using a randomized Haseman-Elston regression estimator ([RHEmc](https://doi.org/10.1038%2Fs41467-020-17576-9)).
+- We note that LDSC and S-LDSC are produce very noisy estimates in non-EUR ancestry groups likely due to small sample sizes.
+- RHEmc produces heritability estimates much more significantly different from 0 than LDSC/S-LDSC in non-EUR groups (see [post](https://pan.ukbb.broadinstitute.org/blog/2022/03/18/h2-qc-updated-sumstats)), however *we caution that the impact of stratification has yet to be fully explored on these estimates* (as PCs are included only as fixed effects) and these may have a differential impact on different ancestry groups. However, these estimates have shown promise in summary statistics QC (see **Quality control of summary statistics**).
+- Due to computational costs we only produce RHEmc EUR estimates for a subset of traits as a sanity check, [finding concordance](https://pan.ukbb.broadinstitute.org/blog/2022/03/18/h2-qc-updated-sumstats) with S-LDSC run on summary statistics from the same traits.
+- The heritability computed by SAIGE is known to be downwardly biased: see the [supplementary information](https://static-content.springer.com/esm/art%3A10.1038%2Fs41588-018-0184-y/MediaObjects/41588_2018_184_MOESM1_ESM.pdf) from the [SAIGE publication](https://www.nature.com/articles/s41588-018-0184-y).
