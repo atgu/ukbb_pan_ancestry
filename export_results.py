@@ -351,7 +351,7 @@ def _export_using_keyed_mt(keyed_mt, mt1, use_hq, batch_idx, get_export_path,
 
 
 def export_subset(num_pops=None, phenocode=None, exponentiate_p=False, suffix=None,
-                  skip_existing_folders=False):
+                  skip_existing_folders=False, allow_binary_eur=False):
     mt0 = get_final_sumstats_mt_for_export(exponentiate_p=exponentiate_p)
     if phenocode != None:
         print(f'\nFiltering to traits with phenocode: {phenocode}\n')
@@ -365,7 +365,8 @@ def export_subset(num_pops=None, phenocode=None, exponentiate_p=False, suffix=No
                                export_path_str=phenocode,
                                exponentiate_p=exponentiate_p,
                                suffix=suffix,
-                               skip_existing_folders=skip_existing_folders)
+                               skip_existing_folders=skip_existing_folders,
+                               skip_binary_eur = not allow_binary_eur)
     else:
         export_results(num_pops=num_pops, 
                        trait_types='all', 
@@ -374,7 +375,8 @@ def export_subset(num_pops=None, phenocode=None, exponentiate_p=False, suffix=No
                        export_path_str=phenocode,
                        exponentiate_p=exponentiate_p,
                        suffix=suffix,
-                       skip_existing_folders=skip_existing_folders)
+                       skip_existing_folders=skip_existing_folders,
+                       skip_binary_eur = not allow_binary_eur)
 
 
 def export_all_loo(batch_size=256, update=False, exponentiate_p=False, 
@@ -839,6 +841,7 @@ if __name__=="__main__":
     parser.add_argument('--export-loo', action='store_true')
     parser.add_argument('--export-loo-minpops', type=int, default=3, help='smallest number of populations for which to output loo phenotypes')
     parser.add_argument('--export-loo-hq', action='store_true', help='if enabled along with --export-loo, will output only the hq loo results')
+    parser.add_argument('--allow-binary-eur', action='store_true')
 
     parser.add_argument('--make-pheno-manifest', action='store_true')
     parser.add_argument('--export-h2-manifest', action='store_true')
@@ -869,7 +872,7 @@ if __name__=="__main__":
         # resulting in a full export across all pop combinations
         export_subset(exponentiate_p=args.exponentiate_p,
                       phenocode=args.phenocode,
-                      suffix=args.suffix, 
+                      suffix=args.suffix, num_pops=args.num_pops, allow_binary_eur=args.allow_binary_eur,
                       skip_existing_folders=args.skip_existing_folders)
     elif args.export_binary_eur:
         export_binary_eur(batch_size=args.batch_size,
