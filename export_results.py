@@ -18,9 +18,9 @@ from itertools import combinations
 from time import time
 from math import ceil
 
-#hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'CUSTOM',
-#                    'spark.hadoop.fs.gs.requester.pays.buckets': 'ukb-diverse-pops-public',
-#                    'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
+hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'CUSTOM',
+                    'spark.hadoop.fs.gs.requester.pays.buckets': 'ukb-diverse-pops-public',
+                    'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
 
 from ukbb_pan_ancestry.utils.results import load_final_sumstats_mt, load_meta_analysis_results
 from ukbb_pan_ancestry.resources import POPS
@@ -350,10 +350,21 @@ def _export_using_keyed_mt(keyed_mt, mt1, use_hq, batch_idx, get_export_path,
     return batch_idx
 
 
+def load_phenotype_list(path):
+    ht = hl.import_table(path).key_by(*PHENO_KEY_FIELDS)
+
+
 def export_subset(num_pops=None, phenocode=None, exponentiate_p=False, suffix=None,
-                  skip_existing_folders=False, allow_binary_eur=False):
+                  skip_existing_folders=False, allow_binary_eur=False, 
+                  export_specific_phenos=None):
     mt0 = get_final_sumstats_mt_for_export(exponentiate_p=exponentiate_p)
-    if phenocode != None:
+    if export_specific_phenos is not None:
+        specific_ht = load_phenotype_list(export_specific_phenos)
+        n_specific = specific_ht.count()
+        mt0 = mt0.semi_join_cols(specific_ht)
+        n_found = mt0.count_cols()
+        print(f'Filtering to specific phenotypes in tsv. Of {str(n_specific)} phenotypes, {str(n_found)} were identified for exporting.')
+    elif phenocode != None:
         print(f'\nFiltering to traits with phenocode: {phenocode}\n')
         mt0 = mt0.filter_cols(mt0.phenocode==phenocode)
     if num_pops is None:
@@ -380,7 +391,8 @@ def export_subset(num_pops=None, phenocode=None, exponentiate_p=False, suffix=No
 
 
 def export_all_loo(batch_size=256, update=False, exponentiate_p=False, 
-                   n_minimum_pops=3, suffix=None, h2_filter: bool=True):
+                   n_minimum_pops=3, suffix=None, h2_filter: bool=True,
+                   export_specific_phenos=None):
     """
     This function iterates through all phenotypes that have at least n_minimum_pops 
     and outputs loo meta-analysis results.
@@ -391,6 +403,13 @@ def export_all_loo(batch_size=256, update=False, exponentiate_p=False,
     meta_mt0 = meta_mt0.select_rows()
     meta_mt0 = meta_mt0.annotate_cols(pheno_id = get_pheno_id(tb=meta_mt0))
     meta_mt0 = meta_mt0.filter_cols(hl.len(meta_mt0.pheno_data.pop)>=n_minimum_pops)
+
+    if export_specific_phenos is not None:
+        specific_ht = load_phenotype_list(export_specific_phenos)
+        n_specific = specific_ht.count()
+        meta_mt0 = meta_mt0.semi_join_cols(specific_ht)
+        n_found = meta_mt0.count_cols()
+        print(f'Filtering to specific phenotypes in tsv. Of {str(n_specific)} phenotypes, {str(n_found)} were identified for LOO exporting with {str(n_minimum_pops)} or more {"hq" if h2_filter else ""} pops.')
     
     if update:    
         current_dir = f'{ldprune_dir}/loo/sumstats/batch1' # directory of current results to update
@@ -842,6 +861,7 @@ if __name__=="__main__":
     parser.add_argument('--export-loo-minpops', type=int, default=3, help='smallest number of populations for which to output loo phenotypes')
     parser.add_argument('--export-loo-hq', action='store_true', help='if enabled along with --export-loo, will output only the hq loo results')
     parser.add_argument('--allow-binary-eur', action='store_true')
+    parser.add_argument('--export-specific-phenos', type=str, default=None, help="path to a .tsv with specific 5-key phenotypes to export")
 
     parser.add_argument('--make-pheno-manifest', action='store_true')
     parser.add_argument('--export-h2-manifest', action='store_true')
@@ -872,6 +892,7 @@ if __name__=="__main__":
         # resulting in a full export across all pop combinations
         export_subset(exponentiate_p=args.exponentiate_p,
                       phenocode=args.phenocode,
+                      export_specific_phenos=args.export_specific_phenos,
                       suffix=args.suffix, num_pops=args.num_pops, allow_binary_eur=args.allow_binary_eur,
                       skip_existing_folders=args.skip_existing_folders)
     elif args.export_binary_eur:
@@ -887,7 +908,8 @@ if __name__=="__main__":
                        exponentiate_p=args.exponentiate_p,
                        n_minimum_pops=args.export_loo_minpops,
                        suffix=args.suffix,
-                       h2_filter=args.export_loo_hq)
+                       h2_filter=args.export_loo_hq,
+                       export_specific_phenos=args.export_specific_phenos)
     elif args.export_updated_phenos:
         export_updated_phenos(num_pops=args.num_pops)
     elif args.make_tabix:
