@@ -50,7 +50,7 @@ def main(args):
                              sum_inv_se2=all_and_leave_one_out(mt.inv_se2, mt.pheno_data.pop))
     mt = mt.transmute_entries(META_BETA=mt.sum_unnorm_beta / mt.sum_inv_se2,
                               META_SE=hl.map(lambda x: hl.sqrt(1 / x), mt.sum_inv_se2))
-    mt = mt.annotate_entries(META_Pvalue=hl.map(lambda x: 2 * hl.pnorm(x, log_p=True), -hl.abs(mt.META_BETA / mt.META_SE)))
+    mt = mt.annotate_entries(META_Pvalue=hl.map(lambda x: hl.log(2) + hl.pnorm(x, log_p=True), -hl.abs(mt.META_BETA / mt.META_SE)))
 
     # Run heterogeneity test (Cochran's Q)
     mt = mt.annotate_entries(META_Q=hl.map(lambda x: hl.sum((mt.summary_stats.BETA - x)**2 * mt.inv_se2), mt.META_BETA),
