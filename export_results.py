@@ -173,11 +173,12 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
             if skip_existing_folders:
                 # We check if there are any folders with this set of ancestries; if so, skip
                 path_to_export = os.path.dirname(get_export_path(1))
-                paths_found = [x['path'] for x in hl.hadoop_ls(path_to_export) if x['is_dir']]
-                anc_found = [re.sub('_batch[0-9]{1,}$','',os.path.basename(x)) for x in paths_found]
-                if "-".join(pop_list) in anc_found:
-                    print(f'\nSkipping {"-".join(pop_list)} as its export folder was found\n')
-                    continue
+                if hl.hadoop_exists(path_to_export):
+                    paths_found = [x['path'] for x in hl.hadoop_ls(path_to_export) if x['is_dir']]
+                    anc_found = [re.sub('_batch[0-9]{1,}$','',os.path.basename(x)) for x in paths_found]
+                    if "-".join(pop_list) in anc_found:
+                        print(f'\nSkipping {"-".join(pop_list)} as its export folder was found\n')
+                        continue
             
             start = time()
             
