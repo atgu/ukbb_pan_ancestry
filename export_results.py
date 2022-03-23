@@ -21,6 +21,7 @@ from math import ceil
 hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'CUSTOM',
                     'spark.hadoop.fs.gs.requester.pays.buckets': 'ukb-diverse-pops-public',
                     'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
+path.append('/home/rahulgupta/')
 
 from ukbb_pan_ancestry.utils.results import load_final_sumstats_mt, load_meta_analysis_results
 from ukbb_pan_ancestry.resources import POPS
@@ -352,6 +353,7 @@ def _export_using_keyed_mt(keyed_mt, mt1, use_hq, batch_idx, get_export_path,
 
 def load_phenotype_list(path):
     ht = hl.import_table(path).key_by(*PHENO_KEY_FIELDS)
+    return ht
 
 
 def export_subset(num_pops=None, phenocode=None, exponentiate_p=False, suffix=None,
