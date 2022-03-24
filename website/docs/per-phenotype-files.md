@@ -103,6 +103,10 @@ Depending on whether a phenotype is quantitative (`trait_type` is "continuous" o
 
 ### Meta-analysis fields
 
+:::note
+All meta-analyses were only performed on variants that were not flagged as `low_confidence` for a given population. As described below in **Population-specific fields**, per-variant `low_confidence` status is specific to each ancestry-trait pair.
+:::note
+
 `af_meta`: Alternate allele frequency from meta-analysis across populations for which this phenotype was GWASed. **NOTE: This field only appears in files for quantitative phenotypes.**
 
 `af_cases_meta`: Alternate allele frequency in cases from meta-analysis across populations for which this phenotype was GWASed. **NOTE: This field only appears in files for binary phenotypes.**
