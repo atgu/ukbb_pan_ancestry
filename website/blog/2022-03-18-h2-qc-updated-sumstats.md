@@ -49,12 +49,13 @@ We have made our final heritability estimates available for download in the [phe
 We observed significantly negative RHEmc heritability estimates for traits that were likely to have a high propensity of confounding (e.g., UK geographic location). We subsequently developed a systematic QC approach using the following *sequential* filters to prioritize high quality phenotypes for further analysis:
 
 1. `GWAS_run`: if the GWAS was performed for the ancestry-trait pair
-2. `defined_h2`: if the heritability estimate is non-missing
-3. `significant_z`: if the ancestry-trait pair shows $h^2$ z-score $> 0$ and if the ancestry-trait pair is not part of the AMR group (due to very limited sample size; labeled `n_too_low` in manifest)
-4. `in_bounds_h2`: if, for all ancestries for a given trait, observed-scale heritability estimates $\in (0,1)$
-5. `normal_lambda`: if, for all ancestries for a given trait, $\lambda_{GC} > 0.9$
-6. `normal_ratio`: if, for the top three best powered ancestry groups (EUR, CSA, AFR), the S-LDSC ratio, given by $\frac{intercept-1}{\lambda_{GC}}$, $< 0.3$ or the ratio z-score $< 4$
-7. `EUR_plus_1`: if the trait passes all above filters in EUR and at least 1 other ancestry group
+2. `ancestry_reasonable_n`: if the ancestry has a reasonable sample size; has the effect of removing AMR
+3. `defined_h2`: if the heritability estimate is non-missing
+4. `significant_z`: if the ancestry-trait pair shows $h^2$ z-score $> 0$
+5. `in_bounds_h2`: if, for all ancestries for a given trait, observed-scale heritability estimates $\in (0,1)$
+6. `normal_lambda`: if, for all ancestries for a given trait, $\lambda_{GC} > 0.9$
+7. `normal_ratio`: if, for the top three best powered ancestry groups (EUR, CSA, AFR), the S-LDSC ratio, given by $\frac{intercept-1}{\lambda_{GC}}$, $< 0.3$ or the ratio z-score $< 4$
+8. `EUR_plus_1`: if the trait passes all above filters in EUR and at least 1 other ancestry group
 
 A more detailed description of the approach is forthcoming. All QC results for ancestry-trait pairs can be found in the [phenotype manifest](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=511623409) and [heritability manifest]().
 
