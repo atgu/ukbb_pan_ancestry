@@ -33,7 +33,7 @@ gsutil -u your_project_id ls gs://ukb-diverse-pops-public/sumstats_release
 
 ## Using the libraries and files
 
-The files on Google Cloud Platform can be accessed by cloning the [ukbb_pan_ancestry](https://github.com/atgu/ukbb_pan_ancestry) and the [ukb_common](https://github.com/Nealelab/ukb_common) repos and accessing them programmatically. We recommend using these functions, as they apply our QC metrics (e.g. the raw file contains 7,271 phenotypes, but use of this function will return 7,221 phenotypes after removing low-quality ones) and include convenience metrics such as lambda GC.
+The files on Google Cloud Platform can be accessed by cloning the [ukbb_pan_ancestry](https://github.com/atgu/ukbb_pan_ancestry) and the [ukb_common](https://github.com/Nealelab/ukb_common) repos and accessing them programmatically. We recommend using these functions, as they allow for automatic application of our QC metrics as well as inclusion of all [QC flags](https://pan.ukbb.broadinstitute.org/docs/qc#quality-control-of-summary-statistics) and convenience metrics such as lambda GC. By default, when loading using `load_final_sumstats_mt`, the best practice QC parameters are used, which removes traits with a lambda GC < 0.5 or > 5 as well as applying all [QC filters](https://pan.ukbb.broadinstitute.org/docs/qc#quality-control-of-summary-statistics). This results in importing summary statistics for 527 traits; if it is preferable to load all traits with exported summary statistics (e.g., only applying the lambda GC < 0.5 or > 5 filter), use `load_final_sumstats_mt(filter_pheno_h2_qc=False)`, resulting in 7,228 traits. If any filtering is undesirable, use `load_final_sumstats_mt(filter_pheno_h2_qc=False, filter_phenos=False)`, which will import all 7,271 traits.
 
 ```
 %%bash
@@ -48,7 +48,9 @@ from ukbb_pan_ancestry import *
 hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'AUTO',
                     'spark.hadoop.fs.gs.requester.pays.project.id': 'your_project_id'})
 
-mt = load_final_sumstats_mt()
+# to load all results for which sumstats were exported (lambda GC < 0.5 or > 5)
+# use filter_pheno_h2_qc=True to filter to just ancestry-trait pairs passing all QC
+mt = load_final_sumstats_mt(filter_pheno_h2_qc=False)
 
 mt.describe()
 ```
@@ -67,13 +69,79 @@ Column fields:
     'pheno_data': struct {
         n_cases: int32,
         n_controls: int32,
-        heritability: float64,
+        heritability: struct {
+            estimates: struct {
+                ldsc: struct {
+                    h2_liability: float64,
+                    h2_liability_se: float64,
+                    h2_z: float64,
+                    h2_observed: float64,
+                    h2_observed_se: float64,
+                    intercept: float64,
+                    intercept_se: float64,
+                    ratio: float64,
+                    ratio_se: float64
+                },
+                sldsc_25bin: struct {
+                    h2_liability: float64,
+                    h2_liability_se: float64,
+                    h2_z: float64,
+                    h2_observed: float64,
+                    h2_observed_se: float64,
+                    intercept: float64,
+                    intercept_se: float64,
+                    ratio: float64,
+                    ratio_se: float64
+                },
+                rhemc_25bin: struct {
+                    h2_liability: float64,
+                    h2_liability_se: float64,
+                    h2_z: float64,
+                    h2_observed: float64,
+                    h2_observed_se: float64
+                },
+                rhemc_8bin: struct {
+                    h2_liability: float64,
+                    h2_liability_se: float64,
+                    h2_observed: float64,
+                    h2_observed_se: float64,
+                    h2_z: float64
+                },
+                rhemc_25bin_50rv: struct {
+                    h2_observed: float64,
+                    h2_observed_se: float64,
+                    h2_liability: float64,
+                    h2_liability_se: float64,
+                    h2_z: float64
+                },
+                final: struct {
+                    h2_observed: float64,
+                    h2_observed_se: float64,
+                    h2_liability: float64,
+                    h2_liability_se: float64,
+                    h2_z: float64
+                }
+            },
+            qcflags: struct {
+                GWAS_run: bool,
+                ancestry_reasonable_n: bool,
+                defined_h2: bool,
+                significant_z: bool,
+                in_bounds_h2: bool,
+                normal_lambda: bool,
+                normal_ratio: bool,
+                EUR_plus_1: bool,
+                pass_all: bool
+            },
+            N_ancestry_QC_pass: int32
+        },
         saige_version: str,
         inv_normalized: bool,
         pop: str,
         lambda_gc: float64,
         n_variants: int64,
-        n_sig_variants: int64
+        n_sig_variants: int64,
+        saige_heritability: float64
     }
     'description': str
     'description_more': str
@@ -82,6 +150,7 @@ Column fields:
     'n_cases_full_cohort_both_sexes': int64
     'n_cases_full_cohort_females': int64
     'n_cases_full_cohort_males': int64
+    'pop_index': int32
 ----------------------------------------
 Row fields:
     'locus': locus<GRCh37>
@@ -140,137 +209,195 @@ By default, the MatrixTable loaded by `load_final_sumstats_mt` returns one colum
 ```
 phenotype_ht = mt.cols().collect_by_key()  # Converting into one element per phenotype
 phenotype_ht.group_by('trait_type').aggregate(n_phenos=hl.agg.count()).show()
+
+# results for all exported sumstats
 +-----------------+----------+
 | trait_type      | n_phenos |
 +-----------------+----------+
+| str             |    int64 |
++-----------------+----------+
 | "biomarkers"    |       30 |
-| "categorical"   |     3684 |
+| "categorical"   |     3686 |
 | "continuous"    |      820 |
-| "icd10"         |      915 |
-| "phecode"       |     1327 |
+| "icd10"         |      921 |
+| "phecode"       |     1326 |
 | "prescriptions" |      445 |
 +-----------------+----------+
+
+# results for full QC pass-only sumstats
++-----------------+----------+
+| trait_type      | n_phenos |
++-----------------+----------+
+| str             |    int64 |
++-----------------+----------+
+| "biomarkers"    |       23 |
+| "categorical"   |      179 |
+| "continuous"    |      206 |
+| "icd10"         |       34 |
+| "phecode"       |       64 |
+| "prescriptions" |       21 |
++-----------------+----------+
 ```
-You can explore the population-level data in more detail using:
+You can explore the population-level data in more detail using (several fields removed for brevity):
 ```
 phenotype_ht = mt.cols()
-phenotype_ht.show(truncate=40, width=85)
+phenotype_ht.show(truncate=40, width=105)
 +--------------+-----------+--------------+--------+----------+--------------------+
 | trait_type   | phenocode | pheno_sex    | coding | modifier | pheno_data.n_cases |
 +--------------+-----------+--------------+--------+----------+--------------------+
 | str          | str       | str          | str    | str      |              int32 |
 +--------------+-----------+--------------+--------+----------+--------------------+
-| "biomarkers" | "30600"   | "both_sexes" | ""     | "irnt"   |               5759 |
-| "biomarkers" | "30600"   | "both_sexes" | ""     | "irnt"   |                856 |
 | "biomarkers" | "30600"   | "both_sexes" | ""     | "irnt"   |               7694 |
-| "biomarkers" | "30600"   | "both_sexes" | ""     | "irnt"   |               2340 |
 | "biomarkers" | "30600"   | "both_sexes" | ""     | "irnt"   |             367192 |
-| "biomarkers" | "30600"   | "both_sexes" | ""     | "irnt"   |               1364 |
-| "biomarkers" | "30610"   | "both_sexes" | ""     | "irnt"   |               6216 |
-| "biomarkers" | "30610"   | "both_sexes" | ""     | "irnt"   |                938 |
 | "biomarkers" | "30610"   | "both_sexes" | ""     | "irnt"   |               8422 |
-| "biomarkers" | "30610"   | "both_sexes" | ""     | "irnt"   |               2572 |
+| "biomarkers" | "30610"   | "both_sexes" | ""     | "irnt"   |             400988 |
+| "biomarkers" | "30620"   | "both_sexes" | ""     | "irnt"   |               6214 |
+| "biomarkers" | "30620"   | "both_sexes" | ""     | "irnt"   |               8407 |
+| "biomarkers" | "30620"   | "both_sexes" | ""     | "irnt"   |             400822 |
+| "biomarkers" | "30620"   | "both_sexes" | ""     | "irnt"   |               1499 |
+| "biomarkers" | "30630"   | "both_sexes" | ""     | "irnt"   |               7679 |
+| "biomarkers" | "30630"   | "both_sexes" | ""     | "irnt"   |             364987 |
 +--------------+-----------+--------------+--------+----------+--------------------+
-+-----------------------+-------------------------+--------------------------+
-| pheno_data.n_controls | pheno_data.heritability | pheno_data.saige_version |
-+-----------------------+-------------------------+--------------------------+
-|                 int32 |                 float64 | str                      |
-+-----------------------+-------------------------+--------------------------+
-|                    NA |                2.54e-01 | "SAIGE_0.36.4"           |
-|                    NA |                1.13e-01 | "SAIGE_0.36.4"           |
-|                    NA |                2.41e-01 | "SAIGE_0.36.4"           |
-|                    NA |                6.13e-02 | "SAIGE_0.36.4"           |
-|                    NA |                6.45e-02 | "SAIGE_0.36.4"           |
-|                    NA |                2.05e-01 | "SAIGE_0.36.4"           |
-|                    NA |                2.85e-01 | "SAIGE_0.36.4"           |
-|                    NA |                2.02e-01 | "SAIGE_0.36.4"           |
-|                    NA |                3.92e-01 | "SAIGE_0.36.4"           |
-|                    NA |                0.00e+00 | "SAIGE_0.36.4"           |
-+-----------------------+-------------------------+--------------------------+
-+---------------------------+----------------+----------------------+
-| pheno_data.inv_normalized | pheno_data.pop | pheno_data.lambda_gc |
-+---------------------------+----------------+----------------------+
-|                      bool | str            |              float64 |
-+---------------------------+----------------+----------------------+
-|                     false | "AFR"          |             1.03e+00 |
-|                     false | "AMR"          |             9.95e-01 |
-|                     false | "CSA"          |             1.01e+00 |
-|                     false | "EAS"          |             9.85e-01 |
-|                     false | "EUR"          |             1.39e+00 |
-|                     false | "MID"          |             1.00e+00 |
-|                     false | "AFR"          |             1.03e+00 |
-|                     false | "AMR"          |             9.98e-01 |
-|                     false | "CSA"          |             1.07e+00 |
-|                     false | "EAS"          |             9.67e-01 |
-+---------------------------+----------------+----------------------+
-+-----------------------+---------------------------+------------------------+
-| pheno_data.n_variants | pheno_data.n_sig_variants | description            |
-+-----------------------+---------------------------+------------------------+
-|                 int64 |                     int64 | str                    |
-+-----------------------+---------------------------+------------------------+
-|              19174891 |                         1 | "Albumin"              |
-|               9660572 |                         0 | "Albumin"              |
-|              12514012 |                         7 | "Albumin"              |
-|               8702282 |                         0 | "Albumin"              |
-|              21020499 |                     38622 | "Albumin"              |
-|              12296019 |                         0 | "Albumin"              |
-|              19351952 |                       399 | "Alkaline phosphatase" |
-|               9905980 |                         3 | "Alkaline phosphatase" |
-|              12681888 |                       783 | "Alkaline phosphatase" |
-|               8859024 |                       131 | "Alkaline phosphatase" |
-+-----------------------+---------------------------+------------------------+
-+------------------+--------------------+------------------------------------------+
-| description_more | coding_description | category                                 |
-+------------------+--------------------+------------------------------------------+
-| str              | str                | str                                      |
-+------------------+--------------------+------------------------------------------+
-| NA               | NA                 | "Biological samples > Assay results >... |
-| NA               | NA                 | "Biological samples > Assay results >... |
-| NA               | NA                 | "Biological samples > Assay results >... |
-| NA               | NA                 | "Biological samples > Assay results >... |
-| NA               | NA                 | "Biological samples > Assay results >... |
-| NA               | NA                 | "Biological samples > Assay results >... |
-| NA               | NA                 | "Biological samples > Assay results >... |
-| NA               | NA                 | "Biological samples > Assay results >... |
-| NA               | NA                 | "Biological samples > Assay results >... |
-| NA               | NA                 | "Biological samples > Assay results >... |
-+------------------+--------------------+------------------------------------------+
-+--------------------------------+-----------------------------+
-| n_cases_full_cohort_both_sexes | n_cases_full_cohort_females |
-+--------------------------------+-----------------------------+
-|                          int64 |                       int64 |
-+--------------------------------+-----------------------------+
-|                         422605 |                      208336 |
-|                         422605 |                      208336 |
-|                         422605 |                      208336 |
-|                         422605 |                      208336 |
-|                         422605 |                      208336 |
-|                         422605 |                      208336 |
-|                         461525 |                      229156 |
-|                         461525 |                      229156 |
-|                         461525 |                      229156 |
-|                         461525 |                      229156 |
-+--------------------------------+-----------------------------+
-+---------------------------+
-| n_cases_full_cohort_males |
-+---------------------------+
-|                     int64 |
-+---------------------------+
-|                    179998 |
-|                    179998 |
-|                    179998 |
-|                    179998 |
-|                    179998 |
-|                    179998 |
-|                    194910 |
-|                    194910 |
-|                    194910 |
-|                    194910 |
-+---------------------------+
+
++-----------------------+------------------------------------------+
+| pheno_data.n_controls | pheno_data.heritability.estimates.lds... |
++-----------------------+------------------------------------------+
+|                 int32 |                                  float64 |
++-----------------------+------------------------------------------+
+|                    NA |                                 1.62e-01 |
+|                    NA |                                 1.18e-01 |
+|                    NA |                                 1.98e-01 |
+|                    NA |                                 2.18e-01 |
+|                    NA |                                 1.27e-01 |
+|                    NA |                                 1.48e-02 |
+|                    NA |                                 1.14e-01 |
+|                    NA |                                -2.67e-01 |
+|                    NA |                                 1.30e-01 |
+|                    NA |                                 1.89e-01 |
++-----------------------+------------------------------------------+
+
++------------------------------------------+------------------------------------------+
+| pheno_data.heritability.qcflags.norma... | pheno_data.heritability.qcflags.norma... |
++------------------------------------------+------------------------------------------+
+|                                     bool |                                     bool |
++------------------------------------------+------------------------------------------+
+|                                     True |                                     True |
+|                                     True |                                     True |
+|                                     True |                                     True |
+|                                     True |                                     True |
+|                                     True |                                     True |
+|                                     True |                                     True |
+|                                     True |                                     True |
+|                                     True |                                     True |
+|                                     True |                                     True |
+|                                     True |                                     True |
++------------------------------------------+------------------------------------------+
+
++------------------------------------------+------------------------------------------+
+| pheno_data.heritability.qcflags.EUR_p... | pheno_data.heritability.qcflags.pass_all |
++------------------------------------------+------------------------------------------+
+|                                     bool |                                     bool |
++------------------------------------------+------------------------------------------+
+|                                     True |                                     True |
+|                                     True |                                     True |
+|                                     True |                                     True |
+|                                     True |                                     True |
+|                                     True |                                     True |
+|                                     True |                                     True |
+|                                     True |                                     True |
+|                                     True |                                     True |
+|                                     True |                                     True |
+|                                     True |                                     True |
++------------------------------------------+------------------------------------------+
+
++------------------------------------------+--------------------------+---------------------------+
+| pheno_data.heritability.N_ancestry_QC... | pheno_data.saige_version | pheno_data.inv_normalized |
++------------------------------------------+--------------------------+---------------------------+
+|                                    int32 | str                      |                      bool |
++------------------------------------------+--------------------------+---------------------------+
+|                                        2 | "SAIGE_0.36.4"           |                     False |
+|                                        2 | "SAIGE_0.36.4"           |                     False |
+|                                        2 | "SAIGE_0.36.4"           |                     False |
+|                                        2 | "SAIGE_0.44.5"           |                     False |
+|                                        4 | "SAIGE_0.36.4"           |                     False |
+|                                        4 | "SAIGE_0.36.4"           |                     False |
+|                                        4 | "SAIGE_0.44.5"           |                     False |
+|                                        4 | "SAIGE_0.36.4"           |                     False |
+|                                        3 | "SAIGE_0.36.4"           |                     False |
+|                                        3 | "SAIGE_0.44.5"           |                     False |
++------------------------------------------+--------------------------+---------------------------+
+
++----------------+----------------------+-----------------------+---------------------------+
+| pheno_data.pop | pheno_data.lambda_gc | pheno_data.n_variants | pheno_data.n_sig_variants |
++----------------+----------------------+-----------------------+---------------------------+
+| str            |              float64 |                 int64 |                     int64 |
++----------------+----------------------+-----------------------+---------------------------+
+| "CSA"          |             1.03e+00 |              12200078 |                         6 |
+| "EUR"          |             1.37e+00 |              20561726 |                     37450 |
+| "CSA"          |             1.02e+00 |              12364741 |                       772 |
+| "EUR"          |             1.67e+00 |              20739978 |                     89683 |
+| "AFR"          |             1.02e+00 |              18630599 |                        77 |
+| "CSA"          |             1.02e+00 |              12362444 |                         0 |
+| "EUR"          |             1.42e+00 |              20739238 |                     38220 |
+| "MID"          |             9.89e-01 |              12328418 |                         0 |
+| "CSA"          |             1.01e+00 |              12195348 |                       378 |
+| "EUR"          |             1.63e+00 |              20547047 |                     62484 |
++----------------+----------------------+-----------------------+---------------------------+
+
++-------------------------------+----------------------------+------------------+--------------------+
+| pheno_data.saige_heritability | description                | description_more | coding_description |
++-------------------------------+----------------------------+------------------+--------------------+
+|                       float64 | str                        | str              | str                |
++-------------------------------+----------------------------+------------------+--------------------+
+|                      2.41e-01 | "Albumin"                  | NA               | NA                 |
+|                      6.45e-02 | "Albumin"                  | NA               | NA                 |
+|                      3.92e-01 | "Alkaline phosphatase"     | NA               | NA                 |
+|                      1.31e-01 | "Alkaline phosphatase"     | NA               | NA                 |
+|                      3.94e-01 | "Alanine aminotransferase" | NA               | NA                 |
+|                      2.19e-01 | "Alanine aminotransferase" | NA               | NA                 |
+|                      6.28e-02 | "Alanine aminotransferase" | NA               | NA                 |
+|                      2.05e-01 | "Alanine aminotransferase" | NA               | NA                 |
+|                      3.58e-01 | "Apolipoprotein A"         | NA               | NA                 |
+|                      1.22e-01 | "Apolipoprotein A"         | NA               | NA                 |
++-------------------------------+----------------------------+------------------+--------------------+
+
++------------------------------------------+--------------------------------+
+| category                                 | n_cases_full_cohort_both_sexes |
++------------------------------------------+--------------------------------+
+| str                                      |                          int64 |
++------------------------------------------+--------------------------------+
+| "Biological samples > Assay results >... |                         422605 |
+| "Biological samples > Assay results >... |                         422605 |
+| "Biological samples > Assay results >... |                         461525 |
+| "Biological samples > Assay results >... |                         461525 |
+| "Biological samples > Assay results >... |                         461326 |
+| "Biological samples > Assay results >... |                         461326 |
+| "Biological samples > Assay results >... |                         461326 |
+| "Biological samples > Assay results >... |                         461326 |
+| "Biological samples > Assay results >... |                         420088 |
+| "Biological samples > Assay results >... |                         420088 |
++------------------------------------------+--------------------------------+
+
++-----------------------------+---------------------------+-----------+
+| n_cases_full_cohort_females | n_cases_full_cohort_males | pop_index |
++-----------------------------+---------------------------+-----------+
+|                       int64 |                     int64 |     int32 |
++-----------------------------+---------------------------+-----------+
+|                      208336 |                    179998 |         0 |
+|                      208336 |                    179998 |         1 |
+|                      229156 |                    194910 |         0 |
+|                      229156 |                    194910 |         1 |
+|                      229118 |                    194764 |         0 |
+|                      229118 |                    194764 |         1 |
+|                      229118 |                    194764 |         2 |
+|                      229118 |                    194764 |         3 |
+|                      206413 |                    179623 |         0 |
+|                      206413 |                    179623 |         1 |
++-----------------------------+---------------------------+-----------+
 showing top 10 rows
 ```
 
-More information about the GWAS run is found in the `pheno_data` struct. By default, when loading using `load_final_sumstats_mt`, the best practice QC parameters are used, which removes traits with a lambda GC < 0.5 or > 2. If this is undesirable, use `load_final_sumstats_mt(filter_phenos=False)`.
+More information about the GWAS run is found in the `pheno_data` struct. This struct also includes all heritability information and QC flags. More details on heritability estimation methods are forthcoming, but can be previewed [here](https://pan.ukbb.broadinstitute.org/blog/2022/04/11/h2-qc-updated-sumstats). Descriptions of the heritability fields can be found [below](https://pan.ukbb.broadinstitute.org/docs/hail-format#heritability) and more information on QC flags can be found [here.](https://pan.ukbb.broadinstitute.org/docs/qc#quality-control-of-summary-statistics)
 
 ### Rows (variants)
 
@@ -287,11 +414,13 @@ mt = mt.filter_cols((mt.trait_type == 'phecode') & (mt.lambda_gc > 0.9) & (mt.la
 
 ## Meta-analysis files
 
-The meta-analysis results are in a similarly structured file:
+The meta-analysis results are in a similarly structured file which can be obtained as such:
 ```
 meta_mt = hl.read_matrix_table(get_meta_analysis_results_path())
 ```
-Here, the results are provided in an array, which includes the all-available-population meta-analysis in the 0th element `meta_mt.meta_analysis[0]` and leave-one-out meta-analyses in the remainder of the array.
+By default, this function imports the "high-quality" meta-analyses, which are meta-analyses of only ancestry groups passing all [QC filters](https://pan.ukbb.broadinstitute.org/docs/qc#quality-control-of-summary-statistics). Naturally these meta-analyses are only available for those phenotypes for which at least two ancestries passed all QC (since a requirement for QC PASS is that a trait passes QC in EUR and at least one other ancestry). If interested in meta-analyses of all ancestries for which GWAS was run for a given phenotype, import using `hl.read_matrix_table(get_meta_analysis_results_path(filter_pheno_h2_qc=False))`.
+
+Both versions of the meta-analysis table have results provided in an array, which includes the all-available-population meta-analysis in the 0th element `meta_mt.meta_analysis[0]` and leave-one-out meta-analyses in the remainder of the array.
 ```
 Entry fields:
     'meta_analysis': array<struct {
@@ -414,3 +543,115 @@ Row fields:
 Key: ['locus', 'alleles']
 ----------------------------------------
 ```
+
+## Heritability estimates
+
+The heritability estimates can be found as a flat file manifest () or as a Hail [Table](https://hail.is/docs/0.2/hail.Table.html).
+```
+ht = hl.read_table(get_h2_ht())
+```
+
+This table has the following schema:
+```
+----------------------------------------
+Global fields:
+    None
+----------------------------------------
+Row fields:
+    'trait_type': str
+    'phenocode': str
+    'pheno_sex': str
+    'coding': str
+    'modifier': str
+    'heritability': array<struct {
+        pop: str,
+        estimates: struct {
+            ldsc: struct {
+                h2_liability: float64,
+                h2_liability_se: float64,
+                h2_z: float64,
+                h2_observed: float64,
+                h2_observed_se: float64,
+                intercept: float64,
+                intercept_se: float64,
+                ratio: float64,
+                ratio_se: float64
+            },
+            sldsc_25bin: struct {
+                h2_liability: float64,
+                h2_liability_se: float64,
+                h2_z: float64,
+                h2_observed: float64,
+                h2_observed_se: float64,
+                intercept: float64,
+                intercept_se: float64,
+                ratio: float64,
+                ratio_se: float64
+            },
+            rhemc_25bin: struct {
+                h2_liability: float64,
+                h2_liability_se: float64,
+                h2_z: float64,
+                h2_observed: float64,
+                h2_observed_se: float64
+            },
+            rhemc_8bin: struct {
+                h2_liability: float64,
+                h2_liability_se: float64,
+                h2_observed: float64,
+                h2_observed_se: float64,
+                h2_z: float64
+            },
+            rhemc_25bin_50rv: struct {
+                h2_observed: float64,
+                h2_observed_se: float64,
+                h2_liability: float64,
+                h2_liability_se: float64,
+                h2_z: float64
+            },
+            final: struct {
+                h2_observed: float64,
+                h2_observed_se: float64,
+                h2_liability: float64,
+                h2_liability_se: float64,
+                h2_z: float64
+            }
+        },
+        qcflags: struct {
+            GWAS_run: bool,
+            ancestry_reasonable_n: bool,
+            defined_h2: bool,
+            significant_z: bool,
+            in_bounds_h2: bool,
+            normal_lambda: bool,
+            normal_ratio: bool,
+            EUR_plus_1: bool,
+            pass_all: bool
+        },
+        N_ancestry_QC_pass: int32
+    }>
+----------------------------------------
+Key: ['trait_type', 'phenocode', 'pheno_sex', 'coding', 'modifier']
+----------------------------------------
+```
+
+Note that this is very similar to the heritability struct in the [results schema](https://pan.ukbb.broadinstitute.org/docs/hail-format#results-schema) -- the `load_final_sumstats_mt()` automatically uses `get_h2_ht()` to import the heritability table and annotate it into the column schema of the summary statistics results table.
+
+Here the heritability field is an `array` of structs, where the elements of the array represent the ancestries for which heritability estimates are available. The corresponding ancestry is found in the `heritability.pop` field. To obtain one row for each ancestry-trait pair, use the following commmand:
+```
+ht = ht.explode('heritability')
+```
+
+The `heritability.estimates` struct contains point estimates and significance test results for:
+
+- Univariate LD score regression (`ldsc`), run using [LD score flat files](https://pan.ukbb.broadinstitute.org/docs/ld#ld-scores) using high-quality HapMap3 SNPs with MAF $\geq$ 0.01 with summary statistics exported from the [results table](https://pan.ukbb.broadinstitute.org/docs/hail-format#results-schema).
+- Stratified LD score regression (`sldsc_25bin`), run using the same summary statistcs as `ldsc` with LD scores generated from SNPs in 5 MAF and 5 LD score bins.
+- Randomized Haseman-Elston (`rhemc_8bin`) using genotype data with 2 MAF and 4 LD score bins using default settings. This was predominantly used to analyze non-EUR ancestry groups but includes a small set of estimates for traits in EUR.
+- Randomized Haseman-Elston (`rhemc_25bin`) using genotype data with 5 MAF and 5 LD score bins using default settings. Only run for non-EUR ancestry groups.
+- Randomized Haseman-Elston (`rhemc_25bin_50rv`) using genotype data with 5 MAF and 5 LD score bins using 50 random variables to reduce run-to-run variability at a slightly higher computational cost. Only run for non-EUR ancestry groups.
+
+Within each of the above methods, we produce observed- and liability-scale estimates as well as standard errors and the z-score for the test of $h^2 > 0$. We also produce LDSC intercept and ratio estimates when relevant.
+
+The `heritability.qcflags` struct contains the results from our sequential QC filtering scheme -- see [quality control](https://pan.ukbb.broadinstitute.org/docs/qc#quality-control-of-summary-statistics) for more details. `N_ancestry_QC_pass ` refers to the number of ancestries passing all QC for a given trait.
+
+More information can be found [here](https://pan.ukbb.broadinstitute.org/docs/heritability) on the heritability estimation approach, and important caveats can be found [here](https://pan.ukbb.broadinstitute.org/docs/qc#heritability).

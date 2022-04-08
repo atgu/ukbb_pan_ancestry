@@ -5,9 +5,11 @@ author: Rahul Gupta, on behalf of the Pan UKBB Team
 tags: [sumstats, heritability, independent phenotypes, meta analysis]
 ---
 
+REPLACE ADDMANIFEST WITH PROPER URLS
+
 We are excited to report significant updates to our summary statistics and data release:
 
-1. We performed heritability analyses across > 16000 phenotype-trait pairs using several approaches.
+1. We performed heritability analyses across > 16,000 ancestry-trait pairs using several approaches.
 2. We developed a detailed summary statistics QC approach to prioritize the highest-quality phenotypes best suited for downstream analyses.
 3. We identified a maximally independent set of phenotypes that passed our QC filters.
 4. We recomputed summary statistics for traits that showed extremely significant p-values with standard errors of 0, now with non-zero standard errors and $\log_{10} p$-values.
@@ -23,7 +25,7 @@ If using the UKBB Pan Ancestry [codebase](https://github.com/atgu/ukbb_pan_ances
 mt = load_final_sumstats_mt(filter_pheno_h2_qc=True)
 ```
 
-If using the manifest flat file directly (available [here](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit?usp=sharing)), filter on `phenotype_qc_{ancestry} == PASS` for the ancestry of interest.
+If using the manifest flat file directly (available [here](ADDMANIFEST)), filter on `phenotype_qc_{ancestry} == PASS` for the ancestry of interest.
 
 ## Heritability analyses
 
@@ -32,7 +34,7 @@ We produced narrow-sense heritability estimates using univariate linkage-disequi
 ![](./EUR_SLDSC_LDSC_compare_all_phenotypes.png)
 **Figure 1**: Comparison of liability-scale $h^2$ estimates for EUR ancestry-trait pairs using S-LDSC (25 bins) in UKB versus prior estimates using S-LDSC with the baselineLDv1.1 model in UKB among EUR samples. Black line is $y=x$.
 
-To boost power for non-EUR ancestry groups we leveraged Haseman-Elston regression at scale on genotypes implemented in RHEmc (Pazokitoroudi et al. Nat Comm 2020). We piloted this approach for several ["sanity check"]() traits expected to behave well, finding good correlations between estimates in EUR using RHEmc and S-LDSC (Figure 2).
+To boost power for non-EUR ancestry groups we leveraged Haseman-Elston regression at scale on genotypes implemented in RHEmc (Pazokitoroudi et al. 2020 Nat Comm). We piloted this approach for several [pilot phenotypes](ADDMANIFEST) expected to behave well, finding good correlations between estimates in EUR using RHEmc and S-LDSC (Figure 2).
 
 ![](./EUR_rhemc_nonliab_v_sldsc_allpananc.png)
 **Figure 2**: Observed-scale $h^2$ estimates in select phenotypes among EUR individuals obtained using RHEmc (8 bins, to limit computational cost) vs. using S-LDSC (25 bins), colored by trait type category. Black line is $y=x$.
@@ -42,7 +44,7 @@ We then extended this approach to all non-EUR ancestry-trait pairs and report th
 ![](./h2z_densities_nonEUR_sldsc_rhemc.png)
 **Figure 3**: Distribution of $h^2$ z-scores for non-EUR ancestry-trait pairs in UKB when computed using summary statistics (S-LDSC, pink) or genotype data (RHEmc, blue). Dotted line corresponds to $Z = 4$.
 
-We have made our final heritability estimates available for download in the [phenotype manifest](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=511623409) and data from all methods available in the [heritability manifest](). All results are also available in [MatrixTable format](https://pan.ukbb.broadinstitute.org/downloads).
+We have made our final heritability estimates available for download in the [phenotype manifest](ADDMANIFEST) and data from all methods available in the [heritability manifest](ADDMANIFEST). All results are also available in [MatrixTable format](https://pan.ukbb.broadinstitute.org/downloads). Further description of the heritability estimation approach can be found [here](https://pan.ukbb.broadinstitute.org/docs/heritability).
 
 ## QC approach
 
@@ -54,14 +56,14 @@ We observed significantly negative RHEmc heritability estimates for traits that 
 4. `significant_z`: if the ancestry-trait pair shows $h^2$ z-score $> 0$
 5. `in_bounds_h2`: if, for all ancestries for a given trait, observed-scale heritability estimates $\in (0,1)$
 6. `normal_lambda`: if, for all ancestries for a given trait, $\lambda_{GC} > 0.9$
-7. `normal_ratio`: if, for the top three best powered ancestry groups (EUR, CSA, AFR), the S-LDSC ratio, given by $\frac{intercept-1}{\lambda_{GC}}$, $< 0.3$ or the ratio z-score $< 4$
+7. `normal_ratio`: if, for the top three best powered ancestry groups (EUR, CSA, AFR), the S-LDSC ratio, given by $\frac{intercept-1}{mean \chi^2 -1}$, $< 0.3$ or the ratio z-score $< 4$
 8. `EUR_plus_1`: if the trait passes all above filters in EUR and at least 1 other ancestry group
 
-A more detailed description of the approach is forthcoming. All QC results for ancestry-trait pairs can be found in the [phenotype manifest](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=511623409) and [heritability manifest]().
+A more detailed description of the approach is forthcoming. All QC results for ancestry-trait pairs can be found in the [phenotype manifest](ADDMANIFEST) and [heritability manifest](ADDMANIFEST).
 
 ## Maximally independent set
 
-Using the set of phenotypes with ancestries passing all of the above QC filters, we next wanted to construct a set of independent phenotypes to avoid double-counting in downstream analyses. To this end we constructed a maximally independent set of phenotypes using a pairwise phenotypic correlation matrix (released [here](https://pan.ukbb.broadinstitute.org/downloads) via [`make_pairwise_ht`](https://github.com/Nealelab/ukb_common/blob/f9b4c037b57e932a52dcfb8c35f1e077c6939610/src/ukbb_common/utils/phenotype_loading.py#L338)). Of all phenotype pairs, we retained any with a pairwise correlation $r < 0.1$. For pairs with  $r > 0.1$ , we used [`hl.maximal_independent_set`](https://hail.is/docs/0.2/methods/misc.html#hail.methods.maximal_independent_set) to identify indendent phenotypes for retention, imposing a tiebreaker of higher case count (or higher sample size for continuous phenotypes). This resulted in the selection of 192 independent phenotypes, which were used in subsequent analyses analyzing trends across phenotypes. We have released this set in the [phenotype manifest](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=511623409).
+Using the set of phenotypes with ancestries passing all of the above QC filters, we next wanted to construct a set of independent phenotypes to avoid double-counting in downstream analyses. To this end we constructed a maximally independent set of phenotypes using a pairwise phenotypic correlation matrix (released [here](https://pan.ukbb.broadinstitute.org/downloads) via [`make_pairwise_ht`](https://github.com/Nealelab/ukb_common/blob/f9b4c037b57e932a52dcfb8c35f1e077c6939610/src/ukbb_common/utils/phenotype_loading.py#L338)). Of all phenotype pairs, we retained any with a pairwise correlation $r < 0.1$. For pairs with  $r > 0.1$ , we used [`hl.maximal_independent_set`](https://hail.is/docs/0.2/methods/misc.html#hail.methods.maximal_independent_set) to identify indendent phenotypes for retention, imposing a tiebreaker of higher case count (or higher sample size for continuous phenotypes). This resulted in the selection of 195 independent phenotypes, which were used in subsequent analyses analyzing trends across phenotypes. We have released this set in the [phenotype manifest](ADDMANIFEST).
 
 ## Updated summary statistics and meta analyses
 

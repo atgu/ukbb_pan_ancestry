@@ -59,11 +59,11 @@ function Downloads() {
             </li>
           </ul>
           <p className="">
-            All heritability estimates are available for download in the following formats:
+            All heritability estimates (see <Link to={useBaseUrl('docs/heritability')}>here</Link> for more information on our approach) are available for download in the following formats:
           </p>
           <ul>
             <li>
-              <b>Flat files</b>: the manifest flat file is available on AWS (<a href="https://pan-ukb-us-east-1.s3.amazonaws.com/ld_release/h2_manifest.tsv.bgz">tarball here</a>) or on <a href="https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=30994804" target="_blank">Google Sheets</a>.
+              <b>Flat files</b>: the manifest flat file is available on AWS (<a href="https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_release/h2_manifest.tsv.bgz">tarball here</a>) or on <a href="https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=30994804" target="_blank">Google Sheets</a>.
               Our topline results can be found as part of the main phenotype manifest (<a href="https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_release/phenotype_manifest.tsv.bgz">Amazon AWS</a> or <a href="https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=30994804" target="_blank">Google Sheets</a>)
             </li>
             <li>
@@ -72,7 +72,7 @@ function Downloads() {
             </li>
           </ul>
           <p className="">
-            The phenotype correlation matrix, used in the construction of the maximally independent set of phenotypes passing QC (see <Link to={useBaseUrl('blog/2022/03/18/h2-qc-updated-sumstats')}>here</Link> for details),
+            The phenotype correlation matrix, used in the construction of the maximally independent set of phenotypes passing QC (see <Link to={useBaseUrl('blog/2022/04/11/h2-qc-updated-sumstats')}>here</Link> for details),
             is available on Amazon AWS (download the tarball file <a href="https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_release/Pheno_pairwise_correlations_update.txt.bgz">here</a>).
           </p>
           <p className="">
