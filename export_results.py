@@ -37,6 +37,7 @@ ldprune_dir = f'{bucket}/ld_prune'
 all_quant_trait_types = {'continuous','biomarkers'}
 all_binary_trait_types = {'categorical','phecode', 'icd10', 'prescriptions'}
 SEX = ['both_sexes','females','males']
+path_max_indep_set = 'gs://ukb-diverse-pops/Cross-Pop-GWAS-comparison/Max_indep_set_phenos_h2QC_10_tiebreakCasenum_FINAL.ht'
 
 # fields specific to each category of trait
 quant_meta_fields = ['AF_Allele2']
@@ -703,7 +704,7 @@ def make_pheno_manifest(export=True, export_flattened_h2_table=False, web_versio
     #ht_meta = mt_meta.cols()
     #ht_meta = ht_meta.annotate(pops_in_hq_meta = ht_meta.meta_analysis_data.pop[0])
 
-    ht_max_indep = hl.read_table('gs://ukb-diverse-pops/Cross-Pop-GWAS-comparison/Max_indep_set_phenos_h2QC_10_tiebreakCasenum.ht').annotate(in_max_independent_set=True)
+    ht_max_indep = hl.read_table(path_max_indep_set).annotate(in_max_independent_set=True)
 
     annotate_dict.update({'pops': hl.delimit(ht.pheno_data.pop),
                           'num_pops': hl.len(ht.pheno_data.pop),
@@ -812,9 +813,9 @@ def make_pheno_manifest(export=True, export_flattened_h2_table=False, web_versio
 
     if export:
         #ht.export(get_pheno_manifest_path(web_version))
-        ht.export(f'{bucket}/combined_results/220316_phenotype_manifest{"_web" if web_version else ""}.tsv.bgz')
+        ht.export(f'{bucket}/combined_results/220407_phenotype_manifest{"_web" if web_version else ""}.tsv.bgz')
         if export_flattened_h2_table:
-            ht_h2.export(f'{bucket}/combined_results/220316_h2_manifest.tsv.bgz')
+            ht_h2.export(f'{bucket}/combined_results/220407_h2_manifest.tsv.bgz')
             #ht_h2.export(get_h2_manifest_path())
     else:
         return ht
