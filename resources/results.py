@@ -51,8 +51,8 @@ def get_heritability_txt_path(from_date: str = None):
     return f'{bucket}/results/misc/all_heritabilities{"_" + from_date if from_date else ""}.txt'
 
 
-def get_pheno_manifest_path():
-    return f'{public_bucket}/sumstats_release/phenotype_manifest.tsv.bgz'
+def get_pheno_manifest_path(web_version=False):
+    return f'{public_bucket}/sumstats_release/phenotype_manifest{"_web" if web_version else ""}.tsv.bgz'
 
 
 def get_h2_manifest_path():

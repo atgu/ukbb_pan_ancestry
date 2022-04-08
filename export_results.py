@@ -13,9 +13,15 @@ from multiprocessing.sharedctypes import Value
 import os, re
 from sys import path
 import hail as hl
+import hailtop.batch as hb
 from itertools import combinations
 from time import time
 from math import ceil
+
+hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'CUSTOM',
+                    'spark.hadoop.fs.gs.requester.pays.buckets': 'ukb-diverse-pops-public',
+                    'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
+
 from ukbb_pan_ancestry.utils.results import load_final_sumstats_mt, load_meta_analysis_results
 from ukbb_pan_ancestry.resources import POPS
 from ukbb_pan_ancestry.resources.results import get_variant_results_path, get_pheno_manifest_path, get_h2_manifest_path
@@ -31,6 +37,7 @@ ldprune_dir = f'{bucket}/ld_prune'
 all_quant_trait_types = {'continuous','biomarkers'}
 all_binary_trait_types = {'categorical','phecode', 'icd10', 'prescriptions'}
 SEX = ['both_sexes','females','males']
+path_max_indep_set = 'gs://ukb-diverse-pops/Cross-Pop-GWAS-comparison/Max_indep_set_phenos_h2QC_10_tiebreakCasenum_FINAL.ht'
 
 # fields specific to each category of trait
 quant_meta_fields = ['AF_Allele2']
@@ -166,11 +173,12 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
             if skip_existing_folders:
                 # We check if there are any folders with this set of ancestries; if so, skip
                 path_to_export = os.path.dirname(get_export_path(1))
-                paths_found = [x['path'] for x in hl.hadoop_ls(path_to_export) if x['is_dir']]
-                anc_found = [re.sub('_batch[0-9]{1,}$','',os.path.basename(x)) for x in paths_found]
-                if "-".join(pop_list) in anc_found:
-                    print(f'\nSkipping {"-".join(pop_list)} as its export folder was found\n')
-                    continue
+                if hl.hadoop_exists(path_to_export):
+                    paths_found = [x['path'] for x in hl.hadoop_ls(path_to_export) if x['is_dir']]
+                    anc_found = [re.sub('_batch[0-9]{1,}$','',os.path.basename(x)) for x in paths_found]
+                    if "-".join(pop_list) in anc_found:
+                        print(f'\nSkipping {"-".join(pop_list)} as its export folder was found\n')
+                        continue
             
             start = time()
             
@@ -344,10 +352,22 @@ def _export_using_keyed_mt(keyed_mt, mt1, use_hq, batch_idx, get_export_path,
     return batch_idx
 
 
+def load_phenotype_list(path):
+    ht = hl.import_table(path).key_by(*PHENO_KEY_FIELDS)
+    return ht
+
+
 def export_subset(num_pops=None, phenocode=None, exponentiate_p=False, suffix=None,
-                  skip_existing_folders=False):
+                  skip_existing_folders=False, allow_binary_eur=False, 
+                  export_specific_phenos=None):
     mt0 = get_final_sumstats_mt_for_export(exponentiate_p=exponentiate_p)
-    if phenocode != None:
+    if export_specific_phenos is not None:
+        specific_ht = load_phenotype_list(export_specific_phenos)
+        n_specific = specific_ht.count()
+        mt0 = mt0.semi_join_cols(specific_ht)
+        n_found = mt0.count_cols()
+        print(f'Filtering to specific phenotypes in tsv. Of {str(n_specific)} phenotypes, {str(n_found)} were identified for exporting.')
+    elif phenocode != None:
         print(f'\nFiltering to traits with phenocode: {phenocode}\n')
         mt0 = mt0.filter_cols(mt0.phenocode==phenocode)
     if num_pops is None:
@@ -359,7 +379,8 @@ def export_subset(num_pops=None, phenocode=None, exponentiate_p=False, suffix=No
                                export_path_str=phenocode,
                                exponentiate_p=exponentiate_p,
                                suffix=suffix,
-                               skip_existing_folders=skip_existing_folders)
+                               skip_existing_folders=skip_existing_folders,
+                               skip_binary_eur = not allow_binary_eur)
     else:
         export_results(num_pops=num_pops, 
                        trait_types='all', 
@@ -368,11 +389,13 @@ def export_subset(num_pops=None, phenocode=None, exponentiate_p=False, suffix=No
                        export_path_str=phenocode,
                        exponentiate_p=exponentiate_p,
                        suffix=suffix,
-                       skip_existing_folders=skip_existing_folders)
+                       skip_existing_folders=skip_existing_folders,
+                       skip_binary_eur = not allow_binary_eur)
 
 
 def export_all_loo(batch_size=256, update=False, exponentiate_p=False, 
-                   n_minimum_pops=3, suffix=None, h2_filter: bool=True):
+                   n_minimum_pops=3, suffix=None, h2_filter: bool=True,
+                   export_specific_phenos=None):
     """
     This function iterates through all phenotypes that have at least n_minimum_pops 
     and outputs loo meta-analysis results.
@@ -383,6 +406,13 @@ def export_all_loo(batch_size=256, update=False, exponentiate_p=False,
     meta_mt0 = meta_mt0.select_rows()
     meta_mt0 = meta_mt0.annotate_cols(pheno_id = get_pheno_id(tb=meta_mt0))
     meta_mt0 = meta_mt0.filter_cols(hl.len(meta_mt0.pheno_data.pop)>=n_minimum_pops)
+
+    if export_specific_phenos is not None:
+        specific_ht = load_phenotype_list(export_specific_phenos)
+        n_specific = specific_ht.count()
+        meta_mt0 = meta_mt0.semi_join_cols(specific_ht)
+        n_found = meta_mt0.count_cols()
+        print(f'Filtering to specific phenotypes in tsv. Of {str(n_specific)} phenotypes, {str(n_found)} were identified for LOO exporting with {str(n_minimum_pops)} or more {"hq" if h2_filter else ""} pops.')
     
     if update:    
         current_dir = f'{ldprune_dir}/loo/sumstats/batch1' # directory of current results to update
@@ -653,7 +683,7 @@ def make_per_population_n_cases():
     return ht
 
 
-def make_pheno_manifest(export=True, export_flattened_h2_table=False):    
+def make_pheno_manifest(export=True, export_flattened_h2_table=False, web_version=False):    
     mt0 = load_final_sumstats_mt(filter_sumstats=False,
                                  filter_variants=False,
                                  separate_columns_by_pop=False,
@@ -674,7 +704,7 @@ def make_pheno_manifest(export=True, export_flattened_h2_table=False):
     #ht_meta = mt_meta.cols()
     #ht_meta = ht_meta.annotate(pops_in_hq_meta = ht_meta.meta_analysis_data.pop[0])
 
-    ht_max_indep = hl.read_table('gs://ukb-diverse-pops/Cross-Pop-GWAS-comparison/Max_indep_set_phenos_h2QC_10_tiebreakCasenum.ht').annotate(in_max_independent_set=True)
+    ht_max_indep = hl.read_table(path_max_indep_set).annotate(in_max_independent_set=True)
 
     annotate_dict.update({'pops': hl.delimit(ht.pheno_data.pop),
                           'num_pops': hl.len(ht.pheno_data.pop),
@@ -711,6 +741,13 @@ def make_pheno_manifest(export=True, export_flattened_h2_table=False):
     ht = ht.annotate(in_max_independent_set = ht_max_indep[ht.key].in_max_independent_set)
     ht = ht.annotate(in_max_independent_set = hl.if_else(hl.is_defined(ht.in_max_independent_set), ht.in_max_independent_set, False))
     ht = ht.annotate(filename = get_pheno_id(tb=ht)+'.tsv.bgz')
+    ht = ht.annotate(filename_tabix = get_pheno_id(tb=ht)+'.tsv.bgz.tbi')
+    if web_version:
+        ht = ht.annotate(aws_link = 'https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_flat_files/' + ht.filename)
+        ht = ht.annotate(aws_link_tabix = 'https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_flat_files_tabix/' + ht.filename_tabix)
+    else:
+        ht = ht.annotate(aws_path = 's3://pan-ukb-us-east-1/sumstats_flat_files/' + ht.filename)
+        ht = ht.annotate(aws_path_tabix = 's3://pan-ukb-us-east-1/sumstats_flat_files_tabix/' + ht.filename_tabix)
 
     # now create a table containing per-ancestry, per-sex case counts
     ht_counts = make_per_population_n_cases()
@@ -734,26 +771,27 @@ def make_pheno_manifest(export=True, export_flattened_h2_table=False):
                                          n_cases_hq_cohort_males = hl.agg.sum(ht_counts_f.recomputed_n_cases_males))
     ht = ht.annotate(**{f'n_cases_hq_cohort_{sex}': ht_hq_cohort[ht.key][f'n_cases_hq_cohort_{sex}'] for sex in SEX})
 
-    dropbox_manifest = hl.import_table(f'{ldprune_dir}/UKBB_Pan_Populations-Manifest_20200615-manifest_info.tsv',
-                                       impute=True,
-                                       key='File') # no need to filter table for duplicates because dropbox links are the same for updated phenos
-    bgz = dropbox_manifest.filter(~dropbox_manifest.File.contains('.tbi'))
-    bgz = bgz.rename({'File':'filename'})
-    tbi = dropbox_manifest.filter(dropbox_manifest.File.contains('.tbi'))
-    tbi = tbi.annotate(filename = tbi.File.replace('.tbi','')).key_by('filename')
+    # no longer using dropbox for distribution of sumstats
+    # dropbox_manifest = hl.import_table(f'{ldprune_dir}/UKBB_Pan_Populations-Manifest_20200615-manifest_info.tsv',
+    #                                    impute=True,
+    #                                    key='File') # no need to filter table for duplicates because dropbox links are the same for updated phenos
+    # bgz = dropbox_manifest.filter(~dropbox_manifest.File.contains('.tbi'))
+    # bgz = bgz.rename({'File':'filename'})
+    # tbi = dropbox_manifest.filter(dropbox_manifest.File.contains('.tbi'))
+    # tbi = tbi.annotate(filename = tbi.File.replace('.tbi','')).key_by('filename')
         
-    dropbox_annotate_dict = {}
+    # dropbox_annotate_dict = {}
     
-    rename_dict = {'dbox link':'dropbox_link',
-                   'size (bytes)':'size_in_bytes'}
+    # rename_dict = {'dbox link':'dropbox_link',
+    #                'size (bytes)':'size_in_bytes'}
     
-    dropbox_annotate_dict.update({'filename_tabix':tbi[ht.filename].File})
-    for field in ['dbox link','wget', 'size (bytes)','md5 hex']:
-        for tb, suffix in [(bgz, ''), (tbi, '_tabix')]:
-            dropbox_annotate_dict.update({(rename_dict[field] if field in rename_dict 
-                                           else field.replace(' ','_')
-                                           )+suffix:tb[ht.filename][field]})
-    ht = ht.annotate(**dropbox_annotate_dict)
+    # dropbox_annotate_dict.update({'filename_tabix':tbi[ht.filename].File})
+    # for field in ['dbox link','wget', 'size (bytes)','md5 hex']:
+    #     for tb, suffix in [(bgz, ''), (tbi, '_tabix')]:
+    #         dropbox_annotate_dict.update({(rename_dict[field] if field in rename_dict 
+    #                                        else field.replace(' ','_')
+    #                                        )+suffix:tb[ht.filename][field]})
+    # ht = ht.annotate(**dropbox_annotate_dict)
     ht = ht.drop('pheno_data', 'phenotype_qc', 'pops_pass_qc_arr')
     ht.describe()
     
@@ -774,14 +812,43 @@ def make_pheno_manifest(export=True, export_flattened_h2_table=False):
         ht_h2.describe()
 
     if export:
-        ht.export(get_pheno_manifest_path())
-        #ht.export(f'{bucket}/combined_results/220224_phenotype_manifest.tsv.bgz')
+        #ht.export(get_pheno_manifest_path(web_version))
+        ht.export(f'{bucket}/combined_results/220407_phenotype_manifest{"_web" if web_version else ""}.tsv.bgz')
         if export_flattened_h2_table:
-            #ht_h2.export(f'{bucket}/combined_results/220224_h2_manifest.tsv.bgz')
-            ht_h2.export(get_h2_manifest_path())
+            ht_h2.export(f'{bucket}/combined_results/220407_h2_manifest.tsv.bgz')
+            #ht_h2.export(get_h2_manifest_path())
     else:
         return ht
+
+
+def make_tabix(folder, sumstats_folder, suffix):
+    if suffix is not None:
+        folder = folder + suffix + '/'
+        sumstats_folder = sumstats_folder + suffix + '/'
     
+    backend = hb.ServiceBackend(billing_project='ukb_diverse_pops', bucket='ukb_diverse_pops')
+    bserv = hb.Batch(name="tabix_pan_ancestry", backend=backend)
+    if hl.hadoop_is_dir(sumstats_folder):
+        items = [x['path'] for x in hl.hadoop_ls(sumstats_folder) if not x['is_dir']]
+    else:
+        raise ValueError('Sumstats folder does not exist.')
+    if hl.hadoop_is_dir(folder):
+        items_tabix = [x['path'] for x in hl.hadoop_ls(folder) if not x['is_dir']]
+    else:
+        items_tabix = []
+    for sumstat in items:
+        if folder + os.path.basename(sumstat) + '.tbi' not in items_tabix:
+            j = bserv.new_job('tabix_' + os.path.basename(sumstat))
+            j.image('gcr.io/ukbb-diversepops-neale/nbaya_tabix:latest')
+            sumstat_file = bserv.read_input_group(**{'tsv.bgz': sumstat})
+            command = f"""
+                tabix -S1 -s1 -b2 -e2 {sumstat_file['tsv.bgz']}
+                cp {sumstat_file['tsv.bgz']}.tbi {j.tbout}
+            """
+            j.command(command)
+            bserv.write_output(j.tbout, folder + os.path.basename(sumstat) + '.tbi')
+    bserv.run(verbose=False)
+
 
 if __name__=="__main__":
     
@@ -789,13 +856,24 @@ if __name__=="__main__":
     parser.add_argument('--num-pops', type=int, default=None, help='number of defined pops (options: 6,5,...,2,1)')
     parser.add_argument('--trait-types', type=str, default='all', help='trait types to export (options: all, quant, binary)')
     parser.add_argument('--phenocode', type=str, default=None, help='phenocode to filter to for exporting results')
+
     parser.add_argument('--export-all-results', action='store_true', help='exports all results (except EUR binary) for all pops')
     parser.add_argument('--export-results', action='store_true')
     parser.add_argument('--export-binary_eur', action='store_true')
     parser.add_argument('--export-loo', action='store_true')
     parser.add_argument('--export-loo-minpops', type=int, default=3, help='smallest number of populations for which to output loo phenotypes')
     parser.add_argument('--export-loo-hq', action='store_true', help='if enabled along with --export-loo, will output only the hq loo results')
+    parser.add_argument('--allow-binary-eur', action='store_true')
+    parser.add_argument('--export-specific-phenos', type=str, default=None, help="path to a .tsv with specific 5-key phenotypes to export")
+
     parser.add_argument('--make-pheno-manifest', action='store_true')
+    parser.add_argument('--export-h2-manifest', action='store_true')
+    parser.add_argument('--export-web-manifest', action='store_true')
+
+    parser.add_argument('--make-tabix', action='store_true')
+    parser.add_argument('--tabix-folder', type=str, default='gs://ukb-diverse-pops/ld_prune/export_results/2112_final_results_tabix/')
+    parser.add_argument('--sumstats-folder', type=str, default='gs://ukb-diverse-pops/ld_prune/export_results/2112_final_results/')
+    
     parser.add_argument('--export-updated-phenos', action='store_true')
     parser.add_argument('--cluster-idx',type=int, default=None, help='cluster index for splitting export of binary EUR traits')
     parser.add_argument('--num-clusters',type=int, default=None, help='total number of clusters used in splitting export of binary EUR traits')
@@ -817,7 +895,8 @@ if __name__=="__main__":
         # resulting in a full export across all pop combinations
         export_subset(exponentiate_p=args.exponentiate_p,
                       phenocode=args.phenocode,
-                      suffix=args.suffix, 
+                      export_specific_phenos=args.export_specific_phenos,
+                      suffix=args.suffix, num_pops=args.num_pops, allow_binary_eur=args.allow_binary_eur,
                       skip_existing_folders=args.skip_existing_folders)
     elif args.export_binary_eur:
         export_binary_eur(batch_size=args.batch_size,
@@ -826,12 +905,15 @@ if __name__=="__main__":
                           exponentiate_p=args.exponentiate_p,
                           suffix=args.suffix)
     elif args.make_pheno_manifest:
-        make_pheno_manifest()
+        make_pheno_manifest(export_flattened_h2_table=args.export_h2_manifest, web_version=args.export_web_manifest)
     elif args.export_loo:
         export_all_loo(batch_size=args.batch_size,
                        exponentiate_p=args.exponentiate_p,
                        n_minimum_pops=args.export_loo_minpops,
                        suffix=args.suffix,
-                       h2_filter=args.export_loo_hq)
+                       h2_filter=args.export_loo_hq,
+                       export_specific_phenos=args.export_specific_phenos)
     elif args.export_updated_phenos:
         export_updated_phenos(num_pops=args.num_pops)
+    elif args.make_tabix:
+        make_tabix(args.tabix_folder, args.sumstats_folder, args.suffix)
