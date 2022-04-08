@@ -5,7 +5,7 @@ __author__ = 'konradk'
 import argparse
 from gnomad.utils.vep import *
 from gnomad.utils.filtering import *
-from ukb_common import *
+from ukbb_common import *
 from ukbb_pan_ancestry import *
 
 

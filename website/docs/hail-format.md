@@ -33,12 +33,12 @@ gsutil -u your_project_id ls gs://ukb-diverse-pops-public/sumstats_release
 
 ## Using the libraries and files
 
-The files on Google Cloud Platform can be accessed by cloning the [ukbb_pan_ancestry](https://github.com/atgu/ukbb_pan_ancestry) and the [ukb_common](https://github.com/Nealelab/ukb_common) repos and accessing them programmatically. We recommend using these functions, as they apply our QC metrics (e.g. the raw file contains 7,271 phenotypes, but use of this function will return 7,221 phenotypes after removing low-quality ones) and include convenience metrics such as lambda GC.
+The files on Google Cloud Platform can be accessed by cloning the [ukbb_pan_ancestry](https://github.com/atgu/ukbb_pan_ancestry) and the [ukbb_common](https://github.com/Nealelab/ukbb_common) repos and accessing them programmatically. We recommend using these functions, as they apply our QC metrics (e.g. the raw file contains 7,271 phenotypes, but use of this function will return 7,221 phenotypes after removing low-quality ones) and include convenience metrics such as lambda GC.
 
 ```
 %%bash
 git clone https://github.com/atgu/ukbb_pan_ancestry
-git clone https://github.com/Nealelab/ukb_common
+git clone https://github.com/Nealelab/ukbb_common
 ```
 
 

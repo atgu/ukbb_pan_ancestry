@@ -7,7 +7,7 @@ import argparse
 import logging
 logging.basicConfig(format="%(levelname)s (%(name)s %(lineno)s): %(message)s", level='INFO', filename='saige_pipeline.log')
 
-from ukb_common import *
+from ukbb_common import *
 
 from ukbb_pan_ancestry import *
 

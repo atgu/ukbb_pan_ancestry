@@ -6,7 +6,7 @@ import argparse
 from pprint import pprint
 
 from gnomad.utils import slack
-from ukb_common import *
+from ukbb_common import *
 from ukbb_pan_ancestry import *
 
 def remove_phenos_from_analysis(mt: hl.MatrixTable):

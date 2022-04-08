@@ -34,7 +34,7 @@ This file can then be loaded using:
 python load_phenotype_data.py --add_dataset TRAITTYPE_NAME
 ```
 
-If you do not have the google cloud connector installed, you can do this as a submission (`hailctl dataproc submit load_phenotype_data.py --add_dataset TRAITTYPE_NAME`); note that in either case, you will need to have the `ukb_common` and `ukbb_pan_ancestry` packages on your path. This script will make a backup copy of the existing phenotype MatrixTable and overwrite the master file with a new one including the new phenotype(s).
+If you do not have the google cloud connector installed, you can do this as a submission (`hailctl dataproc submit load_phenotype_data.py --add_dataset TRAITTYPE_NAME`); note that in either case, you will need to have the `ukbb_common` and `ukbb_pan_ancestry` packages on your path. This script will make a backup copy of the existing phenotype MatrixTable and overwrite the master file with a new one including the new phenotype(s).
 
 #### Step 2 - Run tests
 
