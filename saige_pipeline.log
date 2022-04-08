@@ -1,0 +1,5 @@
+INFO (deploy_config 39): deploy config file not found: None
+INFO (gear 37): tokens loaded from /Users/rahulgupta/.hail/tokens.json
+INFO (deploy_config 39): deploy config file not found: None
+INFO (gear 37): tokens loaded from /Users/rahulgupta/.hail/tokens.json
+INFO (batch_client.aioclient 664): created batch 1577709
