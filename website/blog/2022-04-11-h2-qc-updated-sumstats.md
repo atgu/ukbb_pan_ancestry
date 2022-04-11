@@ -34,7 +34,7 @@ We produced narrow-sense heritability estimates using univariate linkage-disequi
 ![](./EUR_SLDSC_LDSC_compare_all_phenotypes.png)
 **Figure 1**: Comparison of liability-scale $h^2$ estimates for EUR ancestry-trait pairs using S-LDSC (25 bins) in UKB versus prior estimates using S-LDSC with the baselineLDv1.1 model in UKB among EUR samples. Black line is $y=x$.
 
-To boost power for non-EUR ancestry groups we leveraged Haseman-Elston regression at scale on genotypes implemented in RHEmc (Pazokitoroudi et al. 2020 Nat Comm). We piloted this approach for several [pilot phenotypes](ADDMANIFEST) expected to behave well, finding good correlations between estimates in EUR using RHEmc and S-LDSC (Figure 2).
+To boost power for non-EUR ancestry groups we leveraged Haseman-Elston regression at scale on genotypes implemented in RHEmc ([Pazokitoroudi et al. 2020 Nat Comm](https://www.nature.com/articles/s41467-020-17576-9)). We piloted this approach for several [pilot phenotypes](ADDMANIFEST) expected to behave well, finding good correlations between estimates in EUR using RHEmc and S-LDSC (Figure 2).
 
 ![](./EUR_rhemc_nonliab_v_sldsc_allpananc.png)
 **Figure 2**: Observed-scale $h^2$ estimates in select phenotypes among EUR individuals obtained using RHEmc (8 bins, to limit computational cost) vs. using S-LDSC (25 bins), colored by trait type category. Black line is $y=x$.

@@ -48,9 +48,10 @@ from ukbb_pan_ancestry import *
 hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'AUTO',
                     'spark.hadoop.fs.gs.requester.pays.project.id': 'your_project_id'})
 
-# to load all results for which sumstats were exported (lambda GC < 0.5 or > 5)
-# use filter_pheno_h2_qc=True to filter to just ancestry-trait pairs passing all QC
+# loads all results for which sumstats were exported (lambda GC < 0.5 or > 5)
 mt = load_final_sumstats_mt(filter_pheno_h2_qc=False)
+# use filter_pheno_h2_qc=True to filter to just ancestry-trait pairs passing all QC
+# mt = load_final_sumstats_mt(filter_pheno_h2_qc=True)
 
 mt.describe()
 ```
@@ -546,7 +547,7 @@ Key: ['locus', 'alleles']
 
 ## Heritability estimates
 
-The heritability estimates can be found as a flat file manifest () or as a Hail [Table](https://hail.is/docs/0.2/hail.Table.html).
+The heritability estimates can be found as a [flat file manifest](ADDMANIFEST) or as a Hail [Table](https://hail.is/docs/0.2/hail.Table.html).
 ```
 ht = hl.read_table(get_h2_ht())
 ```
@@ -635,7 +636,7 @@ Key: ['trait_type', 'phenocode', 'pheno_sex', 'coding', 'modifier']
 ----------------------------------------
 ```
 
-Note that this is very similar to the heritability struct in the [results schema](https://pan.ukbb.broadinstitute.org/docs/hail-format#results-schema) -- the `load_final_sumstats_mt()` automatically uses `get_h2_ht()` to import the heritability table and annotate it into the column schema of the summary statistics results table.
+Note that this is very similar to the heritability struct in the [results schema](#results-schema) -- the `load_final_sumstats_mt()` automatically uses `get_h2_ht()` to import the heritability table and annotate it into the column schema of the summary statistics results table.
 
 Here the heritability field is an `array` of structs, where the elements of the array represent the ancestries for which heritability estimates are available. The corresponding ancestry is found in the `heritability.pop` field. To obtain one row for each ancestry-trait pair, use the following commmand:
 ```
@@ -644,7 +645,7 @@ ht = ht.explode('heritability')
 
 The `heritability.estimates` struct contains point estimates and significance test results for:
 
-- Univariate LD score regression (`ldsc`), run using [LD score flat files](https://pan.ukbb.broadinstitute.org/docs/ld#ld-scores) using high-quality HapMap3 SNPs with MAF $\geq$ 0.01 with summary statistics exported from the [results table](https://pan.ukbb.broadinstitute.org/docs/hail-format#results-schema).
+- Univariate LD score regression (`ldsc`), run using [LD score flat files](https://pan.ukbb.broadinstitute.org/docs/ld#ld-scores) using high-quality HapMap3 SNPs with MAF $\geq$ 0.01 with summary statistics exported from the [results table](#results-schema).
 - Stratified LD score regression (`sldsc_25bin`), run using the same summary statistcs as `ldsc` with LD scores generated from SNPs in 5 MAF and 5 LD score bins.
 - Randomized Haseman-Elston (`rhemc_8bin`) using genotype data with 2 MAF and 4 LD score bins using default settings. This was predominantly used to analyze non-EUR ancestry groups but includes a small set of estimates for traits in EUR.
 - Randomized Haseman-Elston (`rhemc_25bin`) using genotype data with 5 MAF and 5 LD score bins using default settings. Only run for non-EUR ancestry groups.

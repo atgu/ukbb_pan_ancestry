@@ -47,4 +47,4 @@ The sample size for each population and the number of phenotypes run is as follo
 | EUR |    420531 |     7200 |
 | MID |      1599 |     1372 |
 
-Each phenotype may have fewer samples run, depending on data missingness, which can be found in the [phenotype manifest](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8), or `n_cases` and `n_controls` in the Hail MatrixTable.
+Each phenotype may have fewer samples run, depending on data missingness, which can be found in the [phenotype manifest](ADDMANIFEST), or `n_cases` and `n_controls` in the Hail MatrixTable.

@@ -28,7 +28,7 @@ function Downloads() {
               available in the <Link to={useBaseUrl('docs/per-phenotype-files')}>Technical Details</Link>.
               <ul>
                 <li>
-                  The phenotype manifest (browse on <a href="https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=30994804" target="_blank">Google Sheets</a> or
+                  The phenotype manifest (browse on <a href="ADDMANIFEST" target="_blank">Google Sheets</a> or
                   download on <a href="https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_release/phenotype_manifest.tsv.bgz">Amazon AWS</a>) contains the location and
                   detailed information of all per-phenotype files for those phenotypes for which GWAS was run.
                 </li>
@@ -63,8 +63,8 @@ function Downloads() {
           </p>
           <ul>
             <li>
-              <b>Flat files</b>: the manifest flat file is available on AWS (<a href="https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_release/h2_manifest.tsv.bgz">tarball here</a>) or on <a href="https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=30994804" target="_blank">Google Sheets</a>.
-              Our topline results can be found as part of the main phenotype manifest (<a href="https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_release/phenotype_manifest.tsv.bgz">Amazon AWS</a> or <a href="https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=30994804" target="_blank">Google Sheets</a>)
+              <b>Flat files</b>: the manifest flat file is available on AWS (<a href="https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_release/h2_manifest.tsv.bgz">tarball here</a>) or on <a href="ADDMANIFEST" target="_blank">Google Sheets</a>.
+              Our topline results can be found as part of the main phenotype manifest (<a href="https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_release/phenotype_manifest.tsv.bgz">Amazon AWS</a> or <a href="ADDMANIFEST" target="_blank">Google Sheets</a>)
             </li>
             <li>
               <b>Hail format</b>: for large-scale analyses and integration with our other datasets we provide heritability data
