@@ -3,15 +3,13 @@ __author__ = 'Rahul Gupta'
 import hailtop.batch as hb
 import hail as hl
 hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'CUSTOM',
-                    'spark.hadoop.fs.gs.requester.pays.buckets': 'ukb-diverse-pops-public',
-                    'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
+                   'spark.hadoop.fs.gs.requester.pays.buckets': 'ukb-diverse-pops-public',
+                   'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
 from hail import hadoop_exists, hadoop_ls
 import argparse
 import os, re, math, sys
 import pandas as pd
 import numpy as np
-
-sys.path.append('/Users/rahulgupta/Desktop/')
 
 from ukbb_pan_ancestry.heritability.ldsc_ukbb_div_pops_constants import *
 from ukbb_pan_ancestry.resources.results import get_variant_results_path

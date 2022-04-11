@@ -5,7 +5,7 @@ from ukb_common.resources.generic import PHENO_KEY_FIELDS
 
 
 def get_h2_flat_file():
-    return 'gs://ukb-diverse-pops-public-free/h2/h2_estimates_all_flat_211101.tsv'
+    return 'gs://ukb-diverse-pops-public-free/h2/h2_estimates_all_flat_220317.tsv'
     #return 'gs://ukb-diverse-pops/rg-h2-tables/h2_estimates_all_flat_211101.tsv'
 
 
@@ -16,6 +16,7 @@ def get_h2_ht():
 
 def qc_to_flags(qc_struct):
     map_flags_opposite = {'GWAS_run': 'GWAS_not_run',
+                          'ancestry_reasonable_n': 'ancestry_n_too_low',
                           'defined_h2': 'h2_not_defined',
                           'significant_z': 'h2_z_insignificant',
                           'in_bounds_h2': 'out_of_bounds_h2',

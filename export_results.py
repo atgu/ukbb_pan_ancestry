@@ -18,9 +18,9 @@ from itertools import combinations
 from time import time
 from math import ceil
 
-#hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'CUSTOM',
-#                    'spark.hadoop.fs.gs.requester.pays.buckets': 'ukb-diverse-pops-public',
-#                    'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
+hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'CUSTOM',
+                    'spark.hadoop.fs.gs.requester.pays.buckets': 'ukb-diverse-pops-public',
+                    'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
 
 from ukbb_pan_ancestry.utils.results import load_final_sumstats_mt, load_meta_analysis_results
 from ukbb_pan_ancestry.resources import POPS
@@ -37,6 +37,7 @@ ldprune_dir = f'{bucket}/ld_prune'
 all_quant_trait_types = {'continuous','biomarkers'}
 all_binary_trait_types = {'categorical','phecode', 'icd10', 'prescriptions'}
 SEX = ['both_sexes','females','males']
+path_max_indep_set = 'gs://ukb-diverse-pops/Cross-Pop-GWAS-comparison/Max_indep_set_phenos_h2QC_10_tiebreakCasenum_FINAL.ht'
 
 # fields specific to each category of trait
 quant_meta_fields = ['AF_Allele2']
@@ -172,11 +173,12 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
             if skip_existing_folders:
                 # We check if there are any folders with this set of ancestries; if so, skip
                 path_to_export = os.path.dirname(get_export_path(1))
-                paths_found = [x['path'] for x in hl.hadoop_ls(path_to_export) if x['is_dir']]
-                anc_found = [re.sub('_batch[0-9]{1,}$','',os.path.basename(x)) for x in paths_found]
-                if "-".join(pop_list) in anc_found:
-                    print(f'\nSkipping {"-".join(pop_list)} as its export folder was found\n')
-                    continue
+                if hl.hadoop_exists(path_to_export):
+                    paths_found = [x['path'] for x in hl.hadoop_ls(path_to_export) if x['is_dir']]
+                    anc_found = [re.sub('_batch[0-9]{1,}$','',os.path.basename(x)) for x in paths_found]
+                    if "-".join(pop_list) in anc_found:
+                        print(f'\nSkipping {"-".join(pop_list)} as its export folder was found\n')
+                        continue
             
             start = time()
             
@@ -350,10 +352,22 @@ def _export_using_keyed_mt(keyed_mt, mt1, use_hq, batch_idx, get_export_path,
     return batch_idx
 
 
+def load_phenotype_list(path):
+    ht = hl.import_table(path).key_by(*PHENO_KEY_FIELDS)
+    return ht
+
+
 def export_subset(num_pops=None, phenocode=None, exponentiate_p=False, suffix=None,
-                  skip_existing_folders=False, allow_binary_eur=False):
+                  skip_existing_folders=False, allow_binary_eur=False, 
+                  export_specific_phenos=None):
     mt0 = get_final_sumstats_mt_for_export(exponentiate_p=exponentiate_p)
-    if phenocode != None:
+    if export_specific_phenos is not None:
+        specific_ht = load_phenotype_list(export_specific_phenos)
+        n_specific = specific_ht.count()
+        mt0 = mt0.semi_join_cols(specific_ht)
+        n_found = mt0.count_cols()
+        print(f'Filtering to specific phenotypes in tsv. Of {str(n_specific)} phenotypes, {str(n_found)} were identified for exporting.')
+    elif phenocode != None:
         print(f'\nFiltering to traits with phenocode: {phenocode}\n')
         mt0 = mt0.filter_cols(mt0.phenocode==phenocode)
     if num_pops is None:
@@ -380,7 +394,8 @@ def export_subset(num_pops=None, phenocode=None, exponentiate_p=False, suffix=No
 
 
 def export_all_loo(batch_size=256, update=False, exponentiate_p=False, 
-                   n_minimum_pops=3, suffix=None, h2_filter: bool=True):
+                   n_minimum_pops=3, suffix=None, h2_filter: bool=True,
+                   export_specific_phenos=None):
     """
     This function iterates through all phenotypes that have at least n_minimum_pops 
     and outputs loo meta-analysis results.
@@ -391,6 +406,13 @@ def export_all_loo(batch_size=256, update=False, exponentiate_p=False,
     meta_mt0 = meta_mt0.select_rows()
     meta_mt0 = meta_mt0.annotate_cols(pheno_id = get_pheno_id(tb=meta_mt0))
     meta_mt0 = meta_mt0.filter_cols(hl.len(meta_mt0.pheno_data.pop)>=n_minimum_pops)
+
+    if export_specific_phenos is not None:
+        specific_ht = load_phenotype_list(export_specific_phenos)
+        n_specific = specific_ht.count()
+        meta_mt0 = meta_mt0.semi_join_cols(specific_ht)
+        n_found = meta_mt0.count_cols()
+        print(f'Filtering to specific phenotypes in tsv. Of {str(n_specific)} phenotypes, {str(n_found)} were identified for LOO exporting with {str(n_minimum_pops)} or more {"hq" if h2_filter else ""} pops.')
     
     if update:    
         current_dir = f'{ldprune_dir}/loo/sumstats/batch1' # directory of current results to update
@@ -682,7 +704,7 @@ def make_pheno_manifest(export=True, export_flattened_h2_table=False, web_versio
     #ht_meta = mt_meta.cols()
     #ht_meta = ht_meta.annotate(pops_in_hq_meta = ht_meta.meta_analysis_data.pop[0])
 
-    ht_max_indep = hl.read_table('gs://ukb-diverse-pops/Cross-Pop-GWAS-comparison/Max_indep_set_phenos_h2QC_10_tiebreakCasenum.ht').annotate(in_max_independent_set=True)
+    ht_max_indep = hl.read_table(path_max_indep_set).annotate(in_max_independent_set=True)
 
     annotate_dict.update({'pops': hl.delimit(ht.pheno_data.pop),
                           'num_pops': hl.len(ht.pheno_data.pop),
@@ -791,9 +813,9 @@ def make_pheno_manifest(export=True, export_flattened_h2_table=False, web_versio
 
     if export:
         #ht.export(get_pheno_manifest_path(web_version))
-        ht.export(f'{bucket}/combined_results/220316_phenotype_manifest{"_web" if web_version else ""}.tsv.bgz')
+        ht.export(f'{bucket}/combined_results/220407_phenotype_manifest{"_web" if web_version else ""}.tsv.bgz')
         if export_flattened_h2_table:
-            ht_h2.export(f'{bucket}/combined_results/220316_h2_manifest.tsv.bgz')
+            ht_h2.export(f'{bucket}/combined_results/220407_h2_manifest.tsv.bgz')
             #ht_h2.export(get_h2_manifest_path())
     else:
         return ht
@@ -842,6 +864,7 @@ if __name__=="__main__":
     parser.add_argument('--export-loo-minpops', type=int, default=3, help='smallest number of populations for which to output loo phenotypes')
     parser.add_argument('--export-loo-hq', action='store_true', help='if enabled along with --export-loo, will output only the hq loo results')
     parser.add_argument('--allow-binary-eur', action='store_true')
+    parser.add_argument('--export-specific-phenos', type=str, default=None, help="path to a .tsv with specific 5-key phenotypes to export")
 
     parser.add_argument('--make-pheno-manifest', action='store_true')
     parser.add_argument('--export-h2-manifest', action='store_true')
@@ -872,6 +895,7 @@ if __name__=="__main__":
         # resulting in a full export across all pop combinations
         export_subset(exponentiate_p=args.exponentiate_p,
                       phenocode=args.phenocode,
+                      export_specific_phenos=args.export_specific_phenos,
                       suffix=args.suffix, num_pops=args.num_pops, allow_binary_eur=args.allow_binary_eur,
                       skip_existing_folders=args.skip_existing_folders)
     elif args.export_binary_eur:
@@ -887,7 +911,8 @@ if __name__=="__main__":
                        exponentiate_p=args.exponentiate_p,
                        n_minimum_pops=args.export_loo_minpops,
                        suffix=args.suffix,
-                       h2_filter=args.export_loo_hq)
+                       h2_filter=args.export_loo_hq,
+                       export_specific_phenos=args.export_specific_phenos)
     elif args.export_updated_phenos:
         export_updated_phenos(num_pops=args.num_pops)
     elif args.make_tabix:
