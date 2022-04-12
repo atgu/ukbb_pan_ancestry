@@ -547,7 +547,7 @@ Key: ['locus', 'alleles']
 
 ## Heritability estimates
 
-The heritability estimates can be found as a [flat file manifest](ADDMANIFEST) or as a Hail [Table](https://hail.is/docs/0.2/hail.Table.html).
+The heritability estimates can be found as a [flat file manifest](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=1797288938) or as a Hail [Table](https://hail.is/docs/0.2/hail.Table.html).
 ```
 ht = hl.read_table(get_h2_ht())
 ```

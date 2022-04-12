@@ -7,10 +7,10 @@ title: Heritability Estimation
 Important caveats with our heritability estimation approach can be found [here](https://pan.ukbb.broadinstitute.org/docs/qc#heritability).
 :::note
 :::note
-Due to high computational cost associated with running genotype-based heritability estimation on the EUR ancestry group, we only provide genotype-based heritability estimates for a [pilot](ADDMANIFEST) set of traits in EUR, with results available for all non-EUR ancestry-trait pairs. Summary statistic methods were run for all ancestry-trait pairs.
+Due to high computational cost associated with running genotype-based heritability estimation on the EUR ancestry group, we only provide genotype-based heritability estimates for a [pilot](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=1101141753) set of traits in EUR, with results available for all non-EUR ancestry-trait pairs. Summary statistic methods were run for all ancestry-trait pairs.
 :::note
 
-We have used several methods to estimate heritability across up to 6 ancestry groups and 7,228 traits, totaling over 16,000 ancestry-trait pairs. All results can be found in the [phenotype manifest](ADDMANIFEST) and [heritability manifest](ADDMANIFEST). The following approaches were used:
+We have used several methods to estimate heritability across up to 6 ancestry groups and 7,228 traits, totaling over 16,000 ancestry-trait pairs. All results can be found in the [phenotype manifest](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=903887429) and [heritability manifest](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=1797288938). The following approaches were used:
 
 - Univariate LD score regression ([LDSC](https://github.com/bulik/ldsc); `ldsc`), run using [LD score flat files](https://pan.ukbb.broadinstitute.org/docs/ld#ld-scores) using high-quality HapMap3 SNPs with MAF $\geq$ 0.01 with summary statistics exported from the [results table](https://pan.ukbb.broadinstitute.org/docs/hail-format#results-schema). See Bulik-Sullivan et al. 2015 Nat Gen for more information on the method.
 - Stratified LD score regression ([S-LDSC](https://github.com/bulik/ldsc); `sldsc_25bin`), run using the same summary statistcs as `ldsc` with LD scores generated from SNPs in 5 MAF and 5 LD score bins. See Finucane et al. 2015 Nat Gen for more information on the method.

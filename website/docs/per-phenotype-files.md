@@ -7,7 +7,7 @@ title: Per-phenotype files
 
 The data are released in 7,228 flat files, one for each phenotype, and a corresponding tabix index file for each. These files are available on Amazon AWS (for large-scale analysis, we recommend using the [Hail format](Hail-format) files on Google Cloud).
 
-The files are named with respect to their `trait_type`, `phenocode`, and a combination of `pheno_sex`, `coding`, or `modifier`. To find a specific phenotype, we suggest looking in the [phenotype manifest (Google Sheets)](ADDMANIFEST) (available for download on [Amazon](https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_release/phenotype_manifest.tsv.bgz)). Search for your phenotype(s) of interest and use the paths indicated to download the summary statistics. A description of fields in the manifest can be found [here](#phenotype-manifest-file).
+The files are named with respect to their `trait_type`, `phenocode`, and a combination of `pheno_sex`, `coding`, or `modifier`. To find a specific phenotype, we suggest looking in the [phenotype manifest (Google Sheets)](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=903887429) (available for download on [Amazon](https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_release/phenotype_manifest.tsv.bgz)). Search for your phenotype(s) of interest and use the paths indicated to download the summary statistics. A description of fields in the manifest can be found [here](#phenotype-manifest-file).
 
 The [per-phenotype files](#per-phenotype-files) are summary statistics files containing meta-analyzed and single-ancestry GWAS results. We especially highlight the `low_confidence` fields, which includes some (non-exhaustive) basic quality control filters (see below). These files each have 28,987,534 variants, but note that not all populations will have data for each variant.
 
@@ -15,7 +15,7 @@ Finally, the [variant manifest file](#variant-manifest-file) includes informatio
 
 ## Phenotype manifest file
 
-[Pan-UK Biobank phenotype manifest (Google Sheets)](ADDMANIFEST) (download on [Amazon](https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_release/phenotype_manifest.tsv.bgz))
+[Pan-UK Biobank phenotype manifest (Google Sheets)](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=903887429) (download on [Amazon](https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_release/phenotype_manifest.tsv.bgz))
 
 ### Phenotype ID fields
 
@@ -62,7 +62,7 @@ If a trait is quantitative (`trait_type` is "continuous" or "biomarkers"), all s
 
 `num_pops`: Number of ancestry groups for which this phenotype was GWASed.
 
-`pops_pass_qc`: Comma-delimited list of ancestry codes for which this phenotype passes QC (see [quality control](https://pan.ukbb.broadinstitute.org/docs/qc#quality-control-of-summary-statistics), [heritability manifest](ADDMANIFEST), and `phenotype_qc_{pop}` field).
+`pops_pass_qc`: Comma-delimited list of ancestry codes for which this phenotype passes QC (see [quality control](https://pan.ukbb.broadinstitute.org/docs/qc#quality-control-of-summary-statistics), [heritability manifest](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=1797288938), and `phenotype_qc_{pop}` field).
 
 `num_pops_pass_qc`: Number of ancestry groups for which this phenotype passes QC.
 
@@ -74,7 +74,7 @@ The variable `pop` is a placeholder for a 3-letter ancestry code. For example, `
 If a trait is quantitative (`trait_type` is "continuous" or "biomarkers"), all samples are considered to be "cases". Thus, the number of cases is equivalent to the number of samples.
 :::note
 :::note
-The final heritability estimates for non-EUR traits use a randomized Haseman Elston estimator on genotype data with 5 MAF and 5 LD bins and 50 random variables (`rhemc_25bin_50rv`), while for computational tractability for EUR we use S-LDSC with 5 MAF and 5 LD bins. In the phenotype manifest we provide estimates with the `sldsc_25bin_` prefix for EUR and the `rhemc_25bin_50rv_` prefix for other ancestry groups. See the [heritability manifest](ADDMANIFEST) for all heritability estimates computed, including `sldsc_25bin` for all ancestry groups.
+The final heritability estimates for non-EUR traits use a randomized Haseman Elston estimator on genotype data with 5 MAF and 5 LD bins and 50 random variables (`rhemc_25bin_50rv`), while for computational tractability for EUR we use S-LDSC with 5 MAF and 5 LD bins. In the phenotype manifest we provide estimates with the `sldsc_25bin_` prefix for EUR and the `rhemc_25bin_50rv_` prefix for other ancestry groups. See the [heritability manifest](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=1797288938) for all heritability estimates computed, including `sldsc_25bin` for all ancestry groups.
 :::note
 
 `n_cases_{pop}`: Number of cases (or individuals phenotyped for quantitative traits) with `pop` ancestry in the GWAS analysis. Excludes ancestry outliers and samples that failed QC.
@@ -93,7 +93,7 @@ The final heritability estimates for non-EUR traits use a randomized Haseman Els
 
 `lambda_gc_{pop}`: The genomic control (lambda GC) calculated from the summary statistics for `pop` with low-confidence statistics removed and only considering high-quality variants.
 
-`phenotype_qc_{pop}`: Phenotype QC outcome for each ancestry-trait pair. Filters are described in the [heritability manifest](ADDMANIFEST) in more detail. Filters are applied sequentially; this field specifies either PASS or the reason for failure.
+`phenotype_qc_{pop}`: Phenotype QC outcome for each ancestry-trait pair. Filters are described in the [heritability manifest](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=1797288938) in more detail. Filters are applied sequentially; this field specifies either PASS or the reason for failure.
 
 ### File information
 :::note
@@ -106,7 +106,7 @@ For each field in this section there also exists a field with the suffix `_tabix
 
 ## Heritability manifest file
 
-[Pan-UK Biobank heritability manifest (Google Sheets)](ADDMANIFEST) (download on [Amazon](https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_release/h2_manifest.tsv.bgz))
+[Pan-UK Biobank heritability manifest (Google Sheets)](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=1797288938) (download on [Amazon](https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_release/h2_manifest.tsv.bgz))
 
 ### Phenotype ID fields
 
