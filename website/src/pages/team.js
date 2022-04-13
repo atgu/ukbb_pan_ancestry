@@ -23,16 +23,18 @@ function Contributors() {
               <b>Analysis</b>
               <ul>
                 <li>Konrad Karczewski</li>
-                <li>Elizabeth Atkinson</li>
-                <li>Masahiro Kanai</li>
-                <li>Nikolas Baya</li>
-                <li>Patrick Turley</li>
-                <li>Gopal Sarma</li>
-                <li>Raymond Walters</li>
-                <li>Duncan Palmer</li>
-                <li>Nathan Cheng</li>
                 <li>Rahul Gupta</li>
+                <li>Masahiro Kanai</li>
+                <li>Kristin Tsuo</li>
+                <li>Ying Wang</li>
+                <li>Nikolas Baya</li>
+                <li>Raymond Walters</li>
+                <li>Patrick Turley</li>
+                <li>Duncan Palmer</li>
+                <li>Gopal Sarma</li>
+                <li>Nathan Cheng</li>
                 <li>Wei Zhou</li>
+                <li>Elizabeth Atkinson</li>
                 <li>Alicia Martin</li>
               </ul>
               <b>Website</b>
