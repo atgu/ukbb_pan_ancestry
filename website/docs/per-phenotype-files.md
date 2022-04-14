@@ -195,6 +195,10 @@ The below QC flags were applied sequentially. See [quality control](https://pan.
 
 ## Per-phenotype files
 
+:::note
+All p-values reported in the summary statistics flat files are now stored as log p-values to avoid underflow. This includes the per-ancestry association test p-value as well as `pval_meta`, `pval_meta_hq`, `pval_heterogeneity`, and `pval_heterogeneity_hq`.
+:::note
+
 The per-phenotype files are `tsv.bgz` files are (b)gzipped: they can either be unzipped (`zcat file.tsv.bgz > file.txt`), or read natively in R (`read_delim(gzfile('file.tsv.bgz'), delim='\t')`) and Python (`gzip.open('file.tsv.bgz')`).
 
 Depending on whether a phenotype is quantitative (`trait_type` is "continuous" or "biomarkers") or binary (`trait_type` is "prescriptions", "icd10", "phecode" or "categorical"), the number of columns will change due to  case/control-stratified statistics for binary phenotypes.
@@ -225,9 +229,9 @@ All meta-analyses were only performed on variants that were not flagged as `low_
 
 `se_meta`: Estimated standard error of `beta_meta`.
 
-`pval_meta`: p-value of `beta_meta` significance test.
+`pval_meta`: log p-value of `beta_meta` significance test.
 
-`pval_heterogeneity`: p-value from heterogeneity test of meta-analysis.
+`pval_heterogeneity`: log p-value from heterogeneity test of meta-analysis.
 
 ### High quality meta-analysis fields
 
@@ -248,9 +252,9 @@ As above, meta-analyses were only performed on variants that were not flagged as
 
 `se_meta_hq`: Estimated standard error of `beta_meta_hq`.
 
-`pval_meta_hq`: p-value of `beta_meta_hq` significance test.
+`pval_meta_hq`: log p-value of `beta_meta_hq` significance test.
 
-`pval_heterogeneity_hq`: p-value from heterogeneity test of meta-analysis.
+`pval_heterogeneity_hq`: log p-value from heterogeneity test of meta-analysis.
 
 ### Population-specific fields
 :::note
@@ -272,7 +276,7 @@ An ancestry-specific column is only included in the file if a GWAS was run for t
 
 `se_{pop}`: Estimated standard error of `beta_{pop}`.
 
-`pval_{pop}`: p-value of `beta_{pop}` significance test.
+`pval_{pop}`: log p-value of `beta_{pop}` significance test.
 
 `low_confidence_{pop}`: Boolean flag indicating low confidence for `pop` based on the following heuristics:
 - Alternate allele count in cases <= 3
