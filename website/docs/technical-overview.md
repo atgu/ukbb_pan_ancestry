@@ -6,7 +6,7 @@ title: Overview
 
 ## Pan-ancestry GWAS of UK Biobank
 
-Here, we present a multi-ancestry analysis of 7,221 phenotypes using a generalized mixed model association testing framework, spanning 16,119 genome-wide association studies. We provide standard meta-analysis across all populations and with a leave-one-population-out approach for each trait. We develop a stringent quality control pipeline, identifying variants that are discrepant with gnomAD frequencies, and make recommendations for filtering these and other GWAS results.
+Here, we present a multi-ancestry analysis of 7,228 phenotypes using a generalized mixed model association testing framework, spanning 16,131 genome-wide association studies. We provide standard meta-analysis across all populations and with a leave-one-population-out approach for each trait. We develop a stringent quality control pipeline, identifying variants that are discrepant with gnomAD frequencies, and make recommendations for filtering these and other GWAS results.
 
 ### Multi-ancestry analysis
 

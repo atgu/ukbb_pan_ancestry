@@ -406,6 +406,10 @@ The rows are indexed by locus and alleles. Direct annotations can be found in th
 
 ### Entries (association tests)
 
+:::note
+Please note that p-values are now stored as log p-values to avoid underflow.
+:::
+
 The entry fields house the summary statistics themselves. Note that there is a `low_confidence` annotation that indicates a possible low-quality association test (allele count in cases or controls <= 3, or overall minor allele count < 20).
 
 The resulting dataset can be filtered and annotated as a standard Hail MatrixTable:
@@ -414,6 +418,10 @@ mt = mt.filter_cols((mt.trait_type == 'phecode') & (mt.lambda_gc > 0.9) & (mt.la
 ```
 
 ## Meta-analysis files
+
+:::note
+Please note that p-values are now stored as log p-values to avoid underflow.
+:::
 
 The meta-analysis results are in a similarly structured file which can be obtained as such:
 ```

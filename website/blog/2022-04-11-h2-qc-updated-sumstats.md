@@ -10,7 +10,7 @@ We are excited to report significant updates to our summary statistics and data 
 1. We performed heritability analyses across > 16,000 ancestry-trait pairs using several approaches.
 2. We developed a detailed summary statistics QC approach to prioritize the highest-quality phenotypes best suited for downstream analyses.
 3. We identified a maximally independent set of phenotypes that passed our QC filters.
-4. We recomputed summary statistics for traits that showed extremely significant p-values with standard errors of 0, now with non-zero standard errors and $\log_{10} p$-values.
+4. We recomputed summary statistics for traits that showed extremely significant p-values with standard errors of 0, now with non-zero standard errors and $\log p$-values to avoid numerical underflow.
 5. We updated cross-ancestry meta-analyses to incorporate updated summary statistics and also computed new meta-analyses using only QC-pass ancestry-trait pairs.
 
 <!--truncate-->
@@ -29,17 +29,20 @@ If using the manifest flat file directly (available [here](https://docs.google.c
 
 We produced narrow-sense heritability estimates using univariate linkage-disequilibrium score regression (LDSC) leveraging LD scores computed as [previously described](https://pan.ukbb.broadinstitute.org/blog/2020/10/29/ld-release), as well as using stratified LDSC with 25 minor allele frequency (MAF) and LD score bins. Our results for summary statistics for individuals of EUR ancestry were highly concordant with [prior estimates](https://nealelab.github.io/UKBB_ldsc/) in UKB for overlapping phenotypes (Figure 1), however we observed very poor power for detection of $h^2 > 0$ for non-EUR ancestry groups.
 
-![](./EUR_SLDSC_LDSC_compare_all_phenotypes.png)
+<center><img src="/img/EUR_SLDSC_LDSC_compare_all_phenotypes.png"  width="608" height="600"/></center>
+
 **Figure 1**: Comparison of liability-scale $h^2$ estimates for EUR ancestry-trait pairs using S-LDSC (25 bins) in UKB versus prior estimates using S-LDSC with the baselineLDv1.1 model in UKB among EUR samples. Black line is $y=x$.
 
 To boost power for non-EUR ancestry groups we leveraged Haseman-Elston regression at scale on genotypes implemented in RHEmc ([Pazokitoroudi et al. 2020 Nat Comm](https://www.nature.com/articles/s41467-020-17576-9)). We piloted this approach for several [pilot phenotypes](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=1101141753) expected to behave well, finding good correlations between estimates in EUR using RHEmc and S-LDSC (Figure 2).
 
-![](./EUR_rhemc_nonliab_v_sldsc_allpananc.png)
+<center><img src="/img/EUR_rhemc_nonliab_v_sldsc_allpananc.png"  width="640" height="523"/></center>
+
 **Figure 2**: Observed-scale $h^2$ estimates in select phenotypes among EUR individuals obtained using RHEmc (8 bins, to limit computational cost) vs. using S-LDSC (25 bins), colored by trait type category. Black line is $y=x$.
 
 We then extended this approach to all non-EUR ancestry-trait pairs and report these results using both 8 and 25 MAF-LD score bins. We observe an increase in power for detecting non-zero $h^2$ using this method for non-EUR individuals relative to S-LDSC (Figure 3) as expected from genotype-based approaches. Due to computational cost and the similarity of $h^2$ estimates observed for EUR individuals between S-LDSC and RHEmc, our final estimates use S-LDSC for EUR and RHEmc for non-EUR ancestry groups.
 
-![](./h2z_densities_nonEUR_sldsc_rhemc.png)
+<center><img src="/img/h2z_densities_nonEUR_sldsc_rhemc.png"  width="590" height="413"/></center>
+
 **Figure 3**: Distribution of $h^2$ z-scores for non-EUR ancestry-trait pairs in UKB when computed using summary statistics (S-LDSC, pink) or genotype data (RHEmc, blue). Dotted line corresponds to $Z = 4$.
 
 We have made our final heritability estimates available for download in the [phenotype manifest](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=903887429) and data from all methods available in the [heritability manifest](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=1797288938). All results are also available in [MatrixTable format](https://pan.ukbb.broadinstitute.org/downloads). Further description of the heritability estimation approach can be found [here](https://pan.ukbb.broadinstitute.org/docs/heritability).
@@ -65,7 +68,7 @@ Using the set of phenotypes with ancestries passing all of the above QC filters,
 
 ## Updated summary statistics and meta analyses
 
-Using the updated summary statistics, we reproduced cross-ancestry meta-analyses for all phenotypes (using only ancestry groups for which GWAS was completed). These are represented in the corresponding phenotype-specific summary statistics as columns with the `_meta` suffix.
+Using the updated summary statistics (now with $\log p$-values), we reproduced cross-ancestry meta-analyses for all phenotypes (using only ancestry groups for which GWAS was completed). These are represented in the corresponding phenotype-specific summary statistics as columns with the `_meta` suffix.
 
 We also produced a new set of "high quality" meta-analyses which only include ancestries passing QC (see **QC approach**). These meta-analyses are only available for phenotypes for which QC-passing ancestry groups exist. These new "high quality" meta-analysis results are present in columns with the `_meta_hq` suffix in the corresponding summary statistics for phenotypes for which they were computed.
 

@@ -31,8 +31,8 @@ function Home() {
             information that has been enormously valuable in studies of genetic etiology for common diseases
             and traits. However, most genome-wide analyses of this dataset use only the European ancestry
             individuals. Analyzing a more inclusive and diverse dataset increases power and improves the
-            potential for discovery. Here, we present a multi-ancestry analysis of 7,221 phenotypes, across 6
-            continental ancestry groups, for a total of 16,119 genome-wide association studies. We release
+            potential for discovery. Here, we present a multi-ancestry analysis of 7,228 phenotypes, across 6
+            continental ancestry groups, for a total of 16,131 genome-wide association studies. We release
             these summary statistics freely to the community ahead of publication.
           </p>
           <p className="hero__description">

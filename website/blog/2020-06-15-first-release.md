@@ -5,7 +5,7 @@ author: Pan UKBB Team
 tags: [release, announcement]
 ---
 
-We are thrilled to announce the release of GWAS summary statistics from the Pan-UK Biobank resource, which consists of genome-wide association analyses of 7,221 phenotypes across 6 continental ancestry groups in the [UK Biobank](https://www.ukbiobank.ac.uk/). Across all phenotype-ancestry pairs, we conducted 16,119 GWAS and meta-analyzed summary statistics for all available populations by trait. This release includes more than 20,000 individuals with primarily non-European ancestries, substantially increasing the diversity typically investigated in analyses of these data.
+We are thrilled to announce the release of GWAS summary statistics from the Pan-UK Biobank resource, which consists of genome-wide association analyses of 7,221 phenotypes across 6 continental ancestry groups in the [UK Biobank](https://www.ukbiobank.ac.uk/). Across all phenotype-ancestry pairs, we conducted 16,131 GWAS and meta-analyzed summary statistics for all available populations by trait. This release includes more than 20,000 individuals with primarily non-European ancestries, substantially increasing the diversity typically investigated in analyses of these data.
 
 A summary of the breakdown included in this release is:
 
