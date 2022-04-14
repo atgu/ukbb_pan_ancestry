@@ -29,13 +29,13 @@ If using the manifest flat file directly (available [here](https://docs.google.c
 
 We produced narrow-sense heritability estimates using univariate linkage-disequilibrium score regression (LDSC) leveraging LD scores computed as [previously described](https://pan.ukbb.broadinstitute.org/blog/2020/10/29/ld-release), as well as using stratified LDSC with 25 minor allele frequency (MAF) and LD score bins. Our results for summary statistics for individuals of EUR ancestry were highly concordant with [prior estimates](https://nealelab.github.io/UKBB_ldsc/) in UKB for overlapping phenotypes (Figure 1), however we observed very poor power for detection of $h^2 > 0$ for non-EUR ancestry groups.
 
-<center><img src="/img/EUR_SLDSC_LDSC_compare_all_phenotypes.png"  width="640" height="523"/></center>
+<center><img src="/img/EUR_SLDSC_LDSC_compare_all_phenotypes.png"  width="608" height="600"/></center>
 
 **Figure 1**: Comparison of liability-scale $h^2$ estimates for EUR ancestry-trait pairs using S-LDSC (25 bins) in UKB versus prior estimates using S-LDSC with the baselineLDv1.1 model in UKB among EUR samples. Black line is $y=x$.
 
 To boost power for non-EUR ancestry groups we leveraged Haseman-Elston regression at scale on genotypes implemented in RHEmc ([Pazokitoroudi et al. 2020 Nat Comm](https://www.nature.com/articles/s41467-020-17576-9)). We piloted this approach for several [pilot phenotypes](https://docs.google.com/spreadsheets/d/1AeeADtT0U1AukliiNyiVzVRdLYPkTbruQSk38DeutU8/edit#gid=1101141753) expected to behave well, finding good correlations between estimates in EUR using RHEmc and S-LDSC (Figure 2).
 
-<center><img src="/img/EUR_rhemc_nonliab_v_sldsc_allpananc.png"  width="608" height="600"/></center>
+<center><img src="/img/EUR_rhemc_nonliab_v_sldsc_allpananc.png"  width="640" height="523"/></center>
 
 **Figure 2**: Observed-scale $h^2$ estimates in select phenotypes among EUR individuals obtained using RHEmc (8 bins, to limit computational cost) vs. using S-LDSC (25 bins), colored by trait type category. Black line is $y=x$.
 
