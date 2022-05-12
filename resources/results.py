@@ -78,11 +78,13 @@ def get_h2_manifest_path():
 def get_clumping_results_path(pop: str = 'full', high_quality: bool = False, 
                               not_pop: bool = True, max_pops: bool = False):
     mt_name = 'max_pops' if max_pops else (f'{"not_" if not_pop else ""}{pop}' if pop in POPS else 'full_clump_results')
+    
     if high_quality:
         return f'{public_bucket}/clump_results_high_quality/{mt_name}.mt'
+    elif hq_phenos:
+        return f'{bucket}/ld_prune/clump_results_hq_phenos/{mt_name}.mt'
     else:
         return f'{bucket}/ld_prune/clump_results/{mt_name}.mt'
-
 
 def get_prs_mt_path(high_quality: bool = True):
     return f'{bucket}/prs/all_combos_prs{"" if high_quality else "_raw"}.mt'
