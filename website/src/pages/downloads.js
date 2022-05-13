@@ -37,11 +37,17 @@ function Downloads() {
                   (download on <a href="https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_release/full_variant_qc_metrics.txt.bgz">Amazon AWS</a>
                   , <a href="https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_release/full_variant_qc_metrics.txt.bgz.tbi">tbi</a>).
                 </li>
+                <li>
+                  <b>Please note that p-values are now stored as natural log p-values to avoid underflow (i.e., ln P, not -ln P or -log10 P).</b>
+                </li>
               </ul>
             </li>
             <li>
               <b>Hail format</b>: For large-scale analyses of many phenotypes, we provide the full dataset
               in <Link to={useBaseUrl('docs/hail-format')}>Hail MatrixTable format</Link> on Google Cloud.
+            </li>
+            <li>
+              Please note that the previous iteration of release files have been archived at <code>s3://pan-ukb-us-east-1/archive_20200615/</code>.
             </li>
           </ul>
           <p className="">
