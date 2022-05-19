@@ -3,6 +3,10 @@ id: per-phenotype-files
 title: Per-phenotype files
 ---
 
+:::note
+**Please note that p-values are now stored as natural log p-values to avoid underflow (i.e., ln P, not -ln P or -log10 P).**
+:::note
+
 ## Overview
 
 The data are released in 7,228 flat files, one for each phenotype, and a corresponding tabix index file for each. These files are available on Amazon AWS (for large-scale analysis, we recommend using the [Hail format](Hail-format) files on Google Cloud).
