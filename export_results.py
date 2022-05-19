@@ -24,10 +24,11 @@ hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'CUSTOM',
 
 from ukbb_pan_ancestry.utils.results import load_final_sumstats_mt, load_meta_analysis_results
 from ukbb_pan_ancestry.resources import POPS
-from ukbb_pan_ancestry.resources.results import get_variant_results_path, get_pheno_manifest_path, get_h2_manifest_path, get_maximal_indepenedent_set_ht
+from ukbb_pan_ancestry.resources.results import get_variant_results_path, get_pheno_manifest_path, get_h2_manifest_path, get_maximal_indepenedent_set_ht, get_h2_ht_path, get_h2_flat_file_path
 from ukbb_pan_ancestry.resources.genotypes import get_filtered_mt
 from ukbb_pan_ancestry.resources.phenotypes import get_ukb_pheno_mt_path
-from ukbb_pan_ancestry.heritability.import_heritability import qc_to_flags, get_h2_flat_file
+from ukbb_pan_ancestry.heritability.import_heritability import qc_to_flags
+from ukbb_pan_ancestry.heritability.rhemc_pipeline import run_final_sink
 from ukbb_pan_ancestry.get_timings_null_model import format_pheno_dir
 from ukb_common.resources.generic import PHENO_KEY_FIELDS
 
@@ -797,7 +798,7 @@ def make_pheno_manifest(export=True, export_flattened_h2_table=False, web_versio
     
     if export_flattened_h2_table:
         # now make h2 table
-        ht_h2 = hl.import_table(get_h2_flat_file(), 
+        ht_h2 = hl.import_table(get_h2_flat_file_path(), 
                                 delimiter='\t', 
                                 impute=True, 
                                 key=PHENO_KEY_FIELDS)
@@ -847,6 +848,34 @@ def make_tabix(folder, sumstats_folder, suffix):
             """
             j.command(command)
             bserv.write_output(j.tbout, folder + os.path.basename(sumstat) + '.tbi')
+    bserv.run(verbose=False)
+
+
+def get_md5_size_table(output_path, file_folder):
+    """
+    NOTE output_path should be the path with the filename WITHOUT extension.
+    """
+    backend = hb.ServiceBackend(billing_project='ukb_diverse_pops', remote_tmpdir='gs://ukbb-diverse-temp-7day/md5_size/')
+    bserv = hb.Batch(name="md5_size_pan_ancestry", backend=backend)
+    if hl.hadoop_is_dir(file_folder):
+        items = [x['path'] for x in hl.hadoop_ls(file_folder) if not x['is_dir']]
+    else:
+        raise ValueError('File folder does not exist.')
+    j_holder = []
+    for item in items:
+        j = bserv.new_job('size_md5_' + os.path.basename(item))
+        j.image('gcr.io/ukbb-diversepops-neale/nbaya_tabix:latest')
+        file = bserv.read_input(item)
+        command = f"""
+            thismd5=$(md5sum {file} | awk '{{print $1}}')
+            thisbyte=$(wc -c {file} | awk '{{print $1}}')
+            printf "filename\tmd5\tsize_in_bytes\n" > {j.tab_out}
+            printf "{os.path.basename(item)}\t$thismd5\t$thisbyte\n" >> {j.tab_out}
+        """
+        j.command(command)
+        j_holder.append(j)
+    cat_script = bserv.read_input(f'gs://ukb-diverse-pops/rg-pcgc/code/concat_tables.py')
+    _ = run_final_sink(bserv, j_holder, cat_script, 500, suffix='', output_file=os.path.basename(output_path), path_results=f'{os.path.dirname(output_path)}/')
     bserv.run(verbose=False)
 
 
