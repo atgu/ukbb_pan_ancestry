@@ -1,5 +1,5 @@
 from ukbb_pan_ancestry.resources.results import *
-from ukbb_pan_ancestry.heritability.import_heritability import get_h2_ht
+
 P_THRESHOLDS = {'s1': 5e-8, 's2': 1e-6, 's3': 1e-4, 's4': 1e-3, 's5': 1e-2, 's6': .05, 's7': .1, 's8': .2, 's9': .5, 's10': 1.}
 
 
@@ -75,7 +75,7 @@ def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = T
     mt = mt.annotate_rows(**variant_qual_ht[mt.row_key])
     pheno_qual_ht = hl.read_table(get_analysis_data_path('lambda', 'lambdas', 'full', 'ht'))
     mt = mt.annotate_cols(**pheno_qual_ht[mt.col_key])
-    h2_qc_ht = hl.read_table(get_h2_ht())
+    h2_qc_ht = hl.read_table(get_h2_ht_path())
     mt = mt.annotate_cols(heritability = h2_qc_ht[mt.col_key].heritability)
 
     if filter_to_max_indep_set:

@@ -18,16 +18,19 @@ from itertools import combinations
 from time import time
 from math import ceil
 
-hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'CUSTOM',
-                    'spark.hadoop.fs.gs.requester.pays.buckets': 'ukb-diverse-pops-public',
-                    'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
+# hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'CUSTOM',
+#                     'spark.hadoop.fs.gs.requester.pays.buckets': 'ukb-diverse-pops-public',
+#                     'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
+hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'ENABLED',
+                     'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
 
 from ukbb_pan_ancestry.utils.results import load_final_sumstats_mt, load_meta_analysis_results
 from ukbb_pan_ancestry.resources import POPS
-from ukbb_pan_ancestry.resources.results import get_variant_results_path, get_pheno_manifest_path, get_h2_manifest_path, get_maximal_indepenedent_set_ht
+from ukbb_pan_ancestry.resources.results import get_variant_results_path, get_pheno_manifest_path, get_h2_manifest_path, get_maximal_indepenedent_set_ht, get_h2_ht_path, get_h2_flat_file_path
 from ukbb_pan_ancestry.resources.genotypes import get_filtered_mt
 from ukbb_pan_ancestry.resources.phenotypes import get_ukb_pheno_mt_path
-from ukbb_pan_ancestry.heritability.import_heritability import qc_to_flags, get_h2_flat_file
+from ukbb_pan_ancestry.heritability.import_heritability import qc_to_flags
+from ukbb_pan_ancestry.heritability.rhemc_pipeline import run_final_sink
 from ukbb_pan_ancestry.get_timings_null_model import format_pheno_dir
 from ukb_common.resources.generic import PHENO_KEY_FIELDS
 
@@ -745,9 +748,18 @@ def make_pheno_manifest(export=True, export_flattened_h2_table=False, web_versio
     if web_version:
         ht = ht.annotate(aws_link = 'https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_flat_files/' + ht.filename)
         ht = ht.annotate(aws_link_tabix = 'https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_flat_files_tabix/' + ht.filename_tabix)
+        ht = ht.annotate(wget = 'wget ' + ht.aws_link)
+        ht = ht.annotate(wget_tabix = 'wget ' + ht.aws_link_tabix)
     else:
         ht = ht.annotate(aws_path = 's3://pan-ukb-us-east-1/sumstats_flat_files/' + ht.filename)
         ht = ht.annotate(aws_path_tabix = 's3://pan-ukb-us-east-1/sumstats_flat_files_tabix/' + ht.filename_tabix)
+
+    # adding size/md5 for files and tabix files
+    ht_size_md5 = hl.import_table(f'{bucket}/combined_results/2205_flat_file_info.tsv', impute=True, key='filename').rename({'md5':'md5_hex'})
+    ht_size_md5_tbi = hl.import_table(f'{bucket}/combined_results/2205_tabix_file_info.tsv', impute=True, key='filename').rename({'md5':'md5_hex_tabix', 'size_in_bytes':'size_in_bytes_tabix'})
+    ht = ht.annotate(**ht_size_md5[ht.filename])
+    ht = ht.annotate(**ht_size_md5_tbi[ht.filename_tabix])
+
 
     # now create a table containing per-ancestry, per-sex case counts
     ht_counts = make_per_population_n_cases()
@@ -797,7 +809,7 @@ def make_pheno_manifest(export=True, export_flattened_h2_table=False, web_versio
     
     if export_flattened_h2_table:
         # now make h2 table
-        ht_h2 = hl.import_table(get_h2_flat_file(), 
+        ht_h2 = hl.import_table(get_h2_flat_file_path(), 
                                 delimiter='\t', 
                                 impute=True, 
                                 key=PHENO_KEY_FIELDS)
@@ -813,7 +825,7 @@ def make_pheno_manifest(export=True, export_flattened_h2_table=False, web_versio
 
     if export:
         #ht.export(get_pheno_manifest_path(web_version))
-        ht.export(f'{bucket}/combined_results/220407_phenotype_manifest{"_web" if web_version else ""}.tsv.bgz')
+        ht.export(f'{bucket}/combined_results/220602_phenotype_manifest{"_web" if web_version else ""}.tsv.bgz')
         if export_flattened_h2_table:
             ht_h2.export(f'{bucket}/combined_results/220407_h2_manifest.tsv.bgz')
             #ht_h2.export(get_h2_manifest_path())
@@ -847,6 +859,34 @@ def make_tabix(folder, sumstats_folder, suffix):
             """
             j.command(command)
             bserv.write_output(j.tbout, folder + os.path.basename(sumstat) + '.tbi')
+    bserv.run(verbose=False)
+
+
+def get_md5_size_table(output_path, file_folder):
+    """
+    NOTE output_path should be the path with the filename WITHOUT extension.
+    """
+    backend = hb.ServiceBackend(billing_project='ukb_diverse_pops', remote_tmpdir='gs://ukbb-diverse-temp-7day/md5_size/')
+    bserv = hb.Batch(name="md5_size_pan_ancestry", backend=backend)
+    if hl.hadoop_is_dir(file_folder):
+        items = [x['path'] for x in hl.hadoop_ls(file_folder) if not x['is_dir']]
+    else:
+        raise ValueError('File folder does not exist.')
+    j_holder = []
+    for item in items:
+        j = bserv.new_job('size_md5_' + os.path.basename(item))
+        j.image('gcr.io/ukbb-diversepops-neale/nbaya_tabix:latest')
+        file = bserv.read_input(item)
+        command = f"""
+            thismd5=$(md5sum {file} | awk '{{print $1}}')
+            thisbyte=$(wc -c {file} | awk '{{print $1}}')
+            printf "filename\tmd5\tsize_in_bytes\n" > {j.tab_out}
+            printf "{os.path.basename(item)}\t$thismd5\t$thisbyte\n" >> {j.tab_out}
+        """
+        j.command(command)
+        j_holder.append(j)
+    cat_script = bserv.read_input(f'gs://ukb-diverse-pops/rg-pcgc/code/concat_tables.py')
+    _ = run_final_sink(bserv, j_holder, cat_script, 500, suffix='', output_file=os.path.basename(output_path), path_results=f'{os.path.dirname(output_path)}/')
     bserv.run(verbose=False)
 
 

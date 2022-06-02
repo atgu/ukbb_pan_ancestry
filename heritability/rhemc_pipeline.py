@@ -916,7 +916,7 @@ def run_ancestry_sink(b, phenotype_id, ancestry_jobs, concatter):
     return j
 
 
-def run_final_sink(b, ancestry_sinks, concatter, nlen, suffix='', output_file='tab_out'):
+def run_final_sink(b, ancestry_sinks, concatter, nlen, suffix='', output_file='final_results', path_results=path_results):
     """ Runs final sink to collect and concatenate all results.
     Implements interim sinks of size nlen, and then has one final sink.
     This is to workaround the issue with the submitted script being too long
@@ -924,7 +924,7 @@ def run_final_sink(b, ancestry_sinks, concatter, nlen, suffix='', output_file='t
     """
     interim_sinks = []
     get_interim_id = lambda idx: math.floor(idx/nlen)
-    for this_id in range(0, get_interim_id(len(anc_sinks))+1):
+    for this_id in range(0, get_interim_id(len(ancestry_sinks))+1):
         jobs_in_sink = [v for idx, v in enumerate(ancestry_sinks) if get_interim_id(idx) == this_id]
         interim_sink = b.new_job('interim_sink_' + str(this_id))
         interim_sink.image(IMAGE)
@@ -945,7 +945,7 @@ def run_final_sink(b, ancestry_sinks, concatter, nlen, suffix='', output_file='t
             python {concatter} --tables {final_tables} --out {final_sink.tab_out}
             """
         final_sink.command(command_fin)
-    bserv.write_output(final_sink.tab_out, f'{path_results}final_results{suffix}.tsv')
+    b.write_output(final_sink.tab_out, f'{path_results}{output_file}{suffix}.tsv')
 
     return final_sink
 
