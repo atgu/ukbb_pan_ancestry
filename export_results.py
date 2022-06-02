@@ -18,9 +18,11 @@ from itertools import combinations
 from time import time
 from math import ceil
 
-hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'CUSTOM',
-                    'spark.hadoop.fs.gs.requester.pays.buckets': 'ukb-diverse-pops-public',
-                    'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
+# hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'CUSTOM',
+#                     'spark.hadoop.fs.gs.requester.pays.buckets': 'ukb-diverse-pops-public',
+#                     'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
+hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'ENABLED',
+                     'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
 
 from ukbb_pan_ancestry.utils.results import load_final_sumstats_mt, load_meta_analysis_results
 from ukbb_pan_ancestry.resources import POPS
@@ -746,9 +748,18 @@ def make_pheno_manifest(export=True, export_flattened_h2_table=False, web_versio
     if web_version:
         ht = ht.annotate(aws_link = 'https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_flat_files/' + ht.filename)
         ht = ht.annotate(aws_link_tabix = 'https://pan-ukb-us-east-1.s3.amazonaws.com/sumstats_flat_files_tabix/' + ht.filename_tabix)
+        ht = ht.annotate(wget = 'wget ' + ht.aws_link)
+        ht = ht.annotate(wget_tabix = 'wget ' + ht.aws_link_tabix)
     else:
         ht = ht.annotate(aws_path = 's3://pan-ukb-us-east-1/sumstats_flat_files/' + ht.filename)
         ht = ht.annotate(aws_path_tabix = 's3://pan-ukb-us-east-1/sumstats_flat_files_tabix/' + ht.filename_tabix)
+
+    # adding size/md5 for files and tabix files
+    ht_size_md5 = hl.import_table(f'{bucket}/combined_results/2205_flat_file_info.tsv', impute=True, key='filename').rename({'md5':'md5_hex'})
+    ht_size_md5_tbi = hl.import_table(f'{bucket}/combined_results/2205_tabix_file_info.tsv', impute=True, key='filename').rename({'md5':'md5_hex_tabix', 'size_in_bytes':'size_in_bytes_tabix'})
+    ht = ht.annotate(**ht_size_md5[ht.filename])
+    ht = ht.annotate(**ht_size_md5_tbi[ht.filename_tabix])
+
 
     # now create a table containing per-ancestry, per-sex case counts
     ht_counts = make_per_population_n_cases()
@@ -814,7 +825,7 @@ def make_pheno_manifest(export=True, export_flattened_h2_table=False, web_versio
 
     if export:
         #ht.export(get_pheno_manifest_path(web_version))
-        ht.export(f'{bucket}/combined_results/220407_phenotype_manifest{"_web" if web_version else ""}.tsv.bgz')
+        ht.export(f'{bucket}/combined_results/220602_phenotype_manifest{"_web" if web_version else ""}.tsv.bgz')
         if export_flattened_h2_table:
             ht_h2.export(f'{bucket}/combined_results/220407_h2_manifest.tsv.bgz')
             #ht_h2.export(get_h2_manifest_path())

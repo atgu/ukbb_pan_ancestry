@@ -1,5 +1,5 @@
 from ukbb_pan_ancestry.resources.results import *
-#from ukbb_pan_ancestry.heritability.import_heritability import get_h2_ht
+
 P_THRESHOLDS = {'s1': 5e-8, 's2': 1e-6, 's3': 1e-4, 's4': 1e-3, 's5': 1e-2, 's6': .05, 's7': .1, 's8': .2, 's9': .5, 's10': 1.}
 
 
