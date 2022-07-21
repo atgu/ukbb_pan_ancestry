@@ -827,7 +827,7 @@ def make_pheno_manifest(export=True, export_flattened_h2_table=False, web_versio
         #ht.export(get_pheno_manifest_path(web_version))
         ht.export(f'{bucket}/combined_results/220602_phenotype_manifest{"_web" if web_version else ""}.tsv.bgz')
         if export_flattened_h2_table:
-            ht_h2.export(f'{bucket}/combined_results/220407_h2_manifest.tsv.bgz')
+            ht_h2.export(f'{bucket}/combined_results/220721_h2_manifest.tsv.bgz')
             #ht_h2.export(get_h2_manifest_path())
     else:
         return ht
