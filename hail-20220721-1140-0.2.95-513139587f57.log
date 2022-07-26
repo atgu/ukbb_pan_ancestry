@@ -1,0 +1,15 @@
+2022-07-21 11:41:34 Hail: INFO: Running Hail version 0.2.95-513139587f57
+2022-07-21 11:41:34 SparkContext: WARN: Using an existing SparkContext; some configuration may not take effect.
+2022-07-21 11:43:49 SparkContext: INFO: Invoking stop() from shutdown hook
+2022-07-21 11:43:49 AbstractConnector: INFO: Stopped Spark@5e74d8f1{HTTP/1.1, (http/1.1)}{0.0.0.0:4040}
+2022-07-21 11:43:49 SparkUI: INFO: Stopped Spark web UI at http://10.10.232.133:4040
+2022-07-21 11:43:49 MapOutputTrackerMasterEndpoint: INFO: MapOutputTrackerMasterEndpoint stopped!
+2022-07-21 11:43:49 MemoryStore: INFO: MemoryStore cleared
+2022-07-21 11:43:49 BlockManager: INFO: BlockManager stopped
+2022-07-21 11:43:49 BlockManagerMaster: INFO: BlockManagerMaster stopped
+2022-07-21 11:43:49 OutputCommitCoordinator$OutputCommitCoordinatorEndpoint: INFO: OutputCommitCoordinator stopped!
+2022-07-21 11:43:49 SparkContext: INFO: Successfully stopped SparkContext
+2022-07-21 11:43:49 ShutdownHookManager: INFO: Shutdown hook called
+2022-07-21 11:43:49 ShutdownHookManager: INFO: Deleting directory /private/var/folders/7z/md6hdwyj7tv7dbh014y1wpv00000gn/T/spark-e3570943-67f1-4f7a-ae02-3803614533c5/pyspark-18b88340-6b89-4ed0-aff7-de2f2cdd074f
+2022-07-21 11:43:49 ShutdownHookManager: INFO: Deleting directory /private/var/folders/7z/md6hdwyj7tv7dbh014y1wpv00000gn/T/spark-abdb3738-59d2-4d70-a2fa-ef7d5bf10b37
+2022-07-21 11:43:49 ShutdownHookManager: INFO: Deleting directory /private/var/folders/7z/md6hdwyj7tv7dbh014y1wpv00000gn/T/spark-e3570943-67f1-4f7a-ae02-3803614533c5

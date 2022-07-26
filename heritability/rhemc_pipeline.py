@@ -27,8 +27,8 @@ from ukbb_pan_ancestry.resources.results import get_variant_results_path
 
 # paths
 bucket = 'ukb-diverse-pops'
-fusebucket = 'rgupta-pcgc-mount'
-loc = 'rg-pcgc'
+fusebucket = 'rgupta-rhemc-mount'
+loc = 'rg-rhemc-affix'
 path_geno = f'gs://{bucket}/{loc}/genos/'
 path_pheno = f'gs://{bucket}/{loc}/phenos/'
 path_covar = f'gs://{bucket}/{loc}/covar/'
@@ -341,6 +341,8 @@ def generate_geno_annot_split(path_geno, path_annot, ancestries, args, nbins):
         logging.info('Filtering genotype MatrixTable...')
         # import variant level data
         af_ht = hl.read_table(get_ukb_af_ht_path())
+        # bandaid fix since the AF in this table is 2x what it should be
+        af_ht = af_ht.annotate(af = af_ht.af.map_values(lambda x: x/2))
 
         # filter MAF > cutoff (in all populations) and is defined (all populations)
         af_ht_f = af_ht.filter(hl.all(lambda x: hl.is_defined(af_ht.af[x]), 
