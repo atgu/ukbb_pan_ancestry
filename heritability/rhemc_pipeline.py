@@ -343,6 +343,10 @@ def generate_geno_annot_split(path_geno, path_annot, ancestries, args, nbins):
         af_ht = hl.read_table(get_ukb_af_ht_path())
         # bandaid fix since the AF in this table is 2x what it should be
         af_ht = af_ht.annotate(af = af_ht.af.map_values(lambda x: x/2))
+        tf_oob = af_ht.aggregate(hl.agg.any(hl.any(lambda x: (af_ht.af[x] < 0) | \
+                                                      (af_ht.af[x] > 1), hl.literal(ancestries))))
+        if tf_oob:
+            raise ValueError('ERROR: AF table still malformed; all AF readings should be within [0,1].')
 
         # filter MAF > cutoff (in all populations) and is defined (all populations)
         af_ht_f = af_ht.filter(hl.all(lambda x: hl.is_defined(af_ht.af[x]), 
