@@ -351,8 +351,8 @@ def generate_geno_annot_split(path_geno, path_annot, ancestries, args, nbins):
         # filter MAF > cutoff (in all populations) and is defined (all populations)
         af_ht_f = af_ht.filter(hl.all(lambda x: hl.is_defined(af_ht.af[x]), 
                                       hl.literal(ancestries)))
-        af_ht_f = af_ht_f.filter(hl.all(lambda x: (af_ht.af[x] >= args.maf) & \
-                                                  (af_ht.af[x] <= (1-args.maf)), 
+        af_ht_f = af_ht_f.filter(hl.all(lambda x: (af_ht_f.af[x] >= args.maf) & \
+                                                  (af_ht_f.af[x] <= (1-args.maf)), 
                                       hl.literal(ancestries)))
         mt_maf = mt.filter_rows(hl.is_defined(af_ht_f[mt.row_key]))
 
@@ -399,7 +399,7 @@ def generate_geno_annot_split(path_geno, path_annot, ancestries, args, nbins):
     output_files_annot_noextn = get_annot_split_names(ancestries, dictout=True, n_annot=nbins, suffix_incl=False)
     for anc in ancestries:
         ht_anc = hl.read_table(get_ld_score_ht_path(pop=anc))
-        ht_anc_expr = ht_anc[snps_out.row_key]
+        ht_anc_expr = ht_anc[snps_out.key]
         this_tab = snps_out.annotate(ld_score = ht_anc_expr.ld_score,
                                      af = ht_anc_expr.AF)
         this_tab = this_tab.annotate(maf = 0.5 - hl.abs(0.5 - this_tab.af))
