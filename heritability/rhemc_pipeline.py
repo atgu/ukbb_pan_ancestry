@@ -339,30 +339,33 @@ def generate_geno_annot_split(path_geno, path_annot, ancestries, args, nbins):
         mt_filt = hl.read_matrix_table(geno_filtered_path)
     else:
         logging.info('Filtering genotype MatrixTable...')
-        # import variant level data
-        af_ht = hl.read_table(get_ukb_af_ht_path())
-        # bandaid fix since the AF in this table is 2x what it should be
-        af_ht = af_ht.annotate(af = af_ht.af.map_values(lambda x: x/2))
-        tf_oob = af_ht.aggregate(hl.agg.any(hl.any(lambda x: (af_ht.af[x] < 0) | \
-                                                      (af_ht.af[x] > 1), hl.literal(ancestries))))
-        if tf_oob:
-            raise ValueError('ERROR: AF table still malformed; all AF readings should be within [0,1].')
+
+        # remove relateds
+        mt_nonrel = mt.filter_cols(~mt.related)
 
         # filter MAF > cutoff (in all populations) and is defined (all populations)
+        custom_af_ht_path = MT_TEMP_BUCKET + 'rhemc_custom_af_ht_test.ht'
+        if hl.hadoop_is_file(custom_af_ht_path + '/_SUCCESS'):
+            af_ht = hl.read_table(custom_af_ht_path)
+        else:
+            af_mt = mt.group_cols_by(mt.pop).aggregate(call_info = hl.agg.call_stats(mt.GT, mt.alleles))
+            af_mt = af_mt.annotate_entries(**{x: af_mt.call_info[x] for x in af_mt.call_info.keys()}).drop('call_info')
+            af_ht = af_mt.localize_entries('col_info', 'pops')
+            af_ht = af_ht.annotate(af_dict = hl.dict(hl.zip(af_ht.pops.pop, af_ht.col_info.AF, fill_missing=True))).drop('col_info')
+            af_ht = af_ht.annotate(af = af_ht.af_dict.map_values(lambda x: x[1]))
+            af_ht = af_ht.checkpoint(custom_af_ht_path, overwrite=True)
+       
         af_ht_f = af_ht.filter(hl.all(lambda x: hl.is_defined(af_ht.af[x]), 
                                       hl.literal(ancestries)))
         af_ht_f = af_ht_f.filter(hl.all(lambda x: (af_ht_f.af[x] >= args.maf) & \
                                                   (af_ht_f.af[x] <= (1-args.maf)), 
                                       hl.literal(ancestries)))
-        mt_maf = mt.filter_rows(hl.is_defined(af_ht_f[mt.row_key]))
-
-        # remove relateds
-        mt_nonrel = mt_maf.filter_cols(~mt_maf.related)
+        mt_maf = mt_nonrel.filter_rows(hl.is_defined(af_ht_f[mt.row_key]))
 
         # compute phwe, remove those with p < 1e-7
-        mt_nonrel_hwe = mt_nonrel.annotate_rows(**{'hwe_' + anc.lower(): 
-                                                    hl.agg.filter(mt_nonrel.pop == anc, 
-                                                                  hl.agg.hardy_weinberg_test(mt_nonrel.GT)) 
+        mt_nonrel_hwe = mt_maf.annotate_rows(**{'hwe_' + anc.lower(): 
+                                                    hl.agg.filter(mt_maf.pop == anc, 
+                                                                  hl.agg.hardy_weinberg_test(mt_maf.GT)) 
                                                     for anc in ancestries})
         ancestries_tf = [mt_nonrel_hwe['hwe_' + anc.lower()].p_value >= PHWE for anc in ancestries]
         mt_nonrel_hwe = mt_nonrel_hwe.filter_rows(hl.all(lambda x: x, ancestries_tf))
