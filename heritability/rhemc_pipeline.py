@@ -2,9 +2,9 @@ __author__ = 'Rahul Gupta'
 
 import hail as hl
 
-# hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'CUSTOM',
-#                     'spark.hadoop.fs.gs.requester.pays.buckets': 'ukb-diverse-pops-public',
-#                     'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
+hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'CUSTOM',
+                    'spark.hadoop.fs.gs.requester.pays.buckets': 'ukb-diverse-pops-public',
+                    'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
 
 import hailtop.batch as hb
 import numpy as np
@@ -344,7 +344,7 @@ def generate_geno_annot_split(path_geno, path_annot, ancestries, args, nbins):
         mt_nonrel = mt.filter_cols(~mt.related)
 
         # filter MAF > cutoff (in all populations) and is defined (all populations)
-        custom_af_ht_path = MT_TEMP_BUCKET + 'rhemc_custom_af_ht_test.ht'
+        custom_af_ht_path = MT_TEMP_BUCKET + 'rhemc_custom_af_ht.ht'
         if hl.hadoop_is_file(custom_af_ht_path + '/_SUCCESS'):
             af_ht = hl.read_table(custom_af_ht_path)
         else:
@@ -360,7 +360,7 @@ def generate_geno_annot_split(path_geno, path_annot, ancestries, args, nbins):
         af_ht_f = af_ht_f.filter(hl.all(lambda x: (af_ht_f.af[x] >= args.maf) & \
                                                   (af_ht_f.af[x] <= (1-args.maf)), 
                                       hl.literal(ancestries)))
-        mt_maf = mt_nonrel.filter_rows(hl.is_defined(af_ht_f[mt.row_key]))
+        mt_maf = mt_nonrel.semi_join_rows(af_ht_f)
 
         # compute phwe, remove those with p < 1e-7
         mt_nonrel_hwe = mt_maf.annotate_rows(**{'hwe_' + anc.lower(): 
