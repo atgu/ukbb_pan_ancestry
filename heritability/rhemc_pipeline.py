@@ -348,7 +348,7 @@ def generate_geno_annot_split(path_geno, path_annot, ancestries, args, nbins):
         if hl.hadoop_is_file(custom_af_ht_path + '/_SUCCESS'):
             af_ht = hl.read_table(custom_af_ht_path)
         else:
-            af_mt = mt.group_cols_by(mt.pop).aggregate(call_info = hl.agg.call_stats(mt.GT, mt.alleles))
+            af_mt = mt_nonrel.group_cols_by(mt_nonrel.pop).aggregate(call_info = hl.agg.call_stats(mt_nonrel.GT, mt_nonrel.alleles))
             af_mt = af_mt.annotate_entries(**{x: af_mt.call_info[x] for x in af_mt.call_info.keys()}).drop('call_info')
             af_ht = af_mt.localize_entries('col_info', 'pops')
             af_ht = af_ht.annotate(af_dict = hl.dict(hl.zip(af_ht.pops.pop, af_ht.col_info.AF, fill_missing=True))).drop('col_info')
