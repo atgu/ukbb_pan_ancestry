@@ -2,7 +2,7 @@ from .generic import *
 
 
 def get_ld_matrix_path(pop: str, extension: str = "bm"):
-    return f"{bucket}/ld/{pop}/UKBB.{pop}.ldadj.{extension}"
+    return f"{public_bucket}/ld/{pop}/UKBB.{pop}.ldadj.{extension}"
 
 
 def get_ld_score_ht_path(pop: str, annot: str = None):

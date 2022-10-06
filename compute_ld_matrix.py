@@ -313,7 +313,7 @@ def main(args):
 
         if args.compute_ldscore:
             ht_ldscore = copmute_ldscore(
-                mt.rows(), r2_adj, out_name=get_ld_score_ht_path(pop), overwrite=args.overwrite,
+                ht, r2_adj, out_name=get_ld_score_ht_path(pop), overwrite=args.overwrite,
             )
             export_ldscore(ht_ldscore, pop)
 
