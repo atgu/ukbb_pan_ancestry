@@ -46,7 +46,7 @@ MT_TEMP_BUCKET = f'{temp_dir}{loc}/mt/'
 HT_TEMP_BUCKET = f'{temp_dir}{loc}/ht/'
 
 # other environment variables
-IMAGE = 'gcr.io/ukbb-diversepops-neale/rgupta_rhe_mc'
+IMAGE = 'us-docker.pkg.dev/ukbb-diversepops-neale/pan-ukbb-docker-repo/rgupta_rhe_mc'
 MHC = hl.parse_locus_interval('6:25M-35M') # MHC locus
 PHWE = 1e-7 # p HWE cutoff
 RANDOMPREF = lambda idx: f'random-stdnormal-{str(idx)}-both_sexes'
