@@ -62,6 +62,8 @@ if __name__ == '__main__':
                         help="Output filename. Will output as tab-delimited.")
     parser.add_argument('--logfile', type=str,
                         help="Name of log file to output.")
+    parser.add_argument('--exponentiate-p', action='store_true',
+                        help="If true, will exponentiate imported p-values.")
     
     args = parser.parse_args()
     if args.sumstats is None:
@@ -88,6 +90,11 @@ if __name__ == '__main__':
     logging.info('Using %s for pval.', pval_col_touse)
     beta_col_touse = search_column(data, 'beta', enforce_singular = True)
     logging.info('Using %s for beta.', beta_col_touse)
+
+    if args.exponentiate_p:
+        logging.info('Exponentiating %s column...', pval_col_touse)
+        data[pval_col_touse] = np.exp(np.float64(data[pval_col_touse]))
+        logging.info('Exponentiation complete; old column overwritten with regular scale values.')
 
     # the af field is either af or af_controls/cases for continuous and
     # categorical variables respectively.

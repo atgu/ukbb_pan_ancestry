@@ -21,8 +21,9 @@ from math import ceil
 # hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'CUSTOM',
 #                     'spark.hadoop.fs.gs.requester.pays.buckets': 'ukb-diverse-pops-public',
 #                     'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
-hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'ENABLED',
-                     'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
+# DISABLE WHEN CALLED
+# hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'ENABLED',
+#                      'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
 
 from ukbb_pan_ancestry.utils.results import load_final_sumstats_mt, load_meta_analysis_results
 from ukbb_pan_ancestry.resources import POPS
