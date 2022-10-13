@@ -95,7 +95,7 @@ def get_pheno_id(tb):
     return pheno_id
 
 
-def get_final_sumstats_mt_for_export(exponentiate_p):
+def get_final_sumstats_mt_for_export(exponentiate_p, custom_mt_path):
     """ Updated to *not* filter by QC cutoffs.
     """
     mt0 = load_final_sumstats_mt(filter_sumstats=False,
@@ -103,14 +103,15 @@ def get_final_sumstats_mt_for_export(exponentiate_p):
                                  separate_columns_by_pop=False,
                                  annotate_with_nearest_gene=False,
                                  filter_pheno_h2_qc=False,
-                                 exponentiate_p=exponentiate_p)
+                                 exponentiate_p=exponentiate_p,
+                                 custom_mt_path=custom_mt_path)
     mt0 = mt0.select_rows()
     return mt0
 
 
 def export_results(num_pops, trait_types='all', batch_size=256, mt=None, 
                    export_path_str=None, skip_binary_eur=True, exponentiate_p=False,
-                   suffix=None, skip_existing_folders=False):
+                   suffix=None, skip_existing_folders=False, custom_mt_path=None):
     r'''
     `num_pops`: exact number of populations for which phenotype is defined
     `trait_types`: trait category (options: all, binary, quant)
@@ -120,7 +121,7 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
     assert trait_types in {'all','quant','binary'}, "trait_types must be one of the following: {'all','quant','binary'}"
     print(f'\n\nExporting {trait_types} trait types for {num_pops} pops\n\n')
     if mt == None:
-        mt0 = get_final_sumstats_mt_for_export(exponentiate_p=exponentiate_p)
+        mt0 = get_final_sumstats_mt_for_export(exponentiate_p=exponentiate_p, custom_mt_path=custom_mt_path)
     else:
         mt0 = mt
         
@@ -232,14 +233,14 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
 
 
 def export_binary_eur(cluster_idx, num_clusters=10, batch_size = 256, exponentiate_p=False,
-                      suffix=None):
+                      suffix=None, custom_mt_path=None):
     r'''
     Export summary statistics for binary traits defined only for EUR. 
     Given the large number of such traits (4184), it makes sense to batch this 
     across `num_clusters` clusters for reduced wall time and robustness to mid-export errors.
     NOTE: `cluster_idx` is 1-indexed.
     '''
-    mt0 = get_final_sumstats_mt_for_export(exponentiate_p=exponentiate_p)
+    mt0 = get_final_sumstats_mt_for_export(exponentiate_p=exponentiate_p, custom_mt_path=custom_mt_path)
     #meta_mt0 = hl.read_matrix_table(get_meta_analysis_results_path())
     meta_mt0 = load_meta_analysis_results(h2_filter='both', exponentiate_p=exponentiate_p)
     
@@ -363,8 +364,8 @@ def load_phenotype_list(path):
 
 def export_subset(num_pops=None, phenocode=None, exponentiate_p=False, suffix=None,
                   skip_existing_folders=False, allow_binary_eur=False, 
-                  export_specific_phenos=None):
-    mt0 = get_final_sumstats_mt_for_export(exponentiate_p=exponentiate_p)
+                  export_specific_phenos=None, custom_mt_path=None):
+    mt0 = get_final_sumstats_mt_for_export(exponentiate_p=exponentiate_p, custom_mt_path=custom_mt_path)
     if export_specific_phenos is not None:
         specific_ht = load_phenotype_list(export_specific_phenos)
         n_specific = specific_ht.count()
@@ -384,7 +385,8 @@ def export_subset(num_pops=None, phenocode=None, exponentiate_p=False, suffix=No
                                exponentiate_p=exponentiate_p,
                                suffix=suffix,
                                skip_existing_folders=skip_existing_folders,
-                               skip_binary_eur = not allow_binary_eur)
+                               skip_binary_eur = not allow_binary_eur,
+                               custom_mt_path=custom_mt_path)
     else:
         export_results(num_pops=num_pops, 
                        trait_types='all', 
@@ -394,7 +396,8 @@ def export_subset(num_pops=None, phenocode=None, exponentiate_p=False, suffix=No
                        exponentiate_p=exponentiate_p,
                        suffix=suffix,
                        skip_existing_folders=skip_existing_folders,
-                       skip_binary_eur = not allow_binary_eur)
+                       skip_binary_eur = not allow_binary_eur,
+                       custom_mt_path=custom_mt_path)
 
 
 def export_all_loo(batch_size=256, update=False, exponentiate_p=False, 
@@ -921,6 +924,7 @@ if __name__=="__main__":
     parser.add_argument('--batch-size', type=int, default=256, help='max number of phenotypes per batch for export_entries_by_col')
     parser.add_argument('--exponentiate-p', action='store_true', help='enables regular scale p-values')
     parser.add_argument('--suffix', type=str, default=None, help='if provided, will export to a folder specificed by suffix (added to default directory, so just give a folder name here')
+    parser.add_arugment('--custom-mt', type=str, default=None, help='if provided, will use this instead of the default pan-ukbb mt')
     parser.add_argument('--skip-existing-folders', action='store_true', help='for export_results and export_all_results, will skip a particular export if it exists (e.g., if quant/AFR_batch* exists, it is assumed the quant trait AFR export completed and it is skipped)')
     args = parser.parse_args()
 
@@ -930,7 +934,8 @@ if __name__=="__main__":
                        batch_size=args.batch_size,
                        exponentiate_p=args.exponentiate_p,
                        suffix=args.suffix, 
-                       skip_existing_folders=args.skip_existing_folders)
+                       skip_existing_folders=args.skip_existing_folders,
+                       custom_mt_path=args.custom_mt)
     elif args.export_all_results:
         # If phenocode is not provided, None will be provided below 
         # resulting in a full export across all pop combinations
@@ -938,13 +943,15 @@ if __name__=="__main__":
                       phenocode=args.phenocode,
                       export_specific_phenos=args.export_specific_phenos,
                       suffix=args.suffix, num_pops=args.num_pops, allow_binary_eur=args.allow_binary_eur,
-                      skip_existing_folders=args.skip_existing_folders)
+                      skip_existing_folders=args.skip_existing_folders,
+                      custom_mt_path=args.custom_mt)
     elif args.export_binary_eur:
         export_binary_eur(batch_size=args.batch_size,
                           cluster_idx=args.cluster_idx,
                           num_clusters=args.num_clusters,
                           exponentiate_p=args.exponentiate_p,
-                          suffix=args.suffix)
+                          suffix=args.suffix,
+                          custom_mt_path=args.custom_mt)
     elif args.make_pheno_manifest:
         make_pheno_manifest(export_flattened_h2_table=args.export_h2_manifest, web_version=args.export_web_manifest)
     elif args.export_loo:

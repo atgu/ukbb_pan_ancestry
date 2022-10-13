@@ -67,20 +67,33 @@ def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = T
                            annotate_with_nearest_gene: bool = True, add_only_gene_symbols_as_str: bool = False,
                            load_contig: str = None, filter_pheno_h2_qc: bool = True,
                            exponentiate_p: bool = False, check_log_per_pheno_anc: bool = False,
-                           filter_to_max_indep_set: bool = False):
-    mt = hl.read_matrix_table(get_variant_results_path('full', 'mt')).drop('gene', 'annotation')
+                           filter_to_max_indep_set: bool = False,
+                           custom_mt_path: str = None):
+    
+    if custom_mt_path is not None:
+        path_in = custom_mt_path
+    else:
+        path_in = get_variant_results_path('full', 'mt')
+    
+    mt = hl.read_matrix_table(path_in).drop('gene', 'annotation')
     if load_contig:
         mt = mt.filter_rows(mt.locus.contig == load_contig)
     variant_qual_ht = hl.read_table(get_variant_results_qc_path())
     mt = mt.annotate_rows(**variant_qual_ht[mt.row_key])
-    pheno_qual_ht = hl.read_table(get_analysis_data_path('lambda', 'lambdas', 'full', 'ht'))
-    mt = mt.annotate_cols(**pheno_qual_ht[mt.col_key])
-    h2_qc_ht = hl.read_table(get_h2_ht_path())
-    mt = mt.annotate_cols(heritability = h2_qc_ht[mt.col_key].heritability)
+    
+    if custom_mt_path is None:
+        # Assume that any custom provided MTs are already annotated with relevant fields
+        pheno_qual_ht = hl.read_table(get_analysis_data_path('lambda', 'lambdas', 'full', 'ht'))
+        mt = mt.annotate_cols(**pheno_qual_ht[mt.col_key])
+        h2_qc_ht = hl.read_table(get_h2_ht_path())
+        mt = mt.annotate_cols(heritability = h2_qc_ht[mt.col_key].heritability)
 
     if filter_to_max_indep_set:
+        if custom_mt_path is None:
+            raise NotImplementedError('MIS filtering not implemented outside pan-ukbb sumstats.')
         mis_ht = get_maximal_indepenedent_set_ht()
         mt = mt.filter_cols(mis_ht[mt.col_key].in_max_independent_set)
+
 
     def update_pheno_struct(pheno_struct, mt):
         pheno_struct = pheno_struct.annotate(saige_heritability = pheno_struct.heritability,
@@ -90,11 +103,16 @@ def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = T
         return pheno_struct
 
 
-    mt = mt.annotate_cols(paired_pop_h2 = hl.dict(hl.map(lambda x: (x.pop,x), mt.heritability)))
-    mt = mt.annotate_cols(pheno_data = mt.pheno_data.map(lambda x: update_pheno_struct(x, mt)))
-    mt = mt.drop('heritability', 'paired_pop_h2')
+    if custom_mt_path is None:
+        # H2 estimates are currently only available for Pan UKBB sumstats
+        mt = mt.annotate_cols(paired_pop_h2 = hl.dict(hl.map(lambda x: (x.pop,x), mt.heritability)))
+        mt = mt.annotate_cols(pheno_data = mt.pheno_data.map(lambda x: update_pheno_struct(x, mt)))
+        mt = mt.drop('heritability', 'paired_pop_h2')
 
     if filter_phenos:
+        if 'lambda_gc' not in mt.pheno_data[0].keys():
+            raise ValueError('Cannot filter phenos by lambda_gc is this statistic is not present.')
+        
         keep_phenos = hl.enumerate(mt.pheno_data).filter(
             lambda x: filter_lambda_gc(x[1].lambda_gc))
 
@@ -108,6 +126,9 @@ def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = T
         mt = mt.filter_cols(hl.len(mt.pheno_data) > 0)
 
     if filter_pheno_h2_qc:
+        if custom_mt_path is None:
+            raise NotImplementedError('H2 filtering not implemented outside pan-ukbb sumstats.')
+        
         mt = mt.filter_cols(mt.pheno_data.any(lambda x: (hl.is_defined(x.heritability.qcflags.pass_all)) & \
                                               (x.heritability.qcflags.pass_all)))
         # filter arrays
