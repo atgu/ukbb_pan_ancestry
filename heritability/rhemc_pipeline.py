@@ -1094,18 +1094,18 @@ def _read_pheno_data(checkpoint, load_full=False, custom_path=None):
     """
     if custom_path is not None:
         checkpoint_phenos = MT_TEMP_BUCKET + custom_pheno_to_temp(custom_path)
+        mt_path = custom_path
     else:
         checkpoint_phenos = MT_TEMP_BUCKET + 'filtered_phenotype_data_temporary.mt'
+        mt_path = get_ukb_pheno_mt_path()
     
-    if load_full and custom_path is not None:
-        return hl.read_matrix_table(custom_path)
-    elif load_full and custom_path is None:
-        return hl.read_matrix_table(get_ukb_pheno_mt_path())
+    if load_full:
+        return hl.read_matrix_table(mt_path)
     else:
         if hl.hadoop_exists(checkpoint_phenos):
             pheno_mt_string = hl.read_matrix_table(checkpoint_phenos)
         else:
-            pheno_mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
+            pheno_mt = hl.read_matrix_table(mt_path)
             pheno_mt_string = pheno_mt.annotate_cols(phenotype_id = construct_phenotype_id(pheno_mt)
                                      ).key_cols_by('phenotype_id')
             pheno_mt_string = pheno_mt_string.select_entries('both_sexes'
