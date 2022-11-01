@@ -199,12 +199,20 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
             if col_ct==0:
                 print(f'\nSkipping {trait_types},{sorted(pop_set)}, no phenotypes found\n')
                 continue
+
+            # split into cols with meta analysis available and those without
+            mt1_with_meta = mt1.filter_cols(hl.is_defined(mt1.has_hq_meta_analysis))
+            mt1_no_meta = mt1.filter_cols(~hl.is_defined(mt1.has_hq_meta_analysis))
+            n_no_meta = mt1_no_meta.count_cols()
+            print(f'\nExporting {str(col_ct)} phenotypes...\n')
+            print(f'\nNOTE: {str(n_no_meta)} phenotypes have no available meta analysis...\n')
+            print(f'\nNOTE: {str(mt1_with_meta.count_cols())} phenotypes have an available meta analysis...\n')
             
             # we now split the mt into those with hq filtered meta analysis results and those without
-            mt1_hq = mt1.filter_cols(mt1.has_hq_meta_analysis).drop('has_hq_meta_analysis')
+            mt1_hq = mt1_with_meta.filter_cols(mt1_with_meta.has_hq_meta_analysis).drop('has_hq_meta_analysis')
             keyed_mt_hq_def = meta_mt0[mt1_hq.row_key,mt1_hq.col_key]
 
-            mt1_hq_undef = mt1.filter_cols(~mt1.has_hq_meta_analysis).drop('has_hq_meta_analysis')
+            mt1_hq_undef = mt1_with_meta.filter_cols(~mt1_with_meta.has_hq_meta_analysis).drop('has_hq_meta_analysis')
             keyed_mt_hq_undef = meta_mt0[mt1_hq_undef.row_key,mt1_hq_undef.col_key]
 
 
@@ -217,12 +225,17 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
                                               meta_hq_field_rename_dict=meta_hq_field_rename_dict,
                                               field_rename_dict=field_rename_dict)
             
+            # export sumstats without hq columns
+            if (n_no_meta > 0):
+                batch_idx_nometa = _shortcut_export_keyed(None, mt1=mt1_no_meta, use_hq=None, batch_idx=1)
+            else:
+                batch_idx_nometa = 0
 
             # export sumstats with hq columns
             if (mt1_hq.count_cols() > 0):
-                batch_idx_hq = _shortcut_export_keyed(keyed_mt_hq_def, mt1=mt1_hq, use_hq=True, batch_idx=1)
+                batch_idx_hq = _shortcut_export_keyed(keyed_mt_hq_def, mt1=mt1_hq, use_hq=True, batch_idx=batch_idx_nometa+1)
             else:
-                batch_idx_hq = 0
+                batch_idx_hq = batch_idx_nometa
             
             # export sumstats without hq columns
             if (mt1_hq_undef.count_cols() > 0):
@@ -318,7 +331,7 @@ def _export_using_keyed_mt(keyed_mt, mt1, use_hq, batch_idx, get_export_path,
                            meta_field_rename_dict, meta_hq_field_rename_dict,
                            field_rename_dict):
     annotate_dict = {}
-    if len(pop_set)>1: # NOTE: Meta-analysis columns go before per-population columns
+    if (keyed_mt is not None) and (len(pop_set)>1): # NOTE: Meta-analysis columns go before per-population columns
         if use_hq:
             for field in meta_fields:
                 field_expr = keyed_mt.meta_analysis_hq[field][0]
@@ -924,7 +937,7 @@ if __name__=="__main__":
     parser.add_argument('--batch-size', type=int, default=256, help='max number of phenotypes per batch for export_entries_by_col')
     parser.add_argument('--exponentiate-p', action='store_true', help='enables regular scale p-values')
     parser.add_argument('--suffix', type=str, default=None, help='if provided, will export to a folder specificed by suffix (added to default directory, so just give a folder name here')
-    parser.add_arugment('--custom-mt', type=str, default=None, help='if provided, will use this instead of the default pan-ukbb mt')
+    parser.add_argument('--custom-mt', type=str, default=None, help='if provided, will use this instead of the default pan-ukbb mt')
     parser.add_argument('--skip-existing-folders', action='store_true', help='for export_results and export_all_results, will skip a particular export if it exists (e.g., if quant/AFR_batch* exists, it is assumed the quant trait AFR export completed and it is skipped)')
     args = parser.parse_args()
 
