@@ -18,7 +18,7 @@ def filter_lambda_gc(lambda_gc):
     return (lambda_gc > 0.5) & (lambda_gc < 5)
 
 
-def load_meta_analysis_results(h2_filter: str = 'both', exponentiate_p: bool = False):
+def load_meta_analysis_results(h2_filter: str = 'both', exponentiate_p: bool = False, custom_path: str = None):
     """ Wrapper function for get_meta_analysis_results_path that returns the HailTable/MT.
     Enables creation of a file including both the original meta analysis and the h2 qc pass
     meta analysis.
@@ -29,14 +29,21 @@ def load_meta_analysis_results(h2_filter: str = 'both', exponentiate_p: bool = F
     Can be 'both', 'none', or 'pass'. 'both' loads a merged table; 'none' loads a table with meta
     analysis results using all phenotype-ancestry pairs; 'pass' loads meta analysis using only those
     results that pass QC.
+
+    custom_path: `str`
+    Now supports using a custom path for the meta analysis data. If this is provided,
+    will load meta_analysis.mt from the path. Will ignore the heritability parameter.
     """
     def exponentiate_p_tab(mt):
         return mt.annotate_entries(meta_analysis = mt.meta_analysis.map(lambda x: x.annotate(Pvalue=hl.exp(x.Pvalue),
                                                                                               Pvalue_het=hl.exp(x.Pvalue_het))))
-
-    if h2_filter.lower() in ['none','pass']:
-        filter_flag = h2_filter.lower() == 'pass'
-        meta_path = get_meta_analysis_results_path(filter_pheno_h2_qc=filter_flag, extension='mt')
+ 
+    if (h2_filter.lower() in ['none','pass']) or (custom_path is not None):
+        if custom_path is not None:
+            meta_path = f'{custom_path}/meta_analysis.mt'
+        else:
+            filter_flag = h2_filter.lower() == 'pass'
+            meta_path = get_meta_analysis_results_path(filter_pheno_h2_qc=filter_flag, extension='mt')
         mt = hl.read_matrix_table(meta_path)
         
         if exponentiate_p:
