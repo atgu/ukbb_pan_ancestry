@@ -255,7 +255,7 @@ def export_binary_eur(cluster_idx, num_clusters=10, batch_size = 256, exponentia
     '''
     mt0 = get_final_sumstats_mt_for_export(exponentiate_p=exponentiate_p, custom_mt_path=custom_mt_path)
     #meta_mt0 = hl.read_matrix_table(get_meta_analysis_results_path())
-    meta_mt0 = load_meta_analysis_results(h2_filter='both', exponentiate_p=exponentiate_p, custom_mt_path=custom_mt_path)
+    meta_mt0 = load_meta_analysis_results(h2_filter='both', exponentiate_p=exponentiate_p, custom_mt_path=os.path.dirname(custom_mt_path))
     
     mt0 = mt0.annotate_cols(pheno_id = get_pheno_id(tb=mt0))
     mt0 = mt0.annotate_rows(chr = mt0.locus.contig,
