@@ -41,7 +41,7 @@ def run_meta_analysis(mt):
 
     # Run fixed-effect meta-analysis (all + leave-one-out)
     mt = mt.annotate_entries(
-        unnorm_beta=mt.summary_stats.BETA / (mt.summary_stats.SE**2), inv_se2=1 / (mt.summary_stats.SE**2)
+        unnorm_beta=mt.summary_stats.BETA / (mt.summary_stats.SE ** 2), inv_se2=1 / (mt.summary_stats.SE ** 2)
     )
     mt = mt.annotate_entries(
         sum_unnorm_beta=all_and_leave_one_out(mt.unnorm_beta, mt.pheno_data.pop),
@@ -60,6 +60,10 @@ def run_meta_analysis(mt):
         variant_exists=hl.map(lambda x: ~hl.is_missing(x), mt.summary_stats.BETA),
     )
     mt = mt.annotate_entries(META_N_pops=all_and_leave_one_out(mt.variant_exists, mt.pheno_data.pop))
+    # filter Q-values when N_pops == 1
+    mt = mt.annotate_entries(
+        META_Q=hl.map(lambda i: hl.or_missing(mt.META_N_pops[i] > 1, mt.META_Q[i]), hl.range(hl.len(mt.META_Q)))
+    )
     mt = mt.annotate_entries(
         META_Pvalue_het=hl.map(
             lambda i: hl.pchisqtail(mt.META_Q[i], mt.META_N_pops[i] - 1, log_p=True), hl.range(hl.len(mt.META_Q))
