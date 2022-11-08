@@ -355,7 +355,8 @@ def _export_using_keyed_mt(keyed_mt, mt1, use_hq, batch_idx, get_export_path,
     
     mt2 = mt2.filter_cols(mt2.coding != 'zekavat_20200409')
     mt2 = mt2.key_cols_by('pheno_id')
-    mt2 = mt2.key_rows_by('chr','pos','ref','alt').drop('locus','alleles','summary_stats') # row fields that are no longer included: 'gene','annotation'
+    # add 'chr','pos','ref','alt' to enforce ordering; should only matter if there are duplicate records
+    mt2 = mt2.key_rows_by().drop('locus','alleles','summary_stats') # row fields that are no longer included: 'gene','annotation'
             
     print(mt2.describe())
     while hl.hadoop_is_dir(get_export_path(batch_idx)):
