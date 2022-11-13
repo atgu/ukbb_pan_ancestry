@@ -43,6 +43,10 @@ def load_meta_analysis_results(h2_filter: str = 'both', exponentiate_p: bool = F
             meta_path = f'{custom_path}/meta_analysis.mt'
             mt = hl.read_matrix_table(meta_path)
             mt = mt.annotate_cols(has_hq_meta_analysis = False)
+        elif custom_path is not None and (not hl.hadoop_exists(f'{custom_path}/meta_analysis.mt/_SUCCESS')):
+            meta_path = get_meta_analysis_results_path(filter_pheno_h2_qc=False, extension='mt')
+            mt = hl.read_matrix_table(meta_path)
+            mt = mt.annotate_cols(has_hq_meta_analysis = False)
         else:
             filter_flag = h2_filter.lower() == 'pass'
             meta_path = get_meta_analysis_results_path(filter_pheno_h2_qc=filter_flag, extension='mt')
