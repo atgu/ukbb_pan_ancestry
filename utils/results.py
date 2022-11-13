@@ -39,7 +39,7 @@ def load_meta_analysis_results(h2_filter: str = 'both', exponentiate_p: bool = F
                                                                                               Pvalue_het=hl.exp(x.Pvalue_het))))
  
     if (h2_filter.lower() in ['none','pass']) or (custom_path is not None):
-        if custom_path is not None:
+        if custom_path is not None and (hl.hadoop_exists(f'{custom_path}/meta_analysis.mt/_SUCCESS')):
             meta_path = f'{custom_path}/meta_analysis.mt'
             mt = hl.read_matrix_table(meta_path)
             mt = mt.annotate_cols(has_hq_meta_analysis = False)
