@@ -92,7 +92,7 @@ def rename_dict_for_log10(dct, legacy_exp_p_values=False):
     dct_out = deepcopy(dct)
     if not legacy_exp_p_values:
         for k, v in dct_out.items():
-            if re.search('^Pvalue.+', k) and re.search('^pval.+', v):
+            if re.search('^Pvalue', k) and re.search('^pval', v):
                 dct_out.update({k: re.sub('^pval', 'neglog10_pval',v)})
     return dct_out
 
