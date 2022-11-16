@@ -39,8 +39,8 @@ def load_meta_analysis_results(h2_filter: str = 'both', exponentiate_p: bool = F
                                                                                                   Pvalue_het=hl.exp(x.Pvalue_het))))
     
     def make_p_base_10(mt):
-        return mt.annotate_entries(meta_analysis = mt.meta_analysis.map(lambda x: x.annotate(Pvalue=x.Pvalue/hl.log(10),
-                                                                                                  Pvalue_het=x.Pvalue_het/hl.log(10))))
+        return mt.annotate_entries(meta_analysis = mt.meta_analysis.map(lambda x: x.annotate(Pvalue=-1*x.Pvalue/hl.log(10),
+                                                                                                  Pvalue_het=-1*x.Pvalue_het/hl.log(10))))
  
     if (h2_filter.lower() in ['none','pass']) or (custom_path is not None):
         if custom_path is not None and (hl.hadoop_exists(f'{custom_path}/meta_analysis.mt/_SUCCESS')):
@@ -200,11 +200,11 @@ def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = T
             mt = mt.annotate_cols(tf_vec_log = hl.agg.array_agg(hl.agg.all, mt.summary_stats.Pvalue.map(lambda x: x <= 0)))
             mt = mt.annotate_entries(summary_stats = hl.zip(mt.summary_stats,mt.tf_vec_log
                                                       ).map(lambda x: hl.if_else(x[1],
-                                                                                 x[0].annotate(Pvalue=x[0].Pvalue / hl.log(10)),
+                                                                                 x[0].annotate(Pvalue=-1*x[0].Pvalue / hl.log(10)),
                                                                                  x[0])))
             mt = mt.drop('tf_vec_log')
         else:
-            mt = mt.annotate_entries(summary_stats = mt.summary_stats.map(lambda x: x.annotate(Pvalue=x.Pvalue/hl.log(10))))
+            mt = mt.annotate_entries(summary_stats = mt.summary_stats.map(lambda x: x.annotate(Pvalue=-1*x.Pvalue/hl.log(10))))
     
     if separate_columns_by_pop:
         # TEMPORARY: enable skip_drop to avoid a hail error
