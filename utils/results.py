@@ -18,7 +18,7 @@ def filter_lambda_gc(lambda_gc):
     return (lambda_gc > 0.5) & (lambda_gc < 5)
 
 
-def load_meta_analysis_results(h2_filter: str = 'both', exponentiate_p: bool = False, custom_path: str = None):
+def load_meta_analysis_results(h2_filter: str = 'both', exponentiate_p: bool = False, custom_path: str = None, legacy_exp_p_values: bool = False):
     """ Wrapper function for get_meta_analysis_results_path that returns the HailTable/MT.
     Enables creation of a file including both the original meta analysis and the h2 qc pass
     meta analysis.
@@ -36,7 +36,11 @@ def load_meta_analysis_results(h2_filter: str = 'both', exponentiate_p: bool = F
     """
     def exponentiate_p_tab(mt):
         return mt.annotate_entries(meta_analysis = mt.meta_analysis.map(lambda x: x.annotate(Pvalue=hl.exp(x.Pvalue),
-                                                                                              Pvalue_het=hl.exp(x.Pvalue_het))))
+                                                                                                  Pvalue_het=hl.exp(x.Pvalue_het))))
+    
+    def make_p_base_10(mt):
+        return mt.annotate_entries(meta_analysis = mt.meta_analysis.map(lambda x: x.annotate(Pvalue=x.Pvalue/hl.log(10),
+                                                                                                  Pvalue_het=x.Pvalue_het/hl.log(10))))
  
     if (h2_filter.lower() in ['none','pass']) or (custom_path is not None):
         if custom_path is not None and (hl.hadoop_exists(f'{custom_path}/meta_analysis.mt/_SUCCESS')):
@@ -54,6 +58,8 @@ def load_meta_analysis_results(h2_filter: str = 'both', exponentiate_p: bool = F
         
         if exponentiate_p:
             mt = exponentiate_p_tab(mt)
+        elif not legacy_exp_p_values:
+            mt = make_p_base_10(mt)
 
         return mt
 
@@ -65,6 +71,9 @@ def load_meta_analysis_results(h2_filter: str = 'both', exponentiate_p: bool = F
         if exponentiate_p:
             mt_true = exponentiate_p_tab(mt_true)
             mt_false = exponentiate_p_tab(mt_false)
+        elif not legacy_exp_p_values:
+            mt_true = make_p_base_10(mt_true)
+            mt_false = make_p_base_10(mt_false)
         
         mt_all = mt_false.annotate_entries(meta_analysis_hq = mt_true[mt_false.row_key, mt_false.col_key].meta_analysis)
         mt_all = mt_all.annotate_cols(meta_analysis_data_hq = mt_true.cols()[mt_all.col_key].meta_analysis_data)
@@ -80,7 +89,7 @@ def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = T
                            annotate_with_nearest_gene: bool = True, add_only_gene_symbols_as_str: bool = False,
                            load_contig: str = None, filter_pheno_h2_qc: bool = True,
                            exponentiate_p: bool = False, check_log_per_pheno_anc: bool = False,
-                           filter_to_max_indep_set: bool = False,
+                           filter_to_max_indep_set: bool = False, legacy_exp_p_values: bool = False,
                            custom_mt_path: str = None):
     
     if custom_mt_path is not None:
@@ -184,7 +193,19 @@ def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = T
         else:
             # Assume p-values are all log-transformed. Much faster.
             mt = mt.annotate_entries(summary_stats = mt.summary_stats.map(lambda x: x.annotate(Pvalue=hl.exp(x.Pvalue))))
-
+    elif not legacy_exp_p_values:
+        if check_log_per_pheno_anc:
+            # Check if p-values are log transformed per pheno-ancestry pair by checking if
+            # all p-values <= 0. Slower due to two passes performed.
+            mt = mt.annotate_cols(tf_vec_log = hl.agg.array_agg(hl.agg.all, mt.summary_stats.Pvalue.map(lambda x: x <= 0)))
+            mt = mt.annotate_entries(summary_stats = hl.zip(mt.summary_stats,mt.tf_vec_log
+                                                      ).map(lambda x: hl.if_else(x[1],
+                                                                                 x[0].annotate(Pvalue=x[0].Pvalue / hl.log(10)),
+                                                                                 x[0])))
+            mt = mt.drop('tf_vec_log')
+        else:
+            mt = mt.annotate_entries(summary_stats = mt.summary_stats.map(lambda x: x.annotate(Pvalue=x.Pvalue/hl.log(10))))
+    
     if separate_columns_by_pop:
         # TEMPORARY: enable skip_drop to avoid a hail error
         mt = separate_results_mt_by_pop(mt, skip_drop=True)
