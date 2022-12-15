@@ -801,8 +801,8 @@ def make_pheno_manifest(export=True, export_flattened_h2_table=False, web_versio
         ht = ht.annotate(aws_path_tabix = 's3://pan-ukb-us-east-1/sumstats_flat_files_tabix/' + ht.filename_tabix)
 
     # adding size/md5 for files and tabix files
-    ht_size_md5 = hl.import_table(f'{bucket}/combined_results/2205_flat_file_info.tsv', impute=True, key='filename').rename({'md5':'md5_hex'})
-    ht_size_md5_tbi = hl.import_table(f'{bucket}/combined_results/2205_tabix_file_info.tsv', impute=True, key='filename').rename({'md5':'md5_hex_tabix', 'size_in_bytes':'size_in_bytes_tabix'})
+    ht_size_md5 = hl.import_table(f'{bucket}/combined_results/2212_flat_file_info.tsv', impute=True, key='filename').rename({'md5':'md5_hex'})
+    ht_size_md5_tbi = hl.import_table(f'{bucket}/combined_results/2212_tabix_file_info.tsv', impute=True, key='filename').rename({'md5':'md5_hex_tabix', 'size_in_bytes':'size_in_bytes_tabix'})
     ht = ht.annotate(**ht_size_md5[ht.filename])
     ht = ht.annotate(**ht_size_md5_tbi[ht.filename_tabix])
 
@@ -871,9 +871,9 @@ def make_pheno_manifest(export=True, export_flattened_h2_table=False, web_versio
 
     if export:
         #ht.export(get_pheno_manifest_path(web_version))
-        ht.export(f'{bucket}/combined_results/220602_phenotype_manifest{"_web" if web_version else ""}.tsv.bgz')
+        ht.export(f'{bucket}/combined_results/220215_phenotype_manifest{"_web" if web_version else ""}.tsv.bgz')
         if export_flattened_h2_table:
-            ht_h2.export(f'{bucket}/combined_results/220407_h2_manifest.tsv.bgz')
+            ht_h2.export(f'{bucket}/combined_results/221215_h2_manifest.tsv.bgz')
             #ht_h2.export(get_h2_manifest_path())
     else:
         return ht
