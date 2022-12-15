@@ -35,7 +35,7 @@ def get_h2_ht_path():
 
 
 def get_maximal_independent_set_path():
-    return f'{public_bucket_free}/qc/Max_indep_set_phenos_h2QC_10_tiebreakCasenum.ht'
+    return f'{public_bucket_free}/qc/Max_indep_set_phenos_h2QC_10_tiebreakCasenum_FINAL.ht'
 
 
 def get_maximal_indepenedent_set_ht():
