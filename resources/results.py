@@ -76,7 +76,8 @@ def get_h2_manifest_path():
 
 
 def get_clumping_results_path(pop: str = 'full', high_quality: bool = False, 
-                              not_pop: bool = True, max_pops: bool = False):
+                              not_pop: bool = True, max_pops: bool = False,
+                             hq_phenos: bool = False):
     
     """
     Clumping results available for only high quality variants and high quality phenotypes (single pops, leave-one-out meta-analyses, and all-pop meta-analyses).
