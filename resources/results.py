@@ -81,8 +81,6 @@ def get_clumping_results_path(pop: str = 'full', high_quality: bool = False,
     
     if high_quality:
         return f'{ldprune_dir}/clump_results_high_quality_22115/{mt_name}.mt' 
-    elif not high_quality and hq_phenos:
-        return f'{ldprune_dir}/clump_results_hq_phenos/{mt_name}.mt'
     else:
         return f'{ldprune_dir}/clump_results/{mt_name}.mt'
 
