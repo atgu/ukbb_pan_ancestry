@@ -77,14 +77,23 @@ def get_h2_manifest_path():
 
 def get_clumping_results_path(pop: str = 'full', high_quality: bool = False, 
                               not_pop: bool = True, max_pops: bool = False):
+    
+    """
+    Clumping results available for only high quality variants and high quality phenotypes (single pops, leave-one-out meta-analyses, and all-pop meta-analyses).
+    
+    :param pop: Input pop for single pop or leave-one-out results or "full" for all results in one MT (single pop summstats available for all phenos; clumping results available for only hq phenos)
+    :param high_quality: High quality variants only
+    :param not_pop: Leave-one-out meta-analyses (summstats available for only hq phenos; clumping results available for only hq phenos)
+    :param max_pops: All-pop meta-analyses (summstats available for all phenos; clumping results available for only hq phenos)
+    
+    """
+        
     mt_name = 'max_pops' if max_pops else (f'{"not_" if not_pop else ""}{pop}' if pop in POPS else 'full_clump_results')
     
     if high_quality:
-        return f'{public_bucket}/clump_results_high_quality/{mt_name}.mt'
-    elif hq_phenos:
-        return f'{bucket}/ld_prune/clump_results_hq_phenos/{mt_name}.mt'
+        return f'{ldprune_dir}/clump_results_high_quality_22115/{mt_name}.mt' 
     else:
-        return f'{bucket}/ld_prune/clump_results/{mt_name}.mt'
+        return f'{ldprune_dir}/clump_results/{mt_name}.mt'
 
 def get_prs_mt_path(high_quality: bool = True):
     return f'{bucket}/prs/all_combos_prs{"" if high_quality else "_raw"}.mt'
