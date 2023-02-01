@@ -1,6 +1,7 @@
 from .generic import *
 from ukb_common.resources.results import *
 
+ldprune_dir = f'{bucket}/ld_prune'
 
 def get_gene_intervals_path(reference: str = 'GRCh37'):
     return f'{public_bucket}/misc/gene_intervals_{reference}.ht'
