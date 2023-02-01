@@ -89,7 +89,7 @@ def get_clumping_results_path(pop: str = 'full', high_quality: bool = False,
     
     """
         
-    mt_name = 'max_pops' if max_pops else (f'{"not_" if not_pop else ""}{pop}' if pop in POPS else 'full_clump_results')
+    mt_name = ("max_pops" if max_pops else ("not_" if not_pop else ""))+(f'{pop}' if pop in POPS else ('full' if pop == "full" and not max_pops else ""))
     
     if high_quality:
         return f'{ldprune_dir}/clump_results_high_quality_22115/{mt_name}.mt' 
