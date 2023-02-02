@@ -63,7 +63,9 @@ if __name__ == '__main__':
     parser.add_argument('--logfile', type=str,
                         help="Name of log file to output.")
     parser.add_argument('--exponentiate-p', action='store_true',
-                        help="If true, will exponentiate imported p-values.")
+                        help='If true, will raise p-values to the 10^-p in summary statistics.')
+    parser.add_argument('--legacy-exp-p-values', action='store_true',
+                        help='If true, will exponentiate p-values assuming base e scale, from association tests. Legacy flag.')
     
     args = parser.parse_args()
     if args.sumstats is None:
@@ -73,7 +75,7 @@ if __name__ == '__main__':
     if args.out is None:
         raise ValueError('--out must be provided. This is the output location and filename.')
     if args.logfile is None:
-        raise ValueError('--logifle must be provided. This is the output location of the logfile.')
+        raise ValueError('--logfile must be provided. This is the output location of the logfile.')
 
     logging.basicConfig(filename = args.logfile, level = logging.DEBUG)
 
@@ -86,14 +88,20 @@ if __name__ == '__main__':
     logging.info('Renamed ref -> A1 and alt -> A2.')
     logging.info('Concatenated chr, pos, ref, alt -> SNP')
 
-    pval_col_touse = search_column(data, 'pval', enforce_singular = True)
+    pstring = 'pval' if args.legacy_exp_p_values else 'neglog10_pval'
+    pval_col_touse = search_column(data, pstring, enforce_singular = True)
     logging.info('Using %s for pval.', pval_col_touse)
     beta_col_touse = search_column(data, 'beta', enforce_singular = True)
     logging.info('Using %s for beta.', beta_col_touse)
 
     if args.exponentiate_p:
-        logging.info('Exponentiating %s column...', pval_col_touse)
-        data[pval_col_touse] = np.exp(np.float64(data[pval_col_touse]))
+        if args.legacy_exp_p_values:
+            logging.info('Exponentiating %s column...', pval_col_touse)
+            data[pval_col_touse] = np.exp(np.float64(data[pval_col_touse]))
+        else:
+            logging.info('Raising %s column to absolute scale assuming negative base 10...', pval_col_touse)
+            data[pval_col_touse] = np.power(10, -1 * np.float64(data[pval_col_touse]))
+        
         logging.info('Exponentiation complete; old column overwritten with regular scale values.')
 
     # the af field is either af or af_controls/cases for continuous and
@@ -155,6 +163,11 @@ if __name__ == '__main__':
     # obtain final result
     data_final = data_conf_filt.loc[:, [
         "SNP", "A1", "A2", "N", "Z", beta_col_touse, pval_col_touse, af_col_touse]]
+
+    # remove "neglog10_" suffix from p-value column (not used by LDSC)
+    if args.exponentiate_p and not args.legacy_exp_p_values:
+        replaced_pval_column_name = re.sub('^neglog10_', '', pval_col_touse)
+        data_final = data_final.rename(columns = {pval_col_touse: replaced_pval_column_name})
 
     # provide metrics as in munge_sumstats from ldsc
     logging.info('Final number of rows in file: %d', data_final.shape[0])

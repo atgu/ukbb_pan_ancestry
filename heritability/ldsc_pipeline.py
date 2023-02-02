@@ -234,7 +234,7 @@ def pipeline_setup_env(parsing_script):
     return command_setup
 
 
-def munge_sumstats(j, ancestry, ld_scores, sumstat_file, N, munging_script, exponentiate_p):
+def munge_sumstats(j, ancestry, ld_scores, sumstat_file, N, munging_script, exponentiate_p, legacy_exp_p_values):
     """ Set up commands for munging summary statsitcs. This command assumes that summary statistics
     files are of the pan-ancestry variety and as such will subset the summary statistics to only
     look at the relevant ancestry groups. Will also generate a log to track munging steps while also
@@ -268,6 +268,11 @@ def munge_sumstats(j, ancestry, ld_scores, sumstat_file, N, munging_script, expo
         Sample size.
     munging_script : :obj: `InputResourceFile`
         Location of the munging script, `munge_manual.py`
+    exponentiate_p : `bool`
+        IF enabled, will exponentiate p-values using 10**(-1*p-value).
+    legacy_exp_p_values : `bool`
+        IF enabled, will exponentiate p-values using exp. Used for legacy purposes, as older
+        pan UKBB sumstats stored exp(p-values). If this flag is enabled, will look for a "pvalue" column.
 
     Returns
     -------
@@ -285,6 +290,7 @@ def munge_sumstats(j, ancestry, ld_scores, sumstat_file, N, munging_script, expo
     j = j.storage('20Gi')
     j = j.memory('8Gi')
     exp_arg = "--exponentiate-p" if exponentiate_p else ""
+    legacy_arg = "--legacy-exp-p-value" if legacy_exp_p_values else ""
     command_pre_script = f"""
         gunzip -c {ld_scores}.l2.ldscore.gz > {j.extracted_ldscore}
         gunzip -c {sumstat_file} > {j.extracted_sumstats}
@@ -308,7 +314,7 @@ def munge_sumstats(j, ancestry, ld_scores, sumstat_file, N, munging_script, expo
             cat {j.headers_all} {j.headers_ancestry_specific} > {j.headers_final}
             cut -f $(paste -sd, <(cut -f1 -d: <(grep -Fxn "$(<{j.headers_final})" < <(head -n1 {j.intermediate_sumstats_2} | tr "\t" "\n")))) {j.intermediate_sumstats_2} > {j.intermediate_sumstats_3}
             printf "Trimmed sumstats files to contain only %s columns.\n" {ancestry} >> {j.logout}
-            python {munging_script} --sumstats {j.intermediate_sumstats_3} --N {N} --out {j.final_sumstats_file} --logfile {j.log_tmp} {exp_arg}
+            python {munging_script} --sumstats {j.intermediate_sumstats_3} --N {N} --out {j.final_sumstats_file} --logfile {j.log_tmp} {exp_arg} {legacy_arg}
             cp {j.final_sumstats_file} {j.final_sumstats_file + ".sumstats.gz"}
             printf -- "----------------------------------" >> {j.logout}
             printf "\n" >> {j.logout}
@@ -326,7 +332,7 @@ def run_ancestry_specific_job(b, ancestry, code, address, ld_scores, ld_weights,
                               suffix,
                               parsing_script, munging_script,
                               check_script, prealloc=None, stratified=False, rem_maxchisq=False,
-                              exponentiate_p=True):
+                              exponentiate_p=True, legacy_exp_p_values=False):
     """ Quarterbacks the ancestry specific job. This entails munging/obtaining the munged summary
     statistics for a particular ancestry and phenotype code and running ldsc. We need the parsing
     script because one of its functions is used by the check script.
@@ -352,7 +358,10 @@ def run_ancestry_specific_job(b, ancestry, code, address, ld_scores, ld_weights,
     rem_maxchisq : `bool`
         IF enabled, will set maxchisq to 9999 in order to eliminate this cutoff.
     exponentiate_p : `bool`
-        IF enabled, will exponentiate p-values using exp.
+        IF enabled, will exponentiate p-values using 10**(-1*p-value).
+    legacy_exp_p_values : `bool`
+        IF enabled, will exponentiate p-values using exp. Used for legacy purposes, as older
+        pan UKBB sumstats stored exp(p-values). If this flag is enabled, will look for a "pvalue" column.
 
     Returns
     -------
@@ -377,7 +386,7 @@ def run_ancestry_specific_job(b, ancestry, code, address, ld_scores, ld_weights,
     else:
         # if the munging has not been performed:
         sumstat_file = bserv.read_input_group(**{'tsv.bgz': address})['tsv.bgz']
-        command_app, j, local_stats, local_log = munge_sumstats(j, ancestry, ld_scores, sumstat_file, this_N, munging_script, exponentiate_p)
+        command_app, j, local_stats, local_log = munge_sumstats(j, ancestry, ld_scores, sumstat_file, this_N, munging_script, exponentiate_p, legacy_exp_p_values)
         command += command_app
         local_stats_use = local_stats + ".sumstats.gz"
     
@@ -463,7 +472,9 @@ if __name__ == '__main__':
                         help='If enabled, will use a .tsv manifest. This is a legacy option, as using cols from the sumstats ' + \
                         'MatrixTable will be the most updated and is thus preferred.')
     parser.add_argument('--exponentiate-p', action='store_true',
-                        help='If true, will exponentiate p-values from association tests. EXPECT TO ENABLE.')
+                        help='If true, will raise p-values to the 10^-p in summary statistics. EXPECT TO ENABLE.')
+    parser.add_argument('--legacy-exp-p-values', action='store_true',
+                        help='If true, will exponentiate p-values assuming base e scale, from association tests. Legacy flag.')
 
     parser.add_argument('--vanilla-ld', default='gs://rgupta-ldsc/ld/UKBB.{}', type=str,
                         help='This argument points to the original complete in-sample LD scores. ' + \
@@ -554,7 +565,8 @@ if __name__ == '__main__':
                                                          check_script, prealloc=prealloc,
                                                          stratified=stratified, 
                                                          rem_maxchisq=args.remove_maxchisq,
-                                                         exponentiate_p=args.exponentiate_p)
+                                                         exponentiate_p=args.exponentiate_p,
+                                                         legacy_exp_p_values=args.legacy_exp_p_values)
                 
                 ancestry_jobs.append(anc_j)
 
