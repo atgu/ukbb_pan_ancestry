@@ -11,6 +11,7 @@ Export flat file summary statistics from matrix tables
 import argparse
 from multiprocessing.sharedctypes import Value
 import os, re
+from copy import deepcopy
 from sys import path
 import hail as hl
 import hailtop.batch as hb
@@ -21,8 +22,9 @@ from math import ceil
 # hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'CUSTOM',
 #                     'spark.hadoop.fs.gs.requester.pays.buckets': 'ukb-diverse-pops-public',
 #                     'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
-hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'ENABLED',
-                     'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
+# DISABLE WHEN CALLED
+# hl.init(spark_conf={'spark.hadoop.fs.gs.requester.pays.mode': 'ENABLED',
+#                      'spark.hadoop.fs.gs.requester.pays.project.id': 'ukbb-diversepops-neale'})
 
 from ukbb_pan_ancestry.utils.results import load_final_sumstats_mt, load_meta_analysis_results
 from ukbb_pan_ancestry.resources import POPS
@@ -86,6 +88,15 @@ binary_field_rename_dict = {'AF.Cases': 'af_cases',
                             'low_confidence': 'low_confidence'}
 
 
+def rename_dict_for_log10(dct, legacy_exp_p_values=False):
+    dct_out = deepcopy(dct)
+    if not legacy_exp_p_values:
+        for k, v in dct_out.items():
+            if re.search('^Pvalue', k) and re.search('^pval', v):
+                dct_out.update({k: re.sub('^pval', 'neglog10_pval',v)})
+    return dct_out
+
+
 def get_pheno_id(tb):
     pheno_id = (tb.trait_type+'-'+tb.phenocode+'-'+tb.pheno_sex+
                 hl.if_else(hl.len(tb.coding)>0, '-'+tb.coding, '')+
@@ -94,7 +105,11 @@ def get_pheno_id(tb):
     return pheno_id
 
 
-def get_final_sumstats_mt_for_export(exponentiate_p):
+def dirname_or_none(path):
+    return None if path is None else os.path.dirname(path)
+
+
+def get_final_sumstats_mt_for_export(exponentiate_p, custom_mt_path, legacy_exp_p_values):
     """ Updated to *not* filter by QC cutoffs.
     """
     mt0 = load_final_sumstats_mt(filter_sumstats=False,
@@ -102,14 +117,17 @@ def get_final_sumstats_mt_for_export(exponentiate_p):
                                  separate_columns_by_pop=False,
                                  annotate_with_nearest_gene=False,
                                  filter_pheno_h2_qc=False,
-                                 exponentiate_p=exponentiate_p)
+                                 exponentiate_p=exponentiate_p,
+                                 legacy_exp_p_values=legacy_exp_p_values,
+                                 custom_mt_path=custom_mt_path)
     mt0 = mt0.select_rows()
     return mt0
 
 
 def export_results(num_pops, trait_types='all', batch_size=256, mt=None, 
                    export_path_str=None, skip_binary_eur=True, exponentiate_p=False,
-                   suffix=None, skip_existing_folders=False):
+                   legacy_exp_p_values=False,
+                   suffix=None, skip_existing_folders=False, custom_mt_path=None):
     r'''
     `num_pops`: exact number of populations for which phenotype is defined
     `trait_types`: trait category (options: all, binary, quant)
@@ -119,12 +137,12 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
     assert trait_types in {'all','quant','binary'}, "trait_types must be one of the following: {'all','quant','binary'}"
     print(f'\n\nExporting {trait_types} trait types for {num_pops} pops\n\n')
     if mt == None:
-        mt0 = get_final_sumstats_mt_for_export(exponentiate_p=exponentiate_p)
+        mt0 = get_final_sumstats_mt_for_export(exponentiate_p=exponentiate_p, custom_mt_path=custom_mt_path, legacy_exp_p_values=legacy_exp_p_values)
     else:
         mt0 = mt
         
     #meta_mt0 = hl.read_matrix_table(get_meta_analysis_results_path())
-    meta_mt0 = load_meta_analysis_results(h2_filter='both', exponentiate_p=exponentiate_p)
+    meta_mt0 = load_meta_analysis_results(h2_filter='both', exponentiate_p=exponentiate_p, custom_path=dirname_or_none(custom_mt_path), legacy_exp_p_values=legacy_exp_p_values)
     
     mt0 = mt0.annotate_cols(pheno_id = get_pheno_id(tb=mt0))
     mt0 = mt0.annotate_rows(chr = mt0.locus.contig,
@@ -164,6 +182,10 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
             meta_field_rename_dict = binary_meta_field_rename_dict
             meta_hq_field_rename_dict = binary_meta_hq_field_rename_dict
             field_rename_dict = binary_field_rename_dict
+
+        meta_field_rename_dict = rename_dict_for_log10(meta_field_rename_dict, legacy_exp_p_values=legacy_exp_p_values)
+        meta_hq_field_rename_dict = rename_dict_for_log10(meta_hq_field_rename_dict, legacy_exp_p_values=legacy_exp_p_values)
+        field_rename_dict = rename_dict_for_log10(field_rename_dict, legacy_exp_p_values=legacy_exp_p_values)
     
         meta_fields += ['BETA','SE','Pvalue','Pvalue_het']
         fields += ['BETA','SE','Pvalue','low_confidence']
@@ -197,12 +219,20 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
             if col_ct==0:
                 print(f'\nSkipping {trait_types},{sorted(pop_set)}, no phenotypes found\n')
                 continue
+
+            # split into cols with meta analysis available and those without
+            mt1_with_meta = mt1.filter_cols(hl.is_defined(mt1.has_hq_meta_analysis))
+            mt1_no_meta = mt1.filter_cols(~hl.is_defined(mt1.has_hq_meta_analysis))
+            n_no_meta = mt1_no_meta.count_cols()
+            print(f'\nExporting {str(col_ct)} phenotypes...\n')
+            print(f'\nNOTE: {str(n_no_meta)} phenotypes have no available meta analysis...\n')
+            print(f'\nNOTE: {str(mt1_with_meta.count_cols())} phenotypes have an available meta analysis...\n')
             
             # we now split the mt into those with hq filtered meta analysis results and those without
-            mt1_hq = mt1.filter_cols(mt1.has_hq_meta_analysis).drop('has_hq_meta_analysis')
+            mt1_hq = mt1_with_meta.filter_cols(mt1_with_meta.has_hq_meta_analysis).drop('has_hq_meta_analysis')
             keyed_mt_hq_def = meta_mt0[mt1_hq.row_key,mt1_hq.col_key]
 
-            mt1_hq_undef = mt1.filter_cols(~mt1.has_hq_meta_analysis).drop('has_hq_meta_analysis')
+            mt1_hq_undef = mt1_with_meta.filter_cols(~mt1_with_meta.has_hq_meta_analysis).drop('has_hq_meta_analysis')
             keyed_mt_hq_undef = meta_mt0[mt1_hq_undef.row_key,mt1_hq_undef.col_key]
 
 
@@ -215,12 +245,17 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
                                               meta_hq_field_rename_dict=meta_hq_field_rename_dict,
                                               field_rename_dict=field_rename_dict)
             
+            # export sumstats without hq columns
+            if (n_no_meta > 0):
+                batch_idx_nometa = _shortcut_export_keyed(None, mt1=mt1_no_meta, use_hq=None, batch_idx=1)
+            else:
+                batch_idx_nometa = 0
 
             # export sumstats with hq columns
             if (mt1_hq.count_cols() > 0):
-                batch_idx_hq = _shortcut_export_keyed(keyed_mt_hq_def, mt1=mt1_hq, use_hq=True, batch_idx=1)
+                batch_idx_hq = _shortcut_export_keyed(keyed_mt_hq_def, mt1=mt1_hq, use_hq=True, batch_idx=batch_idx_nometa+1)
             else:
-                batch_idx_hq = 0
+                batch_idx_hq = batch_idx_nometa
             
             # export sumstats without hq columns
             if (mt1_hq_undef.count_cols() > 0):
@@ -231,16 +266,16 @@ def export_results(num_pops, trait_types='all', batch_size=256, mt=None,
 
 
 def export_binary_eur(cluster_idx, num_clusters=10, batch_size = 256, exponentiate_p=False,
-                      suffix=None):
+                      suffix=None, custom_mt_path=None, legacy_exp_p_values=False):
     r'''
     Export summary statistics for binary traits defined only for EUR. 
     Given the large number of such traits (4184), it makes sense to batch this 
     across `num_clusters` clusters for reduced wall time and robustness to mid-export errors.
     NOTE: `cluster_idx` is 1-indexed.
     '''
-    mt0 = get_final_sumstats_mt_for_export(exponentiate_p=exponentiate_p)
+    mt0 = get_final_sumstats_mt_for_export(exponentiate_p=exponentiate_p, custom_mt_path=custom_mt_path, legacy_exp_p_values=legacy_exp_p_values)
     #meta_mt0 = hl.read_matrix_table(get_meta_analysis_results_path())
-    meta_mt0 = load_meta_analysis_results(h2_filter='both', exponentiate_p=exponentiate_p)
+    meta_mt0 = load_meta_analysis_results(h2_filter='both', exponentiate_p=exponentiate_p, custom_path=dirname_or_none(custom_mt_path), legacy_exp_p_values=legacy_exp_p_values)
     
     mt0 = mt0.annotate_cols(pheno_id = get_pheno_id(tb=mt0))
     mt0 = mt0.annotate_rows(chr = mt0.locus.contig,
@@ -287,14 +322,18 @@ def export_binary_eur(cluster_idx, num_clusters=10, batch_size = 256, exponentia
     get_export_path = lambda batch_idx: f'{ldprune_dir}/release{"" if suffix is None else "/"+suffix}/{trait_category}/{"-".join(pop_list)}_batch{batch_idx}/subbatch{cluster_idx}'
     
     
+    meta_field_rename_dict = rename_dict_for_log10(binary_meta_field_rename_dict, legacy_exp_p_values=legacy_exp_p_values)
+    meta_hq_field_rename_dict = rename_dict_for_log10(binary_meta_hq_field_rename_dict, legacy_exp_p_values=legacy_exp_p_values)
+    field_rename_dict = rename_dict_for_log10(binary_field_rename_dict, legacy_exp_p_values=legacy_exp_p_values)
+
     def _shortcut_export_keyed(keyed_mt, mt1, use_hq, batch_idx):
         return _export_using_keyed_mt(keyed_mt, mt1=mt1, use_hq=use_hq, batch_idx=batch_idx,
                                       get_export_path=get_export_path,
                                       batch_size=batch_size, pop_set=pop_set,
                                       pop_list=pop_list, meta_fields=meta_fields, fields=fields,
-                                      meta_field_rename_dict=binary_meta_field_rename_dict,
-                                      meta_hq_field_rename_dict=binary_meta_hq_field_rename_dict,
-                                      field_rename_dict=binary_field_rename_dict)
+                                      meta_field_rename_dict=meta_field_rename_dict,
+                                      meta_hq_field_rename_dict=meta_hq_field_rename_dict,
+                                      field_rename_dict=field_rename_dict)
     
 
     # export sumstats with hq columns
@@ -316,7 +355,7 @@ def _export_using_keyed_mt(keyed_mt, mt1, use_hq, batch_idx, get_export_path,
                            meta_field_rename_dict, meta_hq_field_rename_dict,
                            field_rename_dict):
     annotate_dict = {}
-    if len(pop_set)>1: # NOTE: Meta-analysis columns go before per-population columns
+    if (keyed_mt is not None) and (len(pop_set)>1): # NOTE: Meta-analysis columns go before per-population columns
         if use_hq:
             for field in meta_fields:
                 field_expr = keyed_mt.meta_analysis_hq[field][0]
@@ -340,6 +379,7 @@ def _export_using_keyed_mt(keyed_mt, mt1, use_hq, batch_idx, get_export_path,
     
     mt2 = mt2.filter_cols(mt2.coding != 'zekavat_20200409')
     mt2 = mt2.key_cols_by('pheno_id')
+    # add 'chr','pos','ref','alt' to enforce ordering; should only matter if there are duplicate records
     mt2 = mt2.key_rows_by().drop('locus','alleles','summary_stats') # row fields that are no longer included: 'gene','annotation'
             
     print(mt2.describe())
@@ -361,9 +401,9 @@ def load_phenotype_list(path):
 
 
 def export_subset(num_pops=None, phenocode=None, exponentiate_p=False, suffix=None,
-                  skip_existing_folders=False, allow_binary_eur=False, 
-                  export_specific_phenos=None):
-    mt0 = get_final_sumstats_mt_for_export(exponentiate_p=exponentiate_p)
+                  skip_existing_folders=False, allow_binary_eur=False, legacy_exp_p_values=False,
+                  export_specific_phenos=None, custom_mt_path=None):
+    mt0 = get_final_sumstats_mt_for_export(exponentiate_p=exponentiate_p, custom_mt_path=custom_mt_path, legacy_exp_p_values=legacy_exp_p_values)
     if export_specific_phenos is not None:
         specific_ht = load_phenotype_list(export_specific_phenos)
         n_specific = specific_ht.count()
@@ -381,9 +421,11 @@ def export_subset(num_pops=None, phenocode=None, exponentiate_p=False, suffix=No
                                mt = mt0, 
                                export_path_str=phenocode,
                                exponentiate_p=exponentiate_p,
+                               legacy_exp_p_values=legacy_exp_p_values,
                                suffix=suffix,
                                skip_existing_folders=skip_existing_folders,
-                               skip_binary_eur = not allow_binary_eur)
+                               skip_binary_eur = not allow_binary_eur,
+                               custom_mt_path=custom_mt_path)
     else:
         export_results(num_pops=num_pops, 
                        trait_types='all', 
@@ -391,21 +433,25 @@ def export_subset(num_pops=None, phenocode=None, exponentiate_p=False, suffix=No
                        mt = mt0, 
                        export_path_str=phenocode,
                        exponentiate_p=exponentiate_p,
+                       legacy_exp_p_values=legacy_exp_p_values,
                        suffix=suffix,
                        skip_existing_folders=skip_existing_folders,
-                       skip_binary_eur = not allow_binary_eur)
+                       skip_binary_eur = not allow_binary_eur,
+                       custom_mt_path=custom_mt_path)
 
 
 def export_all_loo(batch_size=256, update=False, exponentiate_p=False, 
                    n_minimum_pops=3, suffix=None, h2_filter: bool=True,
-                   export_specific_phenos=None):
+                   export_specific_phenos=None, legacy_exp_p_values=False):
     """
     This function iterates through all phenotypes that have at least n_minimum_pops 
     and outputs loo meta-analysis results.
+
+    NOTE not updated to use a custom mt
     """
     
     filter_string = 'pass' if h2_filter else 'none'
-    meta_mt0 = load_meta_analysis_results(h2_filter=filter_string, exponentiate_p=exponentiate_p)   
+    meta_mt0 = load_meta_analysis_results(h2_filter=filter_string, exponentiate_p=exponentiate_p, legacy_exp_p_values=legacy_exp_p_values)   
     meta_mt0 = meta_mt0.select_rows()
     meta_mt0 = meta_mt0.annotate_cols(pheno_id = get_pheno_id(tb=meta_mt0))
     meta_mt0 = meta_mt0.filter_cols(hl.len(meta_mt0.pheno_data.pop)>=n_minimum_pops)
@@ -755,8 +801,8 @@ def make_pheno_manifest(export=True, export_flattened_h2_table=False, web_versio
         ht = ht.annotate(aws_path_tabix = 's3://pan-ukb-us-east-1/sumstats_flat_files_tabix/' + ht.filename_tabix)
 
     # adding size/md5 for files and tabix files
-    ht_size_md5 = hl.import_table(f'{bucket}/combined_results/2205_flat_file_info.tsv', impute=True, key='filename').rename({'md5':'md5_hex'})
-    ht_size_md5_tbi = hl.import_table(f'{bucket}/combined_results/2205_tabix_file_info.tsv', impute=True, key='filename').rename({'md5':'md5_hex_tabix', 'size_in_bytes':'size_in_bytes_tabix'})
+    ht_size_md5 = hl.import_table(f'{bucket}/combined_results/2212_flat_file_info.tsv', impute=True, key='filename').rename({'md5':'md5_hex'})
+    ht_size_md5_tbi = hl.import_table(f'{bucket}/combined_results/2212_tabix_file_info.tsv', impute=True, key='filename').rename({'md5':'md5_hex_tabix', 'size_in_bytes':'size_in_bytes_tabix'})
     ht = ht.annotate(**ht_size_md5[ht.filename])
     ht = ht.annotate(**ht_size_md5_tbi[ht.filename_tabix])
 
@@ -825,9 +871,9 @@ def make_pheno_manifest(export=True, export_flattened_h2_table=False, web_versio
 
     if export:
         #ht.export(get_pheno_manifest_path(web_version))
-        ht.export(f'{bucket}/combined_results/220602_phenotype_manifest{"_web" if web_version else ""}.tsv.bgz')
+        ht.export(f'{bucket}/combined_results/221215_phenotype_manifest{"_web" if web_version else ""}.tsv.bgz')
         if export_flattened_h2_table:
-            ht_h2.export(f'{bucket}/combined_results/220407_h2_manifest.tsv.bgz')
+            ht_h2.export(f'{bucket}/combined_results/221215_h2_manifest.tsv.bgz')
             #ht_h2.export(get_h2_manifest_path())
     else:
         return ht
@@ -919,7 +965,9 @@ if __name__=="__main__":
     parser.add_argument('--num-clusters',type=int, default=None, help='total number of clusters used in splitting export of binary EUR traits')
     parser.add_argument('--batch-size', type=int, default=256, help='max number of phenotypes per batch for export_entries_by_col')
     parser.add_argument('--exponentiate-p', action='store_true', help='enables regular scale p-values')
+    parser.add_argument('--legacy-exp-p-values', action='store_true', help='If true, will revert to outputting exp(P). Default behavior is outputting -log10(P).')
     parser.add_argument('--suffix', type=str, default=None, help='if provided, will export to a folder specificed by suffix (added to default directory, so just give a folder name here')
+    parser.add_argument('--custom-mt', type=str, default=None, help='if provided, will use this instead of the default pan-ukbb mt')
     parser.add_argument('--skip-existing-folders', action='store_true', help='for export_results and export_all_results, will skip a particular export if it exists (e.g., if quant/AFR_batch* exists, it is assumed the quant trait AFR export completed and it is skipped)')
     args = parser.parse_args()
 
@@ -928,27 +976,34 @@ if __name__=="__main__":
                        trait_types=args.trait_types,
                        batch_size=args.batch_size,
                        exponentiate_p=args.exponentiate_p,
+                       legacy_exp_p_values=args.legacy_exp_p_values,
                        suffix=args.suffix, 
-                       skip_existing_folders=args.skip_existing_folders)
+                       skip_existing_folders=args.skip_existing_folders,
+                       custom_mt_path=args.custom_mt)
     elif args.export_all_results:
         # If phenocode is not provided, None will be provided below 
         # resulting in a full export across all pop combinations
         export_subset(exponentiate_p=args.exponentiate_p,
+                      legacy_exp_p_values=args.legacy_exp_p_values,
                       phenocode=args.phenocode,
                       export_specific_phenos=args.export_specific_phenos,
                       suffix=args.suffix, num_pops=args.num_pops, allow_binary_eur=args.allow_binary_eur,
-                      skip_existing_folders=args.skip_existing_folders)
+                      skip_existing_folders=args.skip_existing_folders,
+                      custom_mt_path=args.custom_mt)
     elif args.export_binary_eur:
         export_binary_eur(batch_size=args.batch_size,
                           cluster_idx=args.cluster_idx,
                           num_clusters=args.num_clusters,
                           exponentiate_p=args.exponentiate_p,
-                          suffix=args.suffix)
+                          legacy_exp_p_values=args.legacy_exp_p_values,
+                          suffix=args.suffix,
+                          custom_mt_path=args.custom_mt)
     elif args.make_pheno_manifest:
         make_pheno_manifest(export_flattened_h2_table=args.export_h2_manifest, web_version=args.export_web_manifest)
     elif args.export_loo:
         export_all_loo(batch_size=args.batch_size,
                        exponentiate_p=args.exponentiate_p,
+                       legacy_exp_p_values=args.legacy_exp_p_values,
                        n_minimum_pops=args.export_loo_minpops,
                        suffix=args.suffix,
                        h2_filter=args.export_loo_hq,

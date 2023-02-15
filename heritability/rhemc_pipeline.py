@@ -14,7 +14,7 @@ import sys
 import re
 import argparse
 
-from os.path import basename
+from os.path import basename, splitext
 from typing import Union
 from google.cloud import storage
 
@@ -27,8 +27,8 @@ from ukbb_pan_ancestry.resources.results import get_variant_results_path
 
 # paths
 bucket = 'ukb-diverse-pops'
-fusebucket = 'rgupta-pcgc-mount'
-loc = 'rg-pcgc'
+fusebucket = 'rgupta-rhemc-mount'
+loc = 'rg-rhemc-affix'
 path_geno = f'gs://{bucket}/{loc}/genos/'
 path_pheno = f'gs://{bucket}/{loc}/phenos/'
 path_covar = f'gs://{bucket}/{loc}/covar/'
@@ -41,11 +41,12 @@ parsing_script_adr = f'gs://{bucket}/{loc}/code/rhe_mc_parse_results.py'
 
 SAIGE_PHENO_LOC = f'gs://{bucket}/results/pheno_export_data/'
 
-MT_TEMP_BUCKET = f'gs://ukbb-diverse-temp-30day/{loc}/mt/'
-HT_TEMP_BUCKET = f'gs://ukbb-diverse-temp-30day/{loc}/ht/'
+temp_dir = 'gs://ukbb-diverse-temp-30day-multiregion/'
+MT_TEMP_BUCKET = f'{temp_dir}{loc}/mt/'
+HT_TEMP_BUCKET = f'{temp_dir}{loc}/ht/'
 
 # other environment variables
-IMAGE = 'gcr.io/ukbb-diversepops-neale/rgupta_rhe_mc'
+IMAGE = 'us-docker.pkg.dev/ukbb-diversepops-neale/pan-ukbb-docker-repo/rgupta_rhe_mc'
 MHC = hl.parse_locus_interval('6:25M-35M') # MHC locus
 PHWE = 1e-7 # p HWE cutoff
 RANDOMPREF = lambda idx: f'random-stdnormal-{str(idx)}-both_sexes'
@@ -55,7 +56,7 @@ MAFRANGE_5 = [(0.0, 0.1),(0.1,0.2),(0.2,0.3),(0.3,0.4),(0.4,1.0)]
 MAFRANGE_2 = [(0.0,0.05),(0.05,1.0)]
 
 
-def check_indiv_files(ancestries, args, nbins):
+def check_indiv_files(ancestries, args, nbins, custom_path, custom_covar_modifier):
     """ Check if individual level files exist. This means genotype, covariates, 
     and annotations. If files are not found, creates them from source data.
     This *does not* verify if phenotype files are present.
@@ -93,16 +94,16 @@ def check_indiv_files(ancestries, args, nbins):
     logging.info('Validating/setting up Hail tables from .fam files for future use...')
     _ = get_famfiles(ancestries, checkpoint=True, override_check=False)
     logging.info('Validating/setting up phenotype MatrixTable for future use...')
-    _ = _read_pheno_data(checkpoint=True)
+    _ = _read_pheno_data(checkpoint=True, custom_path=custom_path)
 
     # covariate
     logging.info('Checking for covariate files...')
-    covar_names = get_covar_split_names(ancestries, dictout=False, sex_specific=args.sex_specific)
+    covar_names = get_covar_split_names(ancestries, dictout=False, sex_specific=args.sex_specific, custom_covar_modifier=custom_covar_modifier)
     tf_covar = [hl.hadoop_exists(path_covar + x) for x in covar_names]
     if not all(tf_covar):
         covarmiss = ', '.join([nm for nm, tf in zip(covar_names, tf_covar) if not tf])
         logging.info('The following covariate files were not found: ' + covarmiss)
-        generate_covar_split(path_covar, ancestries, args.checkpoint, args.sex_specific)
+        generate_covar_split(path_covar, ancestries, args.checkpoint, args.sex_specific, custom_covar_modifier=custom_covar_modifier)
 
     else:
         logging.info('All covariate files found.')
@@ -128,11 +129,11 @@ def gscopy(source, dest):
     _ = source_bucket.copy_blob(source_blob, destination_bucket, dest_blob)
 
 
-def prepare_fuse_bucket(ancestries, nbins, sex_specific):
+def prepare_fuse_bucket(ancestries, nbins, sex_specific, custom_covar_modifier):
     """ Copies genotype, covariate, and annotation files over to the fuse bucket.
     """
     logging.info(f'Preparing bucket {fusebucket} by adding covariate, genotype, and annotation files...')
-    covar_files = get_covar_split_names(ancestries, True, sex_specific)
+    covar_files = get_covar_split_names(ancestries, True, sex_specific, custom_covar_modifier)
     geno_files = get_geno_split_names(ancestries, True, False)
     annot_files = get_annot_split_names(ancestries, True, n_annot=nbins)
     log_copy = lambda src, dest: logging.info(f'Copying {src} to {dest}...')
@@ -339,24 +340,33 @@ def generate_geno_annot_split(path_geno, path_annot, ancestries, args, nbins):
         mt_filt = hl.read_matrix_table(geno_filtered_path)
     else:
         logging.info('Filtering genotype MatrixTable...')
-        # import variant level data
-        af_ht = hl.read_table(get_ukb_af_ht_path())
-
-        # filter MAF > cutoff (in all populations) and is defined (all populations)
-        af_ht_f = af_ht.filter(hl.all(lambda x: hl.is_defined(af_ht.af[x]), 
-                                      hl.literal(ancestries)))
-        af_ht_f = af_ht_f.filter(hl.all(lambda x: (af_ht.af[x] >= args.maf) & \
-                                                  (af_ht.af[x] <= (1-args.maf)), 
-                                      hl.literal(ancestries)))
-        mt_maf = mt.filter_rows(hl.is_defined(af_ht_f[mt.row_key]))
 
         # remove relateds
-        mt_nonrel = mt_maf.filter_cols(~mt_maf.related)
+        mt_nonrel = mt.filter_cols(~mt.related)
+
+        # filter MAF > cutoff (in all populations) and is defined (all populations)
+        custom_af_ht_path = MT_TEMP_BUCKET + 'rhemc_custom_af_ht.ht'
+        if hl.hadoop_is_file(custom_af_ht_path + '/_SUCCESS'):
+            af_ht = hl.read_table(custom_af_ht_path)
+        else:
+            af_mt = mt_nonrel.group_cols_by(mt_nonrel.pop).aggregate(call_info = hl.agg.call_stats(mt_nonrel.GT, mt_nonrel.alleles))
+            af_mt = af_mt.annotate_entries(**{x: af_mt.call_info[x] for x in af_mt.call_info.keys()}).drop('call_info')
+            af_ht = af_mt.localize_entries('col_info', 'pops')
+            af_ht = af_ht.annotate(af_dict = hl.dict(hl.zip(af_ht.pops.pop, af_ht.col_info.AF, fill_missing=True))).drop('col_info')
+            af_ht = af_ht.annotate(af = af_ht.af_dict.map_values(lambda x: x[1]))
+            af_ht = af_ht.checkpoint(custom_af_ht_path, overwrite=True)
+       
+        af_ht_f = af_ht.filter(hl.all(lambda x: hl.is_defined(af_ht.af[x]), 
+                                      hl.literal(ancestries)))
+        af_ht_f = af_ht_f.filter(hl.all(lambda x: (af_ht_f.af[x] >= args.maf) & \
+                                                  (af_ht_f.af[x] <= (1-args.maf)), 
+                                      hl.literal(ancestries)))
+        mt_maf = mt_nonrel.semi_join_rows(af_ht_f)
 
         # compute phwe, remove those with p < 1e-7
-        mt_nonrel_hwe = mt_nonrel.annotate_rows(**{'hwe_' + anc.lower(): 
-                                                    hl.agg.filter(mt_nonrel.pop == anc, 
-                                                                  hl.agg.hardy_weinberg_test(mt_nonrel.GT)) 
+        mt_nonrel_hwe = mt_maf.annotate_rows(**{'hwe_' + anc.lower(): 
+                                                    hl.agg.filter(mt_maf.pop == anc, 
+                                                                  hl.agg.hardy_weinberg_test(mt_maf.GT)) 
                                                     for anc in ancestries})
         ancestries_tf = [mt_nonrel_hwe['hwe_' + anc.lower()].p_value >= PHWE for anc in ancestries]
         mt_nonrel_hwe = mt_nonrel_hwe.filter_rows(hl.all(lambda x: x, ancestries_tf))
@@ -393,7 +403,7 @@ def generate_geno_annot_split(path_geno, path_annot, ancestries, args, nbins):
     output_files_annot_noextn = get_annot_split_names(ancestries, dictout=True, n_annot=nbins, suffix_incl=False)
     for anc in ancestries:
         ht_anc = hl.read_table(get_ld_score_ht_path(pop=anc))
-        ht_anc_expr = ht_anc[snps_out.row_key]
+        ht_anc_expr = ht_anc[snps_out.key]
         this_tab = snps_out.annotate(ld_score = ht_anc_expr.ld_score,
                                      af = ht_anc_expr.AF)
         this_tab = this_tab.annotate(maf = 0.5 - hl.abs(0.5 - this_tab.af))
@@ -419,25 +429,6 @@ def hl_combine_str(*expressions, sep="_") -> hl.StringExpression:
     """
     strings = hl.array(list(expressions))
     return hl.delimit(strings.filter(lambda x: hl.is_defined(x) & (hl.len(x) > 0)), sep)
-
-    # expressions_replaced = [hl.if_else(hl.is_missing(this_expr), "", this_expr) 
-    #                             for this_expr in expressions]
-    # final_expr = []
-    # for idx,this_expr in enumerate(expressions_replaced):
-    #     if idx == 0:
-    #         final_expr = this_expr
-    #     else:
-    #         tf_1 = hl.len(final_expr) == 0
-    #         tf_2 = hl.len(this_expr) == 0
-    #         final_expr = (hl.case().when(tf_1 & tf_2, final_expr)
-    #                                .when(tf_1, this_expr)
-    #                                .when(tf_2, final_expr)
-    #                                .default(final_expr + sep + this_expr))
-    #         # final_expr = hl.if_else(tf_1 & tf_2, final_expr,
-    #         #                         hl.if_else(tf_1, this_expr,
-    #         #                                    hl.if_else(tf_2, final_expr, 
-    #         #                                               final_expr + sep + this_expr)))
-    # return final_expr
 
 
 def _generate_map_anc_pheno(path_prefix, ancestries):
@@ -491,7 +482,6 @@ def list_completed_rhemc_logs():
     return listout
 
 
-
 def construct_phenotype_id(tab: Union[hl.Table, hl.MatrixTable]):
     """ Returns a StringExpression representing a combination of phenotype keys.
 
@@ -505,7 +495,6 @@ def construct_phenotype_id(tab: Union[hl.Table, hl.MatrixTable]):
     StringExpression
     """
     return hl_combine_str(*[tab[x] for x in PHENO_KEY_FIELDS], sep='-')
-    #return hl.delimit([tab[x] for x in PHENO_KEY_FIELDS], '_')
 
 
 def get_famfiles(ancestries, checkpoint=False, override_check=False):
@@ -553,7 +542,7 @@ def get_famfiles(ancestries, checkpoint=False, override_check=False):
     return famfiles
 
 
-def generate_covar_split(path_covar, ancestries, checkpoint=False, sex_specific=False):
+def generate_covar_split(path_covar, ancestries, checkpoint=False, sex_specific=False, custom_path=None, custom_covar_modifier=None):
     """This will construct and output covariate files. This function
     guarentees that the same individuals (in the same order) are included per person
     as in the genotype files (particularly the .fam file).
@@ -570,6 +559,12 @@ def generate_covar_split(path_covar, ancestries, checkpoint=False, sex_specific=
     
     ancestries: `list`
     List of ancestries to include
+
+    custom_path: `str` or None
+    If enabled, provides a custom phenotype MT. Only read from if custom_covar_modifier is provided.
+    
+    custom_covar_modifier: `str` or None
+    If enabled, modifies the path to search for covariates in.
     """
     if sex_specific:
         logging.info(f'Generating covariate files without sex covariates...')
@@ -580,10 +575,18 @@ def generate_covar_split(path_covar, ancestries, checkpoint=False, sex_specific=
     famfiles = get_famfiles(ancestries, checkpoint, override_check=False)
     
     # construct covariates and output
-    covars = _read_pheno_rowtable()
-    covariate_names = ['PC' + str(x) for x in range(1,21)] + other_covars
+    if custom_covar_modifier is not None:
+        logging.info('Loading covariates from custom phenotype MT...')
+        covars = _read_pheno_rowtable(custom_path=custom_path)
+        if 'covariates' not in covars.row:
+            raise argparse.ArgumentParser('Custom covariates table must have a covariates struct.')
+        covariate_names = list(covars.covariates.keys())
+    else:
+        covars = _read_pheno_rowtable()
+        covariate_names = ['PC' + str(x) for x in range(1,21)] + other_covars
+    
     covars = covars.select(*covariate_names)
-    covar_dirs = get_covar_split_names(ancestries, dictout=True, sex_specific=sex_specific)
+    covar_dirs = get_covar_split_names(ancestries, dictout=True, sex_specific=sex_specific, custom_covar_modifier=custom_covar_modifier)
     for anc in ancestries:
         famfile_this = famfiles[anc]
         famfile_this = famfile_this.add_index('idx').key_by('IID')
@@ -663,7 +666,7 @@ def get_pheno_filename(phenotype_id, enable_suffix=True):
     return phenotype_id + '_' + file_base + suffix if enable_suffix else phenotype_id + '_' + file_base
 
 
-def get_covar_split_names(ancestries, dictout, sex_specific):
+def get_covar_split_names(ancestries, dictout, sex_specific, custom_covar_modifier):
     """ Returns names of covariate files.
 
     Parameters
@@ -676,10 +679,14 @@ def get_covar_split_names(ancestries, dictout, sex_specific):
 
     sex_specific: `bool`
     If sex-specific covariates should be ELIMINATED (because the phenotype is sex-stratified).
+
+    custom_covar_modifier: `str` or None
+    If enabled, modifies the path to search for covariates in.
     """
     file_base = 'pananc_31063_pcgc_covariates'
     file_base = file_base + ('_nosexcovar' if sex_specific else '')
-    suffix = '.tsv'
+    custom_add = '' if custom_covar_modifier is None else f'_{custom_covar_modifier}'
+    suffix = f'{custom_add}.tsv'
     if dictout:
         out = {anc: anc + '_' + file_base + suffix for anc in ancestries}
     else:
@@ -776,7 +783,7 @@ def convert_pheno_id_to_potential_saige(pheno_id: Union[hl.StringExpression, str
 
 
 def run_phenotype_job(b, phenotype_id, ancestries, use_saige, checkpoint, 
-                      phenoscript, n_threads, random):
+                      phenoscript, n_threads, random, custom_pheno_path):
     """ Runs phenotype file creation jobs.
     """
     j = b.new_job(name=phenotype_id+'_create_pheno')
@@ -792,6 +799,7 @@ def run_phenotype_job(b, phenotype_id, ancestries, use_saige, checkpoint,
     checkpoint_val = '--checkpoint' if checkpoint else ''
     saige_pull = '--pull-from-saige' if use_saige else ''
     random_val = '--random' if random else ''
+    custom_path = '' if custom_pheno_path is None else f'--custom-path {custom_pheno_path}'
     #write this file get_pheno_filename(args.phenotype_id, enable_suffix=False)
     anc_array =  '( ' + ', '.join(ancestries) + ' )'
     map_dependencies = {anc: j[anc] for anc in ancestries}
@@ -802,7 +810,7 @@ def run_phenotype_job(b, phenotype_id, ancestries, use_saige, checkpoint,
             mkdir $i
         done
         python3 {phenoscript} --phenotype-id '{phenotype_id}' --ancestries {ancestry} \
-                              --logging --override-check {checkpoint_val} {saige_pull} {random_val}
+                              --logging --override-check {checkpoint_val} {saige_pull} {random_val} {custom_path}
         cp '{filename_compat + '.log'}' {j.log}
               """
     for anc in ancestries:
@@ -819,7 +827,7 @@ def run_phenotype_job(b, phenotype_id, ancestries, use_saige, checkpoint,
 
 def run_rhemc_job(b, phenotype_id, ancestry, phenotype_file, read_previous: bool, parser, 
                  use_fuse: bool, memsize: int, storage, jackknife_blocks: int, 
-                 random_vectors: int, nbins: int, suffix: str, iter, sex_specific):
+                 random_vectors: int, nbins: int, suffix: str, iter, sex_specific, custom_covar_modifier: str):
     # Localize all files (and pass phenotype files in from previous step)
     # This will require GCSFUSE for the annotation, covariate, and genotype files
     # Run RHEmc 
@@ -847,7 +855,7 @@ def run_rhemc_job(b, phenotype_id, ancestry, phenotype_file, read_previous: bool
         j.storage(str(storage) + 'G')
         
         genotype_name = get_geno_split_names([ancestry], dictout=True, plinkprefix=True)[ancestry]
-        covariate_name = get_covar_split_names([ancestry], dictout=True, sex_specific=sex_specific)[ancestry]
+        covariate_name = get_covar_split_names([ancestry], dictout=True, sex_specific=sex_specific, custom_covar_modifier=custom_covar_modifier)[ancestry]
         annot_name = get_annot_split_names([ancestry], dictout=True, n_annot=nbins)[ancestry]
 
         covarpath = b.read_input(path_covar + covariate_name)
@@ -972,24 +980,31 @@ def _get_pheno_manifest_path_internal():
     return f'gs://ukb-diverse-pops/{loc}/phenotype_manifest.tsv.bgz'
 
 
-def _import_manifest(use_tsv_manifest=True):
-    if use_tsv_manifest:
-        manifest = hl.import_table(_get_pheno_manifest_path_internal())
+def _import_manifest(use_tsv_manifest=True, custom_phenotype_mt_path=None):
+    all_pops = ['AFR','AMR','CSA','EAS','EUR','MID']
+    if custom_phenotype_mt_path is not None:
+        # expects this table to have column fields corresponding to the phenotype of interest
+        # assume all pops are represented by each phenotype
+        manifest = hl.read_matrix_table(custom_phenotype_mt_path).cols()
+        manifest = manifest.annotate(pops = ','.join(all_pops))
     else:
-        manifest = hl.read_matrix_table(get_variant_results_path('full')).cols()
-        annotate_dict = {}
-        annotate_dict.update({'pops': hl.str(',').join(manifest.pheno_data.pop),
-                              'num_pops': hl.len(manifest.pheno_data.pop)})
-        for field in ['n_cases','n_controls','heritability']:
-            for pop in ['AFR','AMR','CSA','EAS','EUR','MID']:
-                new_field = field if field!='heritability' else 'saige_heritability' # new field name (only applicable to saige heritability)
-                idx = manifest.pheno_data.pop.index(pop)
-                field_expr = manifest.pheno_data[field]
-                annotate_dict.update({f'{new_field}_{pop}': hl.if_else(hl.is_nan(idx),
-                                                                       hl.missing(field_expr[0].dtype),
-                                                                       field_expr[idx])})
-        manifest = manifest.annotate(**annotate_dict)
-        manifest = manifest.drop(manifest.pheno_data)
+        if use_tsv_manifest:
+            manifest = hl.import_table(_get_pheno_manifest_path_internal())
+        else:
+            manifest = hl.read_matrix_table(get_variant_results_path('full')).cols()
+            annotate_dict = {}
+            annotate_dict.update({'pops': hl.str(',').join(manifest.pheno_data.pop),
+                                'num_pops': hl.len(manifest.pheno_data.pop)})
+            for field in ['n_cases','n_controls','heritability']:
+                for pop in all_pops:
+                    new_field = field if field!='heritability' else 'saige_heritability' # new field name (only applicable to saige heritability)
+                    idx = manifest.pheno_data.pop.index(pop)
+                    field_expr = manifest.pheno_data[field]
+                    annotate_dict.update({f'{new_field}_{pop}': hl.if_else(hl.is_nan(idx),
+                                                                        hl.missing(field_expr[0].dtype),
+                                                                        field_expr[idx])})
+            manifest = manifest.annotate(**annotate_dict)
+            manifest = manifest.drop(manifest.pheno_data)
     if 'phenotype_id' not in list(manifest.row):
         manifest = manifest.annotate(phenotype_id = construct_phenotype_id(manifest))
     manifest = manifest.annotate(pheno_file = get_pheno_filename(manifest.phenotype_id),
@@ -1062,13 +1077,13 @@ def _make_phenotype_dict(manifest, ancestries, n_include=None, random_phenos=Non
             return dct_out
 
 
-def _read_pheno_rowtable():
+def _read_pheno_rowtable(custom_path=None):
     """ Reads the row Hail Table from the FULL phenotype MatrixTable.
     """
-    return _read_pheno_data(False,load_full=True).rows()
+    return _read_pheno_data(False,load_full=True,custom_path=custom_path).rows()
 
 
-def _read_pheno_data(checkpoint, load_full=False):
+def _read_pheno_data(checkpoint, load_full=False, custom_path=None):
     """ Reads phenotype data, extending the stock phenotype matrix table
     by using a single phenotype ID and keeping only a single row, entry, and column field
     unless load_full is set to True.
@@ -1077,14 +1092,20 @@ def _read_pheno_data(checkpoint, load_full=False):
     -------
     `MatrixTable`
     """
-    checkpoint_phenos = MT_TEMP_BUCKET + 'filtered_phenotype_data_temporary.mt'
+    if custom_path is not None:
+        checkpoint_phenos = MT_TEMP_BUCKET + custom_pheno_to_temp(custom_path)
+        mt_path = custom_path
+    else:
+        checkpoint_phenos = MT_TEMP_BUCKET + 'filtered_phenotype_data_temporary.mt'
+        mt_path = get_ukb_pheno_mt_path()
+    
     if load_full:
-        return hl.read_matrix_table(get_ukb_pheno_mt_path())
+        return hl.read_matrix_table(mt_path)
     else:
         if hl.hadoop_exists(checkpoint_phenos):
             pheno_mt_string = hl.read_matrix_table(checkpoint_phenos)
         else:
-            pheno_mt = hl.read_matrix_table(get_ukb_pheno_mt_path())
+            pheno_mt = hl.read_matrix_table(mt_path)
             pheno_mt_string = pheno_mt.annotate_cols(phenotype_id = construct_phenotype_id(pheno_mt)
                                      ).key_cols_by('phenotype_id')
             pheno_mt_string = pheno_mt_string.select_entries('both_sexes'
@@ -1102,6 +1123,18 @@ def _write_flat_without_key(ht, destination, delimiter, header):
     """
     ht2 = ht.order_by(*ht.key).drop(*ht.key)
     ht2.export(output=destination, header=header, delimiter=delimiter)
+
+
+def custom_pheno_to_temp(pheno_mt_address):
+    pheno_table_and_ext = splitext(basename(pheno_mt_address))
+    return pheno_table_and_ext[0] + '_temp_checkpoint' + pheno_table_and_ext[1]
+
+
+def produce_covariates_suffix(pheno_mt_address, make_custom_covars):
+    if not make_custom_covars:
+        return None
+    else:
+        return splitext(basename(pheno_mt_address))[0]
 
 
 def compatiblify_phenotype_id(phenotype_id):
@@ -1131,6 +1164,8 @@ def _verify_args(args):
     if args.specific_pheno is not None and (args.random_phenotypes is not None or args.initialize_only or (args.n_only is not None)):
         raise argparse.ArgumentError(message='Since --specific-pheno is enable, pipeline cannot be run with ' +
                                      '--n-only, --initialize-only, or --random-phenotypes.')
+    if args.read_covars_from_custom and args.custom_phenotype_mt is None:
+        raise argparse.ARgumentError(message='Can only read covariates from custom MT if the custom MT is provided using --custom-phenotype-mt.')
 
 
 def _initialize_log(args):
@@ -1154,6 +1189,10 @@ def _initialize_log(args):
         logging.info('NOTE: We will read previously completed RHEmc runs from ' + path_results + ' if available.')
     if args.random_phenotypes is not None:
         logging.info('NOTE: Running random phenotypes only. Will do ' + str(args.random_phenotypes) + ' phenos per ancestry.')
+    if args.custom_phenotype_mt is not None:
+        logging.info('NOTE: reading phenotypes from a custom path. Beware of overwriting existing phenotype data.')
+    if args.read_covars_from_custom and args.custom_phenotype_mt is None:
+        logging.info('NOTE: reading covariates from custom phenotype MT path.')
     if args.n_iter is not None:
         logging.info('NOTE: Running multiple duplicates of each penotype. Will do ' + str(args.n_iter) + ' runs for each phenotype-ancestry pair.')
     if args.specific_pheno is not None:
@@ -1200,6 +1239,10 @@ if __name__ == '__main__':
     parser.add_argument('--use-tsv-manifest', action='store_true',
                         help='If enabled, will use a .tsv manifest. This is a legacy option, as using cols from the sumstats ' + \
                         'MatrixTable will be the most updated and is thus preferred.')
+    parser.add_argument('--custom-phenotype-mt', default=None,
+                        help='Path to a custom phenotype MT. Expects the usual column and row keys for Pan UKBB phenotypes.')
+    parser.add_argument('--read-covars-from-custom', action='store_true',
+                        help='If provided, will read covariates from the custom phenotype MT. Must provide --custom-phenotype-mt. Must contain a struct called covariates in the row schema.')
 
     parser.add_argument('--n-threads-pheno', default=4, type=int,
                         help='Number of threads per phenotype worker.')
@@ -1256,10 +1299,11 @@ if __name__ == '__main__':
     _initialize_log(args)
     
     # Ensures all files are present. Does not verify phenotype files; this is done in pheno workers
-    check_indiv_files(ancestries, args, nbins)
+    covars_modifier = produce_covariates_suffix(args.custom_phenotype_mt, args.read_covars_from_custom)
+    check_indiv_files(ancestries, args, nbins, args.custom_phenotype_mt, covars_modifier)
 
     if not args.initialize_only and not args.phenotype_only and args.use_fuse:
-        prepare_fuse_bucket(ancestries, nbins, args.sex_specific)
+        prepare_fuse_bucket(ancestries, nbins, args.sex_specific, covars_modifier)
 
     if not args.initialize_only:
         # Log the files present in the phenos directory
@@ -1268,7 +1312,7 @@ if __name__ == '__main__':
         ls_previous_runs = list_completed_rhemc_logs()
 
         # Get manifest
-        manifest = _import_manifest(args.use_tsv_manifest)
+        manifest = _import_manifest(args.use_tsv_manifest, args.custom_phenotype_mt)
         if args.specific_pheno is None:
             if args.sex_specific:
                 manifest = manifest.filter(manifest.pheno_sex != 'both_sexes')
@@ -1281,7 +1325,7 @@ if __name__ == '__main__':
                                             args.specific_pheno.split(','))
 
         # Create batch job
-        backend = hb.ServiceBackend(billing_project='ukb_diverse_pops', bucket=bucket)
+        backend = hb.ServiceBackend(billing_project='ukb_diverse_pops', remote_tmpdir=temp_dir)
         bserv = hb.Batch(name="h2_rhemc_pan_ancestry", backend=backend)
         pheno_script = bserv.read_input(pheno_script_adr)
         cat_script = bserv.read_input(cat_script_adr)
@@ -1303,7 +1347,8 @@ if __name__ == '__main__':
                                                             checkpoint=args.checkpoint, 
                                                             phenoscript=pheno_script,
                                                             n_threads=args.n_threads_pheno,
-                                                            random=args.random_phenotypes is not None)
+                                                            random=args.random_phenotypes is not None,
+                                                            custom_pheno_path=args.custom_phenotype_mt)
                 num_pheno_jobs+=1
             else: 
                 pheno_job = False # all phenotype files found!
@@ -1333,7 +1378,8 @@ if __name__ == '__main__':
                                                                 random_vectors=args.random_vectors,
                                                                 nbins=nbins,
                                                                 suffix=args.suffix, iter=niter_idx,
-                                                                sex_specific=args.sex_specific)
+                                                                sex_specific=args.sex_specific,
+                                                                custom_covar_modifier=covars_modifier)
                         if niter is None:
                             anc_iter = anc
                         else:

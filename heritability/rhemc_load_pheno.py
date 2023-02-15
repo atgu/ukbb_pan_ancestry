@@ -33,7 +33,7 @@ def rename_phenotype_id(phenotype_id, all_phenotypes):
         return new_id
 
 
-def generate_indiv_pheno_file(phenotype_id, checkpoint, log, random=False):
+def generate_indiv_pheno_file(phenotype_id, checkpoint, log, random=False, custom_path=None):
     """ Create individual phenotype file. This does not merge with the fam file.
 
     Parameters
@@ -53,7 +53,7 @@ def generate_indiv_pheno_file(phenotype_id, checkpoint, log, random=False):
     For QC and benchmarking, allows for the creation of random phenotypes for
     heritability analysis. Random phenotypes are Normal(0,1) noise.
     """
-    pheno_mt_string = _read_pheno_data(checkpoint)
+    pheno_mt_string = _read_pheno_data(checkpoint, custom_path=custom_path)
     this_pheno_loc = HT_TEMP_BUCKET + phenotype_id + '.ht'
 
     if log:
@@ -93,7 +93,7 @@ def generate_indiv_pheno_file(phenotype_id, checkpoint, log, random=False):
     return pheno_tab
 
 
-def generate_final_pheno_file(phenotype_id, ancestries, checkpoint, override_check, log=False, random=False):
+def generate_final_pheno_file(phenotype_id, ancestries, checkpoint, override_check, log=False, random=False, custom_path=None):
     """ Generate a single phenotype file for each of a set of ancestries. These are in the proper
     format for RHEmc. Fam files must exist for this to work, so if they do not exist
     use generate_geno_annot_split.
@@ -102,7 +102,7 @@ def generate_final_pheno_file(phenotype_id, ancestries, checkpoint, override_che
         logging.info(f'Generating phenotype file for {args.phenotype_id}.')
 
     # load phenotype data
-    pheno_tab = generate_indiv_pheno_file(phenotype_id, checkpoint, log=log, random=random)
+    pheno_tab = generate_indiv_pheno_file(phenotype_id, checkpoint, log=log, random=random, custom_path=custom_path)
     famfiles = get_famfiles(ancestries, checkpoint, override_check=override_check)
 
     # join with fam files and output
@@ -178,12 +178,14 @@ def main(args):
             generate_final_pheno_file(args.phenotype_id, ancestries, 
                                       checkpoint=args.checkpoint, 
                                       override_check=args.override_check, 
-                                      log=args.logging, random=args.random)
+                                      log=args.logging, random=args.random, 
+                                      custom_path=args.custom_path)
     else:
         generate_final_pheno_file(args.phenotype_id, ancestries, 
                                   checkpoint=args.checkpoint, 
                                   override_check=args.override_check,
-                                  log=args.logging, random=args.random)
+                                  log=args.logging, random=args.random, 
+                                  custom_path=args.custom_path)
 
 
 def _join_pheno_with_famfile(famfile_this, pheno_tab):
@@ -219,6 +221,8 @@ if __name__ == '__main__':
     parser.add_argument('--random', action='store_true',
                         help='If used, will generate a phenotype at random form a Normal(0,1). Draws ' + \
                             'will be independent across ancestries.')
+    parser.add_argument('--custom-path', type=str, default=None,
+                        help='If used, will load a custom phenotype MT.')
 
     args = parser.parse_args()
     main(args)
