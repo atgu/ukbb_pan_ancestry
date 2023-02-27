@@ -111,7 +111,7 @@ def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = T
         mt = mt.annotate_cols(heritability = h2_qc_ht[mt.col_key].heritability)
 
     if filter_to_max_indep_set:
-        if custom_mt_path is None:
+        if custom_mt_path is not None:
             raise NotImplementedError('MIS filtering not implemented outside pan-ukbb sumstats.')
         mis_ht = get_maximal_indepenedent_set_ht()
         mt = mt.filter_cols(mis_ht[mt.col_key].in_max_independent_set)
@@ -133,7 +133,7 @@ def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = T
 
     if filter_phenos:
         if 'lambda_gc' not in mt.pheno_data[0].keys():
-            raise ValueError('Cannot filter phenos by lambda_gc is this statistic is not present.')
+            raise ValueError('Cannot filter phenos by lambda_gc if this statistic is not present.')
         
         keep_phenos = hl.enumerate(mt.pheno_data).filter(
             lambda x: filter_lambda_gc(x[1].lambda_gc))
@@ -148,7 +148,7 @@ def load_final_sumstats_mt(filter_phenos: bool = True, filter_variants: bool = T
         mt = mt.filter_cols(hl.len(mt.pheno_data) > 0)
 
     if filter_pheno_h2_qc:
-        if custom_mt_path is None:
+        if custom_mt_path is not None:
             raise NotImplementedError('H2 filtering not implemented outside pan-ukbb sumstats.')
         
         mt = mt.filter_cols(mt.pheno_data.any(lambda x: (hl.is_defined(x.heritability.qcflags.pass_all)) & \
