@@ -37,6 +37,10 @@ gsutil -u your_project_id ls gs://ukb-diverse-pops-public/sumstats_release
 
 ## Using the libraries and files
 
+:::note
+**Please note that p-values are now stored as -log10 p-values to avoid underflow.**
+:::note
+
 The files on Google Cloud Platform can be accessed by cloning the [ukbb_pan_ancestry](https://github.com/atgu/ukbb_pan_ancestry) and the [ukb_common](https://github.com/Nealelab/ukb_common) repos and accessing them programmatically. We recommend using these functions, as they allow for automatic application of our QC metrics as well as inclusion of all [QC flags](https://pan.ukbb.broadinstitute.org/docs/qc#quality-control-of-summary-statistics) and convenience metrics such as lambda GC. By default, when loading using `load_final_sumstats_mt`, the best practice QC parameters are used, which removes traits with a lambda GC < 0.5 or > 5 as well as applying all [QC filters](https://pan.ukbb.broadinstitute.org/docs/qc#quality-control-of-summary-statistics). This results in importing summary statistics for 527 traits; if it is preferable to load all traits with exported summary statistics (e.g., only applying the lambda GC < 0.5 or > 5 filter), use `load_final_sumstats_mt(filter_pheno_h2_qc=False)`, resulting in 7,228 traits. If any filtering is undesirable, use `load_final_sumstats_mt(filter_pheno_h2_qc=False, filter_phenos=False)`, which will import all 7,271 traits.
 
 ```
@@ -60,7 +64,14 @@ mt = load_final_sumstats_mt(filter_pheno_h2_qc=False)
 mt.describe()
 ```
 
+Additional arguments can be used to adjust the format of the p-values. Enabling `exponentiate_p` will produce absolute-scale p-values, while `legacy_exp_p_values` will produce legacy p-values that are in the format `ln p`.
+
 ## Results schema
+
+:::note
+**Please note that p-values are now stored as -log10 p-values to avoid underflow.**
+:::note
+
 The basic summary statistics have the following schema:
 
 ```
@@ -424,16 +435,45 @@ mt = mt.filter_cols((mt.trait_type == 'phecode') & (mt.lambda_gc > 0.9) & (mt.la
 ## Meta-analysis files
 
 :::note
-Please note that p-values are now stored as log p-values to avoid underflow.
+Please note that p-values are now stored as -log10 p-values to avoid underflow.
 :::
 
 The meta-analysis results are in a similarly structured file which can be obtained as such:
 ```
-meta_mt = hl.read_matrix_table(get_meta_analysis_results_path())
+meta_mt = load_meta_analysis_results()
 ```
-By default, this function imports the "high-quality" meta-analyses, which are meta-analyses of only ancestry groups passing all [QC filters](https://pan.ukbb.broadinstitute.org/docs/qc#quality-control-of-summary-statistics). Naturally these meta-analyses are only available for those phenotypes for which at least two ancestries passed all QC (since a requirement for QC PASS is that a trait passes QC in EUR and at least one other ancestry). If interested in meta-analyses of all ancestries for which GWAS was run for a given phenotype, import using `hl.read_matrix_table(get_meta_analysis_results_path(filter_pheno_h2_qc=False))`.
+By default, this function imports both the meta-analyses for all phenotype-ancestry pairs with completed GWAS as well as the "high-quality" meta-analyses, which are meta-analyses of only ancestry groups passing all [QC filters](https://pan.ukbb.broadinstitute.org/docs/qc#quality-control-of-summary-statistics). Naturally the high-quality meta-analyses are only available for those phenotypes for which at least two ancestries passed all QC (since a requirement for QC PASS is that a trait passes QC in EUR and at least one other ancestry). The meta-analyses for all pairs are found under the `meta_analysis` struct, while the high-quality meta-analyses are found in the `meta_analysis_hq` struct.
 
-Both versions of the meta-analysis table have results provided in an array, which includes the all-available-population meta-analysis in the 0th element `meta_mt.meta_analysis[0]` and leave-one-out meta-analyses in the remainder of the array.
+```
+Entry fields:
+    'meta_analysis': array<struct {
+        BETA: float64,
+        SE: float64,
+        Pvalue: float64,
+        Q: float64,
+        Pvalue_het: float64,
+        N: int32,
+        N_pops: int32,
+        AF_Allele2: float64,
+        AF_Cases: float64,
+        AF_Controls: float64
+    }>
+    'meta_analysis_hq': array<struct {
+        BETA: float64,
+        SE: float64,
+        Pvalue: float64,
+        Q: float64,
+        Pvalue_het: float64,
+        N: int32,
+        N_pops: int32,
+        AF_Allele2: float64,
+        AF_Cases: float64,
+        AF_Controls: float64
+    }>
+```
+
+Meta-analyses using only the high-quality pairs or using all pairs can be imported seperately by using `load_meta_analysis_results(h2_filter='pass')` or `load_meta_analysis_results(h2_filter='none')` respectively. These arguments always produce tables with the following entry schema:
+
 ```
 Entry fields:
     'meta_analysis': array<struct {
@@ -450,11 +490,15 @@ Entry fields:
     }>
 ```
 
+All meta-analysis tables have results provided in an array, which includes the all-available-population meta-analysis in the 0th element `meta_mt.meta_analysis[0]` and leave-one-out meta-analyses in the remainder of the array.
+
+As for the per-population summary statistics, additional arguments can be used to adjust the format of the p-values. Enabling `exponentiate_p` will produce absolute-scale p-values, while `legacy_exp_p_values` will produce legacy p-values that are in the format `ln p`.
+
 ### Combining the datasets
-We also provide a function to annotate the overall sumstats MatrixTable with the largest meta-analysis for that phenotype.
+We also provide a function to annotate the overall sumstats MatrixTable with the largest meta-analysis for that phenotype. Specification of `h2_filter` will determine if the annotated meta analysis is for all included phenotypes or for just those passing QC.
 ```
 mt = load_final_sumstats_mt()
-mt = annotate_mt_with_largest_meta_analysis(mt)
+mt = annotate_mt_with_largest_meta_analysis(mt, h2_filter='none')
 ```
 If your analysis requires the simultaneous analysis of summary statistics from multiple populations (and not the meta-analysis), you can load the data with a similar structure to the meta-analysis MatrixTable (one column per phenotype, with population information packed into an array of entries and columns) using `load_final_sumstats_mt(separate_columns_by_pop=False)`.
 

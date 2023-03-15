@@ -4,7 +4,7 @@ title: Per-phenotype files
 ---
 
 :::note
-**Please note that p-values are now stored as natural log p-values to avoid underflow (i.e., ln P, not -ln P or -log10 P).**
+**Please note that p-values are now stored as -log10 p-values to avoid underflow.**
 :::note
 
 ## Overview
@@ -233,9 +233,9 @@ All meta-analyses were only performed on variants that were not flagged as `low_
 
 `se_meta`: Estimated standard error of `beta_meta`.
 
-`pval_meta`: log p-value of `beta_meta` significance test.
+`neglog10_pval_meta`: -log10 p-value of `beta_meta` significance test.
 
-`pval_heterogeneity`: log p-value from heterogeneity test of meta-analysis.
+`neglog10_pval_heterogeneity`: -log10 p-value from heterogeneity test of meta-analysis.
 
 ### High quality meta-analysis fields
 
@@ -256,9 +256,9 @@ As above, meta-analyses were only performed on variants that were not flagged as
 
 `se_meta_hq`: Estimated standard error of `beta_meta_hq`.
 
-`pval_meta_hq`: log p-value of `beta_meta_hq` significance test.
+`neglog10_pval_meta_hq`: -log10 p-value of `beta_meta_hq` significance test.
 
-`pval_heterogeneity_hq`: log p-value from heterogeneity test of meta-analysis.
+`neglog10_pval_heterogeneity_hq`: -log10 p-value from heterogeneity test of meta-analysis.
 
 ### Population-specific fields
 :::note
@@ -280,7 +280,7 @@ An ancestry-specific column is only included in the file if a GWAS was run for t
 
 `se_{pop}`: Estimated standard error of `beta_{pop}`.
 
-`pval_{pop}`: log p-value of `beta_{pop}` significance test.
+`neglog10_pval_{pop}`: -log10 p-value of `beta_{pop}` significance test.
 
 `low_confidence_{pop}`: Boolean flag indicating low confidence for `pop` based on the following heuristics:
 - Alternate allele count in cases <= 3

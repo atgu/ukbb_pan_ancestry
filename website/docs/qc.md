@@ -77,7 +77,7 @@ We have recently developed a best practice set of quality control steps for anal
 3. `defined_h2`: if the heritability estimate is non-missing
 4. `significant_z`: if the ancestry-trait pair shows $h^2$ z-score $> 0$
 5. `in_bounds_h2`: if, for all ancestries for a given trait, observed-scale heritability estimates $\in (0,1)$
-6. `normal_lambda`: if, for all ancestries for a given trait, $\lambda_{GC} > 0.9$
+6. `normal_lambda`: if, for the top three best powered ancestry groups (EUR, CSA, AFR), $\lambda_{GC} > 0.9$
 7. `normal_ratio`: if, for the top three best powered ancestry groups (EUR, CSA, AFR), the S-LDSC ratio, given by $\frac{intercept-1}{mean \chi^2 -1}$, $< 0.3$ or the ratio z-score $< 4$
 8. `EUR_plus_1`: if the trait passes all above filters in EUR and at least 1 other ancestry group
 
@@ -85,11 +85,11 @@ More detailed documentation on these filters is forthcoming. The number of trait
 
 | Population   | Total phenotypes | Categorical | Continuous | Phecode | ICD-10 | Biomarkers | Prescriptions |
 |-------|----------------|------------|---------|-------|-------------|------------|---------------|
-| AFR |          110 |        45 |     46 |   8 |        5  |         3 |           3 |
-| CSA |          441 |       132 |     184 |   53 |        28  |         23 |           21 |
-| EAS |          38 |        14 |      16 |    5 |        3  |         0 |           0 |
-| EUR |          527 |       179 |    206 |   64 |        34  |         23 |           21 |
-| MID |          196 |        68 |      84 |    19 |        14  |         10 |           1 |
+| AFR |          92 |        28 |     48 |   2 |        2  |         4 |           8 |
+| CSA |          349 |       97 |     177 |   25 |        13  |         21 |           16 |
+| EAS |          62 |        23 |      26 |    8 |        2  |         2 |           1 |
+| EUR |          452 |       145 |    197 |   38 |        24  |         21 |           27 |
+| MID |          136 |        46 |      59 |    7 |        8  |         7 |           9 |
 
 As with any analysis of large-scale datasets, we urge caution in interpretation especially of outliers (i.e. genetic variants, samples, and/or whole phenotypes) that can signal technical artifacts or noise.
 

@@ -13,8 +13,11 @@ def remove_phenos_from_analysis(mt: hl.MatrixTable):
     pass
 
 
-def annotate_mt_with_largest_meta_analysis(mt):
-    meta_mt = hl.read_matrix_table(get_meta_analysis_results_path())
+def annotate_mt_with_largest_meta_analysis(mt, h2_filter='none'):
+    if h2_filter == 'both':
+        raise ValueError('h2_filter must be none or pass for annotate_mt_with_largest_meta_analysis')
+    #meta_mt = hl.read_matrix_table(get_meta_analysis_results_path(h2_filter))
+    meta_mt = load_meta_analysis_results(h2_filter=h2_filter)
     meta_analysis_join = meta_mt[mt.row_key, mt.col_key].meta_analysis
     return mt.annotate_entries(meta=hl.or_missing(hl.len(meta_analysis_join) > 0, meta_analysis_join[0]))
 
