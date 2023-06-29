@@ -108,6 +108,11 @@ def get_clump_sumstats_col_ht_path(high_quality: bool = True):
     return f'{public_bucket}/misc/prs/clumped_sumstats{"" if high_quality else "_raw"}.cols.ht'
 
 
+def get_distance_clumping_results_path(pop: str, radius: int, merged: bool = True, extension: str = "ht"):
+    merged = "merged" if merged else "not_merged"
+    return f"{bucket}/misc/distance_clump_results.{pop}.r{radius}.{merged}.{extension}"
+
+
 genotype_bm_path = f'{temp_bucket}/prs/genotypes.bm'
 genotype_samples_ht_path = f'{temp_bucket}/prs/genotype_samples.ht'
 
@@ -118,3 +123,17 @@ def get_prs_bm_path(high_quality: bool = True):
 
 def get_prs_assess_ht_path(high_quality: bool = True):
     return f'{bucket}/prs/assess_prs{"" if high_quality else "_raw"}.ht'
+
+otg_release = "22.09"
+
+
+def get_ukb_pheno_efo_mapping_path(release: str = otg_release, extension: str = "ht"):
+    return f'{bucket}/misc/otg/{release}/ukb_pheno_efo_mapping.{extension}'
+
+
+def get_munged_otg_v2d_path(release: str = otg_release, extension: str = "ht"):
+    return f'{bucket}/misc/otg/{release}/munged_otg_v2d.{extension}'
+
+
+def get_known_ukbb_loci_path(pop: str, release: str = otg_release, extension: str = "ht"):
+    return f'{bucket}/misc/otg/{release}/known_ukbb_loci.{pop}.{extension}'

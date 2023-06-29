@@ -2,7 +2,7 @@ from .generic import *
 
 
 def get_ld_matrix_path(pop: str, extension: str = "bm"):
-    return f"{public_bucket}/ld/{pop}/UKBB.{pop}.ldadj.{extension}"
+    return f"{public_bucket}/ld_release/UKBB.{pop}.ldadj.{extension}"
 
 
 def get_ld_score_ht_path(pop: str, annot: str = None):
@@ -17,8 +17,8 @@ def get_ld_score_flat_file_path(pop: str, extension: str = "ldscore.gz", annot: 
 
 
 def get_ld_variant_index_path(pop: str, extension: str = "ht"):
-    return f"{public_bucket}/ld/{pop}/UKBB.{pop}.ldadj.variant.{extension}"
+    return f"{public_bucket}/ld_release/UKBB.{pop}.ldadj.variant.{extension}"
 
 
 def get_hm3_snplist_path(pop: str, extension: str = "ht"):
-    return f"{public_bucket}/ld/{pop}/HM3.UKBB.{pop}.qc.snplist.{extension}"
+    return f"{public_bucket}/ld_release/HM3.UKBB.{pop}.qc.snplist.{extension}"

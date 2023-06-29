@@ -348,6 +348,6 @@ if __name__ == "__main__":
     parser.add_argument("--overwrite", action="store_true", help="Overwrite data")
     args = parser.parse_args()
 
-    atexit.register(lambda: hl.copy_log(timestamp_path(f"gs://ukb-diverse-pops/ld/{args.pop}/ld", suffix=".log")))
+    atexit.register(lambda: hl.copy_log(timestamp_path(f"gs://ukbb-diverse-temp-30day/ld/{args.pop}/ld", suffix=".log")))
 
     main(args)
