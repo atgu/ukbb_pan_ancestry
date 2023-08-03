@@ -49,6 +49,9 @@ function Downloads() {
             <li>
               Please note that the previous iteration of release files have been archived at <code>s3://pan-ukb-us-east-1/archive_20200615/</code>.
             </li>
+              <li>
+                All data are now additionally hosted on the <a href="https://learn.microsoft.com/en-us/azure/open-datasets/dataset-panancestry-uk-bio-bank">Genomics Data Lake - Azure Open Datasets</a>.
+              </li>
           </ul>
           <p className="">
             In addition, the LD matrices and scores are available in the following formats:
