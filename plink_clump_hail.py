@@ -11,11 +11,32 @@ Hail script for clumping GWAS results with PLINK
 import argparse
 import hail as hl
 import sys
-import ukb_common
-from ukbb_pan_ancestry import POPS, bucket, get_clumping_results_path, get_meta_analysis_results_path #get_pheno_manifest_path
+import ukbb_common
+from ukbb_pan_ancestry import POPS, bucket, get_meta_analysis_results_path, PHENO_KEY_FIELDS
 #from ukb_common import mwzj_hts_by_tree
 
 ldprune_dir = f'{bucket}/ld_prune'
+
+def get_clumping_results_path(pop: str = 'full', high_quality: bool = False, 
+                              not_pop: bool = False, max_pops: bool = False, hm3_only: bool=False):
+    """
+    Clumping results available for only high quality variants and high quality phenotypes (single pops, leave-one-out meta-analyses, and all-pop meta-analyses).
+    
+    :param pop: Input pop for single pop or leave-one-out results or "full" for all results in one MT
+    :param high_quality: High quality variants only
+    :param not_pop: Leave-one-out meta-analyses
+    :param max_pops: All-pop meta-analyses
+    :param hq_phenos: Leave-one-out meta-analyses (summstats available only for hq phenos)
+    
+    """
+    mt_name = ("max_pops" if max_pops else ("not_" if not_pop else ""))+(f'{pop}' if pop in POPS else ('full' if pop == "full" and not max_pops else ""))
+
+    if high_quality and not hm3_only:
+        return f'{ldprune_dir}/clump_results_high_quality_22115/{mt_name}.mt'
+    elif hm3_only:
+        return f'{ldprune_dir}/clump_results_high_quality_HM3_230411/{mt_name}.mt'
+    else:
+        return f'{ldprune_dir}/clump_results/{mt_name}.mt'
 
 def ht_to_tsv(args):
     r'''
@@ -72,7 +93,7 @@ def tsv_to_ht(args):
                                     pos=ht.pos,
                                     reference_genome='GRCh37'),
                    alleles = ht.varid.split(':')[2:4])
-    ht = ht.annotate_globals(**{k: getattr(args, k) for k in ukb_common.PHENO_KEY_FIELDS})
+    ht = ht.annotate_globals(**{k: getattr(args, k) for k in ukbb_common.PHENO_KEY_FIELDS})
     ht = ht.drop('contig','varid','pos')
     ht.describe()
 #    ht.select().show()
@@ -153,7 +174,7 @@ def mwzj_hts_by_tree(all_hts, temp_dir, globals_for_col_key,
     checkpoint_kwargs = {inner_mode: not read_if_exists,
                          '_read_if_exists': read_if_exists} #
     if repartition_final is not None:
-        intervals = ukb_common.get_n_even_intervals(repartition_final)
+        intervals = ukbb_common.get_n_even_intervals(repartition_final)
         checkpoint_kwargs['_intervals'] = intervals
     
     if debug: print(f'Running chunk size {chunk_size}...')
@@ -165,7 +186,7 @@ def mwzj_hts_by_tree(all_hts, temp_dir, globals_for_col_key,
             if isinstance(hts[0], str):
                 def read_clump_ht(f):
                     ht = hl.read_table(f)
-                    ht = ht.drop('idx')
+                    # ht = ht.drop('idx')
                     return ht
                 hts = list(map(read_clump_ht, hts))
             ht = hl.Table.multi_way_zip_join(hts, 'row_field_name', 'global_field_name')
@@ -207,31 +228,37 @@ def resume_mwzj(temp_dir, globals_for_col_key):
     mt = ht._unlocalize_entries('inner_row', 'inner_global', globals_for_col_key)
     return mt
 
-def join_clump_hts(pop, not_pop, max_pops, high_quality=False, overwrite=False):
+def join_clump_hts(pop, not_pop, max_pops, hq_phenos=False, high_quality=False, overwrite=False, hm3_only=False):
     r'''
     Wrapper for mwzj_hts_by_tree()
     '''
     assert not (not_pop and max_pops), '`not_pop` and `max_pops` cannot both be True'
+
     mt_path = get_clumping_results_path(pop=pop,
                                         not_pop=not_pop,
                                         max_pops=max_pops,
-                                        high_quality=high_quality)
-    if hl.hadoop_is_file(f'{mt_path}/_SUCCESS') and ~overwrite:
+                                        high_quality=high_quality,
+                                        hm3_only=hm3_only)
+
+    # if hl.hadoop_is_file(f'{mt_path}/_SUCCESS') and ~overwrite:
+    if hl.hadoop_is_file(f'{mt_path}/_SUCCESS') and overwrite==False:
         print(f'\nMT already written to {mt_path}! To overwrite, use overwrite=True')
         return
     else:
         print(f'Writing MT to {mt_path}')
     pop = pop.upper() if pop is not None else None
     
-    clump_results_dir = (f'{ldprune_dir}/results{"_high_quality" if high_quality else ""}/'+
-                         ('max_pops' if max_pops else '{"not_" if not_pop else ""}{pop}'))
+    clump_results_dir = (f'{ldprune_dir}/results{"_hq_phenos" if hq_phenos else ""}'+('_HM3/' if hm3_only else '_22115/')+
+                     ('max_pops' if max_pops else f'{"not_" if not_pop else ""}{pop}')+(f'{"_hq" if high_quality else ""}'))
+
+    print(clump_results_dir)
     ls = hl.hadoop_ls(f'{clump_results_dir}/*')
     all_hts = [x['path'] for x in ls if 'clump_results.ht' in x['path']]
     
-    temp_dir = ('gs://ukbb-diverse-temp-30day/nb-temp/'+
-                'max_pops' if max_pops else f'{"not_" if not_pop else ""}{pop}'+
-                f'{"-hq" if high_quality else ""}')
-    globals_for_col_key = ukb_common.PHENO_KEY_FIELDS
+    temp_dir = ('gs://ukbb-diverse-temp-30day/kt-batch-tmp/'+
+                ('max_pops' if max_pops else f'{"not_" if not_pop else ""}{pop}')+
+                (f'{"_hq" if high_quality else ""}'))
+    globals_for_col_key = PHENO_KEY_FIELDS
     mt = mwzj_hts_by_tree(all_hts=all_hts,
                          temp_dir=temp_dir,
                          globals_for_col_key=globals_for_col_key)
@@ -240,15 +267,23 @@ def join_clump_hts(pop, not_pop, max_pops, high_quality=False, overwrite=False):
 
     mt.write(mt_path, overwrite=overwrite)
 
-def munge_mt(pop, not_pop, high_quality, parts=None):
+def munge_mt(pop, not_pop, high_quality, hq_phenos, max_pops, hm3_only, pheno_manifest, parts=None):
     r'''
     For processing MTs before joining into the full clump mt
     '''
-    pop_array = [p for p in POPS if p!=pop] if not_pop else [pop]
-    mt = hl.read_matrix_table(path=get_clumping_results_path(pop=pop,not_pop=not_pop,high_quality=high_quality),
-                              _intervals=parts) # alternative path for results that are filtered to high quality variants before clumping
-    print(f'{"not_" if not_pop else ""}{pop}: {mt.count_cols()}')
-    mt = mt.annotate_cols(clump_pops = hl.literal(pop_array))
+    mt = hl.read_matrix_table(path=get_clumping_results_path(pop=pop,not_pop=not_pop,high_quality=high_quality, max_pops=max_pops,hm3_only=hm3_only),
+                            _intervals=parts)
+    # print(f'{"not_" if not_pop else ""}{pop}: {mt.count_cols()}')
+    # mt = mt.annotate_cols(clump_pops = hl.literal(pop_array))
+    if not_pop and hq_phenos:
+        mt = mt.annotate_cols(pops_pass_qc=pheno_manifest[mt.col_key].pops_pass_qc.split(','))
+        mt = mt.annotate_cols(clump_pops=mt.pops_pass_qc.filter(lambda x: x != pop))
+        mt = mt.drop(mt.pops_pass_qc)
+    elif max_pops:
+        mt = mt.annotate_cols(clump_pops=pheno_manifest[mt.col_key].pops_pass_qc.split(','))
+    elif not not_pop and not max_pops:
+        mt = mt.annotate_cols(clump_pops=[pop])
+
     if 'idx' in mt.entry.keys():
         mt = mt.select_entries(plink_clump=mt.entry.drop('idx')) # needed to clean up not_EAS and not_MID MTs (8/4/20)
     else:
@@ -281,29 +316,52 @@ def make_single_pop_clump_mt(high_quality=False, overwrite=False):
     # 2020-08-06 17:51:23 Hail: INFO: wrote matrix table with 24870911 rows and 7221 columns in 5000 partitions
     # Time: 2hr 48 min (ran with 2 workers, 150 preemptibles for first ~1hr, then removed all preemptibles)
     
-def make_full_clump_mt(high_quality=False, overwrite=False, single_pop_only=False):
+def make_full_clump_mt(pheno_manifest, high_quality=False, all_hq=False, hm3_only=False, overwrite=False, single_pop_only=False):
     mts = []
     
     n_partitions = 5000 
-    parts = hl.read_matrix_table(get_clumping_results_path(pop='EUR',not_pop=False,high_quality=high_quality))._calculate_new_partitions(n_partitions)
+    parts = hl.read_matrix_table(get_clumping_results_path(pop='EUR',not_pop=False,high_quality=high_quality,hm3_only=hm3_only))._calculate_new_partitions(n_partitions)
 
-    for not_pop in [True]+([] if single_pop_only else [False]):
+    # TODO: confirm right paths
+        # gs://ukb-diverse-pops/ld_prune/clump_results_hq_phenos/not_{pop}_hq.mt (LOO)
+        # gs://ukb-diverse-pops/ld_prune/clump_results_high_quality/max_pops.mt (max pops)
+        # gs://ukb-diverse-pops/ld_prune/clump_results_high_quality/{pop}.mt (single pops)
+
+    pheno_ht = hl.import_table(pheno_manifest)
+    pheno_ht = pheno_ht.key_by(*PHENO_KEY_FIELDS)
+
+    if high_quality and all_hq:
+        # LOO hq_pheno/pop pairs
+        pops_noEUR = ['AFR', 'CSA', 'EAS', 'MID']
+        for pop in pops_noEUR:
+            mts.append(munge_mt(pop=pop, not_pop=True, high_quality=True, hq_phenos=True, max_pops=False, pheno_manifest=pheno_ht, hm3_only=hm3_only, parts=parts))
+        # single pop
         for pop in POPS:
-            mts.append(munge_mt(pop=pop,
-                                not_pop=not_pop,
-                                high_quality=high_quality,
-                                parts=parts))
+            mts.append(munge_mt(pop=pop, not_pop=False, high_quality=True, hq_phenos=False,  max_pops=False, pheno_manifest=pheno_ht, hm3_only=hm3_only, parts=parts))
+        # max_pops
+        mts.append(munge_mt(pop=None, not_pop=False, high_quality=True, hq_phenos=False, max_pops=True, pheno_manifest=pheno_ht, hm3_only=hm3_only, parts=parts))
+
+    else:
+        for not_pop in [True]+([] if single_pop_only else [False]):
+            for pop in POPS:
+                mts.append(munge_mt(pop=pop,
+                                    not_pop=not_pop,
+                                    high_quality=False,
+                                    hq_phenos=False,
+                                    max_pops=False,
+                                    parts=parts))
     full_mt = mts[0]
     for mt in mts[1:]:
         full_mt = full_mt.union_cols(mt, row_join_type='outer')
         
     full_mt = full_mt.collect_cols_by_key()
     
-    full_mt.write(get_clumping_results_path(pop='full',high_quality=high_quality), 
-                  overwrite=overwrite)
+    full_mt.write(get_clumping_results_path(pop='full',high_quality=high_quality, hm3_only=hm3_only), 
+                    overwrite=overwrite)
     # 2020-08-07 06:17:10 Hail: INFO: wrote matrix table with 28024109 rows and 7221 columns in 5000 partitions
     # Time: 5hr 6 min (ran with 2 workers, 150 preemptibles for first ~1hr, then removed all preemptibles)
 
+    # 2022-06-16 19:11:25 Hail: INFO: wrote matrix table with 27541034 rows and 7748 columns in 4823 partitions to gs://ukb-diverse-pops/ld_prune/clump_results_high_quality/not_.mt
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -319,14 +377,17 @@ if __name__ == '__main__':
     parser.add_argument('--modifier', type=str, default='', help='modifier in meta-analyzed sumstats')
     parser.add_argument('--ht_to_tsv', action='store_true')
     parser.add_argument('--tsv_to_ht', action='store_true')
-    parser.add_argument('--not_pop', action='store_true', help='whether pop set is a not_{pop}')
-    parser.add_argument('--max_pops', action='store_true', help='whether to use "max_pops" clumping results')
-    parser.add_argument('--join_clump_hts', default=False, action='store_true')    
-    parser.add_argument('--make_full_clump_mt', action='store_true')    
+    parser.add_argument('--not_pop', action='store_true', help='Include if pop set is a not_{pop}')
+    parser.add_argument('--max_pops', action='store_true', help='Include to use "max_pops" clumping results')
+    parser.add_argument('--hq_phenos', action='store_true', help='Include to run this for only hq pheno/pop pairs')
+    parser.add_argument('--hm3_only', action='store_true', help='Include to run for only clump results using HM3 SNPs')
+    parser.add_argument('--join_clump_hts', action='store_true')    
+    parser.add_argument('--make_full_clump_mt', action='store_true') 
+    parser.add_argument('--all_hq', action='store_true', help='Include for the full clump mt, using hq pheno/pop pairs and high quality variants only' )   
     parser.add_argument('--make_single_pop_clump_mt', action='store_true')    
     parser.add_argument('--batch_size', type=int, default=256, help='max number of phenotypes per batch for export_entries_by_col')
-    parser.add_argument('--high_quality', default=False, action='store_true', help='Use high quality variants only')
-    parser.add_argument('--overwrite', default=False, action='store_true', help='overwrite existing files')
+    parser.add_argument('--high_quality', action='store_true', help='Include to use high quality variants only')
+    parser.add_argument('--overwrite', action='store_true', help='overwrite existing files')
     args = parser.parse_args()
     
 #    try:        
@@ -335,19 +396,32 @@ if __name__ == '__main__':
     elif args.tsv_to_ht:
         tsv_to_ht(args)
     elif args.join_clump_hts:
-        join_clump_hts(pop=args.pop, 
-                       not_pop=args.not_pop,
-                       max_pops=args.max_pops,
-                       high_quality=args.high_quality,
-                       overwrite=args.overwrite)
+        if args.hq_phenos:
+            pops_noEUR = ['AFR', 'CSA', 'EAS', 'MID']
+            for pop in pops_noEUR:
+                join_clump_hts(pop=pop, 
+                            not_pop=True,
+                            max_pops=args.max_pops,
+                            high_quality=args.high_quality,
+                            overwrite=args.overwrite,
+                            hq_phenos=args.hq_phenos,
+                            hm3_only=args.hm3_only)
+        else:
+            join_clump_hts(pop=args.pop, 
+                not_pop=args.not_pop,
+                max_pops=args.max_pops,
+                high_quality=args.high_quality,
+                overwrite=args.overwrite,
+                hq_phenos=args.hq_phenos,
+                hm3_only=args.hm3_only)
     elif args.make_full_clump_mt:
-        make_full_clump_mt(high_quality=args.high_quality,
+        pheno_manifest = 'gs://ukb-diverse-pops/combined_results/221215_phenotype_manifest.tsv.bgz'
+        make_full_clump_mt(pheno_manifest=pheno_manifest, high_quality=args.high_quality, all_hq=args.all_hq, hm3_only=args.hm3_only,
                            overwrite=args.overwrite)
     elif args.make_single_pop_clump_mt:
         make_full_clump_mt(high_quality=args.high_quality, 
                            overwrite=args.overwrite,
                            single_pop_only=True)
-
 #    except:
 #        hl.copy_log('gs://ukbb-diverse-temp-30day/nb_hail.log')
         
