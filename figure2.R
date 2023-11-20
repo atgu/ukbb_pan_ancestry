@@ -5,7 +5,11 @@ theme_set(theme_classic())
 
 phenotypes = read_tsv(gzfile('data/phenotype_manifest.tsv.bgz'))
 # gs://ukb-diverse-pops-public-free/h2/h2_estimates_all_flat_221123.tsv
-h2_data = load_ukb_file('h2_estimates_all_flat_221123.tsv', parent_folder='h2/')
+h2_data = load_ukb_file('h2_estimates_all_flat_221123.tsv', parent_folder='h2/') %>%
+  mutate(phenotype_id = paste_noempty(trait_type, phenocode, pheno_sex, coding, modifier, sep='-')) %>%
+  mutate(code2 = str_remove(str_extract(phenotype_id, '(?=.+)-[A-Za-z0-9_]+'),'^-')) %>% 
+  mutate(post_str = str_extract(phenotype_id, '(?<=[A-Za-z0-9]{1,30}-[A-Za-z0-9]{1,30}-(both_sexes|female|male)-)[A-Za-z0-9_]+')) %>%
+  mutate(code = ifelse(!is.na(post_str), paste0(code2,'_',post_str), code2))
 
 filter_to_pass = function(x, anc) {
   return(filter_at(x, vars(starts_with('phenotype_qc_') & ends_with(anc)), any_vars(. == 'PASS')))
@@ -19,22 +23,61 @@ compute_neff = function(x, anc) {
 }
 
 heritability_table = function() {
-  tab = tribble(
-    ~`Phenotype QC filters`, ~Total, ~EUR, ~CSA, ~AFR, ~EAS, ~MID,
-    "Significant and bounded
-    heritability", 2679, 937, 1146, 248, 56, 292,
-    'Calibrated~\u03BB["GC"]', 2661, 930, 1143, 245, 54, 289,
-    "Controlled S-LDSC ratio", 2537, 881, 1098, 234, 51, 273,
-    "Passes all filters in EUR &
-    ≥1 other genetic ancestry", 1312, 527, 441, 110, 38, 196
-  )
   tab2 = tribble(
     ~`Phenotype QC filters`, ~Total, ~EUR, ~CSA, ~AFR, ~EAS, ~MID,
     "Phenotype QC filters", "Total", "EUR", "CSA", "AFR", "EAS", "MID"
   )
-  tab = union_all(tab2, tab %>% mutate_if(is.double, as.character))
+  h2_table_dat = h2_data %>%
+    filter(ancestry != 'AMR') %>%
+    group_by(ancestry) %>%
+    summarize(`Significant and bounded\nheritability`=sum(qcflags.defined_h2 & qcflags.significant_z & qcflags.in_bounds_h2),
+              `lambda`=sum(qcflags.defined_h2 & qcflags.significant_z & qcflags.in_bounds_h2 & qcflags.normal_lambda),
+              `Controlled S-LDSC ratio`=sum(qcflags.defined_h2 & qcflags.significant_z & qcflags.in_bounds_h2 & qcflags.normal_lambda & qcflags.normal_ratio),
+              `Passes all filters in EUR and\n≥1 other ancestry group`=sum(qcflags.pass_all)
+    ) %>% pivot_longer(-ancestry, names_to="Phenotype QC filters") %>%
+    pivot_wider(names_from='ancestry') %>%
+    rowwise %>%
+    mutate(Total = sum(c_across(AFR:MID))) %>%
+    select("Phenotype QC filters", "Total", all_of(pops_by_sample_size[1:5])) %>%
+    mutate(`Phenotype QC filters` = if_else(`Phenotype QC filters` == 'lambda', 'Calibrated~\u03BB["GC"]', `Phenotype QC filters`))
+  tab = union_all(tab2, h2_table_dat %>% mutate_if(is.numeric, comma))
   return(tab)
 }
+
+phenotypes %>%
+  filter(grepl('AFR', pops_pass_qc) & grepl('CSA', pops_pass_qc) & grepl('EUR', pops_pass_qc)) %>%
+  View
+
+# polygenicity %>% filter(grepl('30600', Pheno) | grepl('30620', Pheno) | grepl('30870', Pheno) | grepl('30890', Pheno) | grepl('20002-both_sexes-1226', Pheno) | grepl('30080', Pheno) | grepl('30100', Pheno) | grepl('30270', Pheno) | grepl('30300', Pheno) | grepl('3063', Pheno))
+
+h2_data %>%
+  group_by(ancestry) %>%
+  summarize(significant_phenos=sum(estimates.final.h2_z > 4, na.rm=T))
+
+h2_data %>%
+  filter(estimates.final.h2_z > 4) %>%
+  group_by_at(key_fields) %>%
+  summarize(n=n()) %>%
+  ungroup %>% count(n) %>%
+  mutate(prop=nn/sum(nn))
+
+h2_data %>%
+  filter(qcflags.pass_all) %T>% 
+  {print(nrow(.))} %>%
+  group_by_at(key_fields) %>%
+  summarize(n=n()) %>%
+  ungroup %>% count(n) %>%
+  mutate(prop=nn/sum(nn))
+
+phenotypes %>% filter(num_pops_pass_qc > 1 & in_max_independent_set) %T>%
+  {print(nrow(.))} %$%
+  sum(num_pops_pass_qc)
+
+h2_data %>%
+  filter(qcflags.pass_all) %>%
+  group_by(trait_type) %>%
+  summarize(mean_observed=mean(estimates.final.h2_observed),
+            mean_EUR_observed=sum(estimates.final.h2_observed*(ancestry == 'EUR'))/sum(ancestry == 'EUR'))
 
 generate_heritability_table = function(size = 10) {
   tab = heritability_table()
@@ -61,6 +104,16 @@ generate_heritability_table = function(size = 10) {
   }
   ggtab
   return(ggtab)
+}
+
+get_phenos = function(anc_x='EUR', anc_y='CSA', indep_only=TRUE, remove_questionnaire=FALSE) {
+  phenotypes %>% 
+    filter_to_pass(anc_x) %>%
+    filter_to_pass(anc_y) %>%
+    # filter(num_pops_pass_qc > 2) %>%
+    filter(!remove_questionnaire | !grepl('question', description_more, ignore.case = TRUE)) %>%
+    filter(!indep_only | in_max_independent_set) %>%
+    return
 }
 
 heritability_correlations = function(anc_x='EUR', anc_y='CSA', type='observed',
@@ -107,21 +160,12 @@ heritability_correlations = function(anc_x='EUR', anc_y='CSA', type='observed',
     }
     return(p)
   } else {
-    return(data.frame(estimate=york_res$b[[1]], p=york_res$p.value, n_phenos=nrow(plot_data)))
-    # return(data.frame(estimate=res$estimate[[1]], p=res$p.value, n_phenos=nrow(plot_data)))
+    # return(data.frame(estimate=york_res$b[[1]], p=york_res$p.value, n_phenos=nrow(plot_data)))
+    return(data.frame(estimate=res$estimate[[1]], p=res$p.value, n_phenos=nrow(plot_data)))
   }
 }
 heritability_correlations(type='observed', remove_questionnaire = F)
 
-get_phenos = function(anc_x='EUR', anc_y='CSA', indep_only=TRUE, remove_questionnaire=FALSE) {
-  phenotypes %>% 
-    filter_to_pass(anc_x) %>%
-    filter_to_pass(anc_y) %>%
-    # filter(num_pops_pass_qc > 2) %>%
-    filter(!remove_questionnaire | !grepl('question', description_more, ignore.case = TRUE)) %>%
-    filter(!indep_only | in_max_independent_set) %>%
-    return
-}
 
 heritability_histograms = function() {
   upper_bound = 10
@@ -134,11 +178,13 @@ heritability_histograms = function() {
                            value > upper_bound ~ upper_bound,
                            TRUE ~ value)) %>%
     ggplot + aes(x = value, group = name, fill = name) +
-    geom_histogram(bins=200, alpha=0.5, position='identity') +
+    geom_histogram(bins=100, alpha=0.5, position='identity') +
     geom_vline(xintercept=4, linetype='dashed') +
     theme(legend.position = c(0.9, 0.9)) +
-    scale_fill_discrete(name=NULL) +
-      xlab('Heritability Z-score') + ylab('Number of\nancestry-trait pairs') -> p
+    scale_fill_manual(name=NULL, values=c('RHE-mc' = muted('red', l=50),
+                                            'S-LDSC' = muted('blue', l=50))) +
+    xlab('Heritability Z-score') + ylab('Number of\nancestry-trait pairs') -> p
+  # p
   return(p)
 }
 rhemc_v_sldsc = function(legend_size = 0.25) {
@@ -165,7 +211,8 @@ rhemc_v_sldsc = function(legend_size = 0.25) {
     ylab('RHE-mc heritability') +
     trait_color_scale +
     theme(legend.position = c(0.8, 0.8),
-          legend.key.size = unit(legend_size, 'in')
+          legend.key.size = unit(legend_size, 'in'),
+          # legend.background=element_rect(fill = alpha("white", 0))
           ) +
     geom_abline(slope = res$coefficients[[2]], intercept = res$coefficients[[1]], linetype='dashed') +
     geom_abline(slope = 1, intercept = 0, linetype='dotted') -> p
@@ -182,6 +229,7 @@ all_pairs %>%
 
 phenotypes %>%
   filter_to_pass('EUR') %>%
+  compute_neff('EUR') %>%
   ggplot + aes(x = n_eff_EUR, y = 1 / (sldsc_25bin_h2_liability_se_EUR ^ 2)) + geom_point()
 
 figure2 = function(output_format = 'png') {

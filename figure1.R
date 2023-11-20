@@ -20,10 +20,11 @@ n_phenos_by_pop = function(table_size = 2.5) {
     geom_bar(stat='identity') +
     ylab('Number of phenotypes') +
     xlab(NULL) +
+    scale_y_continuous(labels=comma) + 
     scale_fill_manual(values=ukb_pop_colors, guide=F) +
     # scale_x_discrete(labels=ukb_pop_names) +
-    theme(axis.text.x = element_text(angle = 35, hjust=1)) + 
-    geom_text(aes(label=n), vjust=0, nudge_y = 80, size=2.5) +
+    # theme(axis.text.x = element_text(angle = 35, hjust=1)) + 
+    geom_text(aes(label=comma(n)), vjust=0, nudge_y = 80, size=2.5) +
     annotate(geom = "table", x = 6.5, y = max(by_pop$n), label = list(inset_table), 
              vjust = 1, hjust = 1, table.theme = ttheme_gtplain, table.hjust = 1,
              size=table_size)
@@ -58,10 +59,11 @@ n_phenos_by_pop_combo = function(legend_size=0.15) {
     ylab('Number of phenotypes') +
     scale_fill_manual(values=trait_type_colors, name='Trait type', labels=trait_type_names) +
     scale_x_discrete(labels=multi_pop_names) +
+    scale_y_continuous(labels=comma) + 
     xlab('Number of genetic ancestries') +
-    theme(axis.text.x = element_text(angle = 35, hjust=1),
+    theme(# axis.text.x = element_text(angle = 35, hjust=1),
           legend.key.size = unit(legend_size, 'in')) + 
-    geom_text(aes(label=n), vjust=0, nudge_y = 80, size=2.5,
+    geom_text(aes(label=comma(n)), vjust=0, nudge_y = 80, size=2.5,
               data=by_pop_cumulative %>% mutate(trait_type=NA_character_)) +
     theme(legend.position=c(1, 1), legend.justification = c(1, 1))
   return(p)
@@ -69,7 +71,7 @@ n_phenos_by_pop_combo = function(legend_size=0.15) {
 
 sig_hits_by_pheno = load_ukb_file('sig_hits_pops_by_pheno_full.txt.bgz', 'sig_hits/', use_local=F)
 
-get_sig_hits_data = function() {
+get_sig_hits_data = function(filter_to_6pop=T) {
   run_phenos = pheno_summary %>%
     select_at(c(key_fields, 'pheno_data.pop')) %>% rename(pop=pheno_data.pop)
   phenos_6pop = run_phenos %>% group_by_at(key_fields) %>% 
@@ -77,8 +79,13 @@ get_sig_hits_data = function() {
     ungroup %>% select(-n)
   
   plot_data = sig_hits_by_pheno %>%
-    inner_join(run_phenos) %>%
-    inner_join(phenos_6pop) %>%
+    inner_join(run_phenos)
+  
+  if (filter_to_6pop) {
+    plot_data = plot_data %>%
+    inner_join(phenos_6pop)
+  }
+  plot_data = plot_data %>%
     mutate(sig_pops_by_pheno_clumped=if_else(is.na(clumped), 0, clumped),
            sig_pops_by_pheno_total=if_else(is.na(total), 0, total)) %>%
     group_by(pop) %>%
@@ -87,6 +94,15 @@ get_sig_hits_data = function() {
     ) %>% ungroup
   return(plot_data)
 }
+
+get_sig_hits_data() %>%
+  group_by(pop) %>%
+  summarize(mean_number_clumped_hits=mean(sig_pops_by_pheno_clumped),
+            per10_number_clumped_hits=quantile(sig_pops_by_pheno_clumped, 0.9),
+            per25_number_clumped_hits=quantile(sig_pops_by_pheno_clumped, 0.75)) %>%
+  group_by(pop == 'EUR') %>%
+  summarize_if(is.numeric, sum)
+
 sig_hits_cdf = function(only_clumped=T, include_amr=F) {
   plot_data = get_sig_hits_data()
   p = plot_data %>%
@@ -96,7 +112,7 @@ sig_hits_cdf = function(only_clumped=T, include_amr=F) {
     aes(group = pop, color = pop) +
     geom_line(lwd=1) + ylab('Phenotype percentile') +
     scale_x_log10(name=paste0('Number of ', if_else(only_clumped, 'independent ', ''), 'significant associations')) + 
-    scale_color_manual(values=ukb_pop_colors, name=NULL, labels=ukb_pop_names) + 
+    scale_color_manual(values=ukb_pop_colors, name=NULL) + 
     theme(legend.position = c(1, 0.01), legend.justification = c(1, 0))
   
   # plot_data %>%
