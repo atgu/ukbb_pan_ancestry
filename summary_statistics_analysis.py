@@ -17,7 +17,7 @@ def annotate_mt_with_largest_meta_analysis(mt, h2_filter='none'):
     if h2_filter == 'both':
         raise ValueError('h2_filter must be none or pass for annotate_mt_with_largest_meta_analysis')
     #meta_mt = hl.read_matrix_table(get_meta_analysis_results_path(h2_filter))
-    meta_mt = load_meta_analysis_results(h2_filter=h2_filter)
+    meta_mt = load_meta_analysis_results(h2_filter=h2_filter, exponentiate_p=True)
     meta_analysis_join = meta_mt[mt.row_key, mt.col_key].meta_analysis
     return mt.annotate_entries(meta=hl.or_missing(hl.len(meta_analysis_join) > 0, meta_analysis_join[0]))
 
@@ -40,8 +40,9 @@ def partial_log_log(p):
 
 
 def compute_sig_pops_by_pheno(overwrite):
-    mt = load_final_sumstats_mt(separate_columns_by_pop=False)
-    clump_mt = hl.read_matrix_table(get_clumping_results_path(high_quality=True, not_pop=False))
+    mt = load_final_sumstats_mt(separate_columns_by_pop=False, exponentiate_p=True, filter_pheno_h2_qc=False, filter_phenos=False)
+    # clump_mt = hl.read_matrix_table(get_clumping_results_path(high_quality=True, not_pop=False))
+    clump_mt = hl.read_matrix_table('gs://ukb-diverse-pops-public/clump_results_high_quality_22115/full.mt')
     mt = all_axis_join(mt, clump_mt)
     mt = mt.annotate_entries(
         sig_pops=get_sig_pops(mt),
@@ -53,6 +54,28 @@ def compute_sig_pops_by_pheno(overwrite):
         sig_pops_by_pheno_clumped=hl.agg.explode(lambda x: hl.agg.counter(x), mt.sig_pops_clumped)
     )
     mt.cols().write(get_analysis_data_path('sig_hits', 'sig_hits_pops_by_pheno', 'full', 'ht'), overwrite=overwrite)
+    ht = hl.read_table(get_analysis_data_path('sig_hits', 'sig_hits_pops_by_pheno', 'full', 'ht'))
+    # explode over pheno_data and index into sig_pops_by_pheno_clumped
+    ht = ht.explode(ht.pheno_data)
+    ht = ht.transmute(
+        pop=ht.pheno_data.pop,
+        total=ht.sig_pops_by_pheno_total.get(ht.pheno_data.pop),
+        clumped=ht.sig_pops_by_pheno_clumped.get(ht.pheno_data.pop)
+    ).drop('clump_pops', 'sig_pops_by_pheno_grouped')
+    ht.export(get_analysis_data_path('sig_hits', 'sig_hits_pops_by_pheno', 'full'))
+
+
+def compute_number_of_variants_by_pop(overwrite):
+    ht = hl.read_table(get_variant_results_qc_path())
+    ht = ht.annotate(**{f'freq_{pop}': ht.freq.find(lambda x: x.pop == pop).af for pop in POPS})
+    ht.aggregate(hl.struct(
+        pop1=hl.agg.count_where(ht.freq_EUR > 0.01),
+        pop2=hl.agg.count_where((ht.freq_EUR > 0.01) | (ht.freq_CSA > 0.01)),
+        pop3=hl.agg.count_where((ht.freq_EUR > 0.01) | (ht.freq_CSA > 0.01) | (ht.freq_AFR > 0.01)),
+        pop4=hl.agg.count_where((ht.freq_EUR > 0.01) | (ht.freq_CSA > 0.01) | (ht.freq_AFR > 0.01) | (ht.freq_EAS > 0.01)),
+        pop5=hl.agg.count_where((ht.freq_EUR > 0.01) | (ht.freq_CSA > 0.01) | (ht.freq_AFR > 0.01) | (ht.freq_EAS > 0.01) | (ht.freq_MID > 0.01)),
+        pop6=hl.agg.count_where((ht.freq_EUR > 0.01) | (ht.freq_CSA > 0.01) | (ht.freq_AFR > 0.01) | (ht.freq_EAS > 0.01) | (ht.freq_MID > 0.01) | (ht.freq_AMR > 0.01))
+    ))
 
 
 def compute_top_p(overwrite):
@@ -65,9 +88,9 @@ def compute_top_p(overwrite):
 
     :param bool overwrite: Whether to overwrite results
     """
-    mt = load_final_sumstats_mt(separate_columns_by_pop=False, add_only_gene_symbols_as_str=True)
+    mt = load_final_sumstats_mt(separate_columns_by_pop=False, add_only_gene_symbols_as_str=True, exponentiate_p=True)
 
-    mt = annotate_mt_with_largest_meta_analysis(mt)
+    mt = annotate_mt_with_largest_meta_analysis(mt, 'pass')
     sumstats_with_pop = hl.zip_with_index(mt.summary_stats).map(
         lambda x: x[1].annotate(pop=mt.pheno_data[x[0]].pop)
     )
@@ -90,8 +113,8 @@ def compute_top_p(overwrite):
     ht = mt.annotate_rows(
         top_p=[agg_top_p(ss_pop) for ss_pop in sumstats_with_pheno_meta_by_pop],
         top_meta_p=agg_top_p(meta_with_pheno_and_per_pop),
-        top_p_6pop_phenos=[hl.agg.filter(hl.len(mt.pheno_data) == 6, agg_top_p(ss_pop)) for ss_pop in sumstats_with_pheno_meta_by_pop],
-        top_meta_p_6pop_phenos=hl.agg.filter(hl.len(mt.pheno_data) == 6, agg_top_p(meta_with_pheno_and_per_pop))
+        # top_p_6pop_phenos=[hl.agg.filter(hl.len(mt.pheno_data) == 6, agg_top_p(ss_pop)) for ss_pop in sumstats_with_pheno_meta_by_pop],
+        # top_meta_p_6pop_phenos=hl.agg.filter(hl.len(mt.pheno_data) == 6, agg_top_p(meta_with_pheno_and_per_pop))
     ).rows().naive_coalesce(1000).drop('vep', 'freq')
     ht.write(get_analysis_data_path('sig_hits', 'top_p_by_variant', 'full', 'ht'), overwrite=overwrite)
 
@@ -140,25 +163,99 @@ def compute_neff():
     return mt_w_var.cols()
 
 def main(args):
-    hl.init(default_reference='GRCh37')
+    hl.init(log=hl.utils.timestamp_path(os.path.join('/tmp', 'hail'), suffix='.log'), default_reference='GRCh37',
+            gcs_requester_pays_configuration='ukbb-diversepops-neale')
 
     if args.write_gene_intervals:
         create_genome_intervals_file().write(get_gene_intervals_path('GRCh37'), args.overwrite)
+
+    # Figure 1
+    if args.generate_pheno_summary:
+        mt = load_final_sumstats_mt(filter_phenos=False, separate_columns_by_pop=False, annotate_with_nearest_gene=False, filter_pheno_h2_qc=False)
+        mt.cols().explode('pheno_data').flatten().export(get_analysis_data_path('phenos', 'pheno_summary', 'full'))
+
+    if args.compute_sig_pops_by_pheno:
+        compute_sig_pops_by_pheno(args.overwrite)
+
+    # Extended Data Figure 3
+    if args.compute_number_of_variants_by_pop:
+        compute_number_of_variants_by_pop(args.overwrite)
 
     if args.compute_top_p:
         compute_top_p(args.overwrite)
 
     if args.export_top_p:
-        # Export top meta-analysis p-value for each variant (Figure 1D)
+        # Export top meta-analysis p-value for each variant
         # Also grabs the most significant population that contributed to that meta-analysis
         ht_full = hl.read_table(get_analysis_data_path('sig_hits', 'top_p_by_variant', 'full', 'ht'))
 
-        ht = locus_alleles_to_chr_pos_ref_alt(ht_full.annotate(global_position=ht_full.locus.global_position()), True)
-        ht = ht.select('chrom', 'pos', 'ref', 'alt', 'nearest_genes', **ht.top_meta_p_6pop_phenos.drop(*PHENO_DESCRIPTION_FIELDS))
+        ht = locus_alleles_to_chr_pos_ref_alt(ht_full.annotate(global_position=ht_full.locus.global_position()),
+                                              True)
+        ht = ht.select('chrom', 'pos', 'ref', 'alt', 'nearest_genes',
+                       **ht.top_meta_p.drop(*PHENO_DESCRIPTION_FIELDS))
         ht = ht.filter((hl.len(ht.pop_data) > 0) & (ht.Pvalue < 0.01))
         ht = ht.transmute(top_pop=hl.sorted(ht.pop_data, key=lambda x: x.Pvalue)[0])
         ht = ht.filter(~ht.top_pop.low_confidence)
         ht.flatten().export(get_analysis_data_path('sig_hits', 'top_meta_with_top_pop_by_variant', 'full'))
+
+    # Figure 3
+    if args.meta_eur_comparison:
+        mt_meta = hl.read_matrix_table(get_meta_analysis_results_path(filter_pheno_h2_qc=True))
+        mt_meta = mt_meta.annotate_rows(
+            max_maf_pop=mt_meta.freq.filter(
+                lambda x: (0.5 - hl.abs(0.5 - x.af)) == hl.max((0.5 - hl.abs(0.5 - mt_meta.freq.af)))
+            ).pop[0]
+        )
+        mt_meta = mt_meta.annotate_entries(
+            meta_analysis=mt_meta.meta_analysis[0].annotate(
+                Pvalue=mt_meta.meta_analysis[0].Pvalue / -np.log(10),
+                Pvalue_het=mt_meta.meta_analysis[0].Pvalue_het / -np.log(10),
+            ),
+            EUR=mt_eur[mt_meta.row_key, mt_meta.col_key].summary_stats,
+        )
+        mt_meta = mt_meta.filter_entries(
+            (mt_meta.meta_analysis.Pvalue > nlog10p_threshold) | (mt_meta.EUR.Pvalue > nlog10p_threshold)
+        )
+        mt_meta = mt_meta.checkpoint("gs://ukb-diverse-pops/misc/comp/meta_eur_comparison.mt", overwrite=True)
+
+    if args.export_meta_eur_comparison:
+        mt_meta = hl.read_matrix_table("gs://ukb-diverse-pops/misc/comp/meta_eur_comparison.mt")
+        clump_mt = hl.read_matrix_table(get_clumping_results_path(not_pop=False, high_quality=True))
+        clump_mt = clump_mt.select_entries(
+            in_clump=hl.or_missing(hl.is_defined(clump_mt.plink_clump[-1]),
+                                   hl.delimit(clump_mt.clump_pops[-1]))
+        )
+        mt_meta = all_axis_join(mt_meta, clump_mt)
+
+        pop_lds = [hl.read_table(get_ld_score_ht_path(pop)) for pop in POPS]
+        models = [ht.aggregate(hl.agg.linreg(ht.ld_score, [1, ht.AF]), _localize=False) for ht in pop_lds]
+        pop_lds = [ht.annotate(ld_score_resid=ht.ld_score - (model.beta[0] + model.beta[1] * ht.AF)) for ht, model
+                   in
+                   zip(pop_lds, models)]
+        mt_meta = annotate_nearest_gene(mt_meta, add_only_gene_symbols_as_str=True)
+        ht_meta = mt_meta.key_cols_by().entries()
+        ht_meta = ht_meta.select(
+            *PHENO_KEY_FIELDS, 'description', 'high_quality', 'max_maf_pop', 'info', 'nearest_genes', 'in_clump',
+            Pvalue_meta=ht_meta.meta_analysis.Pvalue,
+            Pvalue_EUR=ht_meta.EUR.Pvalue,
+            beta_meta=ht_meta.meta_analysis.BETA,
+            beta_EUR=ht_meta.EUR.BETA,
+            SE_meta=ht_meta.meta_analysis.SE,
+            SE_EUR=ht_meta.EUR.SE,
+            low_confidence_EUR=ht_meta.EUR.low_confidence,
+            Pvalue_het=ht_meta.meta_analysis.Pvalue_het,
+            AF_Allele2_meta=ht_meta.meta_analysis.AF_Allele2,
+            AF_Allele2_EUR=ht_meta.EUR.AF_Allele2,
+            N_pops=ht_meta.meta_analysis.N_pops,
+            pops=hl.delimit(ht_meta.meta_analysis_data[0].pop),
+            **{f'ldscore_{pop}': pop_lds[i][ht_meta.key].ld_score for i, pop in enumerate(POPS)},
+            **{f'ldscore_resid_{pop}': pop_lds[i][ht_meta.key].ld_score_resid for i, pop in enumerate(POPS)},
+            **{f'freq_{pop}': ht_meta.freq.find(lambda x: x.pop == pop).af for pop in POPS}
+        )
+        ht_meta = locus_alleles_to_chr_pos_ref_alt(ht_meta, unkey_drop_and_add_as_prefix=True)
+        ht_meta.describe()
+        ht_meta.export("gs://ukb-diverse-pops/misc/comp/meta_eur_comparison.tsv.bgz")
+
 
     # TODO: add clumping and re-compute top p meta vs top p EUR
     if args.export_top_p_eur:
@@ -233,8 +330,6 @@ def main(args):
         #  'significant_traits_EUR': 3752,
         #  'significant_traits_not_EUR': 1725}
 
-    mt = load_final_sumstats_mt(separate_columns_by_pop=False, annotate_with_nearest_gene=False)
-    mt.cols().explode('pheno_data').flatten().export(get_analysis_data_path('phenos', 'pheno_summary', 'full'))
 
     if args.beta_correlations:
         mt = load_final_sumstats_mt(separate_columns_by_pop=False, annotate_with_nearest_gene=False)
@@ -296,6 +391,10 @@ if __name__ == '__main__':
 
     parser.add_argument('--overwrite', help='Overwrite everything', action='store_true')
     parser.add_argument('--write_gene_intervals', help='Overwrite everything', action='store_true')
+    parser.add_argument('--compute_number_of_variants_by_pop', help='Overwrite everything', action='store_true')
+    parser.add_argument('--meta_eur_comparison', help='Overwrite everything', action='store_true')
+    parser.add_argument('--export_meta_eur_comparison', help='Overwrite everything', action='store_true')
+    parser.add_argument('--generate_pheno_summary', help='Overwrite everything', action='store_true')
     parser.add_argument('--compute_top_p', help='Overwrite everything', action='store_true')
     parser.add_argument('--export_top_p_eur', help='Overwrite everything', action='store_true')
     parser.add_argument('--export_top_p', help='Overwrite everything', action='store_true')
