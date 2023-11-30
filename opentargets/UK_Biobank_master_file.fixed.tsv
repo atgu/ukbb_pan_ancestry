@@ -1,0 +1,1566 @@
+ZOOMA QUERY	MAPPED_TERM_LABEL	MAPPED_TERM_URI	MAPPING_TYPE	ICD10_CODE/SELF_REPORTED_TRAIT_FIELD_CODE	COMMENTS/TICKET	AI
+Vascular disorders of intestine	vascular disease	EFO_0004264, EFO_0009431	Broad	K55	DONE	
+Gonarthrosis	osteoarthritis || knee	EFO_0004616	Broad	M17	DONE	
+Psoriatic and enteropathic arthropathies	psoriatic arthritis	EFO_0003778	? Broad	M07	DONE	
+Pain associated with micturition	dysuria	EFO_0003901	? Broad	R30	DONE	
+Other mood	mood disorder	EFO_0004247	? Broad	F38	DONE	
+Preterm delivery	premature birth	EFO_0003917	? Exact	O60	DONE	
+Injury of nerves at forearm level	carpal tunnel syndrome	EFO_0004143	? Narrow	S54	DONE	
+Injury of nerves at wrist and hand level	carpal tunnel syndrome	EFO_0004143	? Narrow	S64	DONE	
+Gastritis and duodenitis	gastritis	EFO_0000217	Broad	K29	DONE	
+Problems related to physical environment	exposure	EFO_0000487	Broad	Z58	DONE	
+Pre existing hypertension complicating pregnancy childbirth and the puerperium	hypertension	EFO_0000537	Broad	O10	DONE	
+Pre existing hypertensive disorder with superimposed proteinuria	hypertension	EFO_0000537	Broad	O11	DONE	
+Injury of blood vessels at wrist and hand level	injury	EFO_0000546	Broad	S65	DONE	
+Superficial injuries involving multiple body regions	injury	EFO_0000546	Broad	T00	DONE	
+Open wounds involving multiple body regions	injury	EFO_0000546	Broad	T01	DONE	
+Other injuries involving multiple body regions	injury	EFO_0000546	Broad	T06	DONE	
+Effects of air pressure and water pressure	injury	EFO_0000546	Broad	T70	DONE	
+Sequelae of injuries of neck and trunk	injury	EFO_0000546	Broad	T91	DONE	
+Sequelae of injuries involving multiple and unspecified body regions	injury	EFO_0000546	Broad	T94	DONE	
+Sequelae of other effects of external causes	injury	EFO_0000546, EFO_0008546	Broad	T98	DONE	
+Other injuries of spine and trunk level unspecified	Injury	EFO_0000546	Broad	T09	DONE	
+Personal history of malignant neoplasm	neoplasm' (covers benign + malignant; otherwise create/import 'malignant neoplasm')	EFO_0000616	Broad	Z85	DONE	
+Seropositive rheumatoid arthritis	rheumatoid arthritis	EFO_0000685	Broad	M05	DONE	
+Hypertrophic disorders of skin	skin disease	EFO_0000701	Broad	L91	DONE	
+Other infestations	parasitic infection	EFO_0001067	Broad	B88	DONE	
+Fibrosis and cirrhosis of liver	cirrhosis of liver	EFO_0001422	Broad	K74	DONE	
+Polyarthrosis	osteoarthritis	EFO_0002506	Broad	M15	DONE	
+Supervision of normal pregnancy	pregnancy'	EFO_0002950	Broad	Z34	DONE	
+Unspecified contracted kidney	kidney disease	EFO_0003086	Broad	N26	DONE	
+Infections of genitourinary tract in pregnancy	urinary tract infection	EFO_0003103	Broad	O23	DONE	
+Sequelae of cerebrovascular disease	cerebrovascular disorder	EFO_0003763	Broad	I69	DONE	
+Other acute ischaemic heart diseases	heart disease	EFO_0003777	Broad	I24	DONE	
+Complications and ill defined descriptions of heart disease	heart disease	EFO_0003777	Broad	I51	DONE	
+Osteoporosis in diseases classified elsewhere	osteoporosis	EFO_0003882	Broad	M82	DONE	
+Mental and behavioural disorders due to use of sedatives or hypnotics	drug dependence	EFO_0003890	Broad	F13	DONE	
+Mental and behavioural disorders due to use of hallucinogens	drug dependence	EFO_0003890	Broad	F16	DONE	
+Mental and behavioural disorders due to use of volatile solvents	drug dependence	EFO_0003890	Broad	F18	DONE	
+Fracture of lumbar spine and pelvis	spinal fracture	EFO_0003902	Broad	S32	DONE	
+Hereditary and idiopathic neuropathy	neuropathy	EFO_0004149	Broad	G60	DONE	
+Osteopathies in diseases classified elsewhere	bone disease	EFO_0004260	Broad	M90	DONE	
+Other extrapyramidal and movement disorders	movement disorder	EFO_0004280	Broad	G25	DONE	
+Other congenital musculoskeletal deformities	bone development disease	EFO_0005541	Broad	Q68	DONE	
+Carrier of infectious disease	infectious disease'	EFO_0005741	Broad	Z22	DONE	
+Premature rupture of membranes	spontaneous preterm birth	EFO_0006917	Broad	O42	DONE	
+Anogenital herpesviral infection	genital herpes	EFO_0007282	Broad	A60	DONE	
+Postinfective and reactive arthropathies in diseases classified elsewhere	reactive arthritis	EFO_0007460	Broad	M03	DONE	
+Early syphilis	syphilis	EFO_0007504	Broad	A51	DONE	
+Sequelae of toxic effects of substances chiefly nonmedicinal as to source	poisoning	EFO_0008546	Broad	T97	DONE	
+Subclinical iodine deficiency hypothyroidism	Iodine Deficiency Hypothyroidism	EFO_0008614	Broad	E02	DONE	
+Disorders of vitreous body and globe in diseases classified elsewhere	vitreous body disease	EFO_0008624	Broad	H45	DONE	
+Polyarteritis nodosa and related conditions	Polyarteritis Nodosa	EFO_0009012	Broad	M30	DONE	
+Sequelae of inflammatory diseases of CNS	central nervous system disease	EFO_0009386	Broad	G09	DONE	
+Respiratory tuberculosis not confimed	pulmonary tuberculosis	EFO_1000049	Broad	A16	DONE	
+Disorders of conjunctiva in diseases classified elsewhere	Conjunctival Disorder	EFO_1000203	Broad	H13	DONE	
+Congenital deformities of hip	developmental dysplasia of the hip	EFO_1000648	Broad	Q65	DONE	
+Neonatal jaundice from other causes	neonatal jaundice	EFO_1000739	Broad	P59	DONE	
+Urethral stricture	bladder neck obstruction	EFO_1000840	Broad	N35	DONE	
+Other specific arthropathies	joint disease	EFO_1000999	Broad	M12	DONE	
+Conductive and sensorineural hearing loss	sensorineural hearing loss	EFO_1001176	Broad	H90	DONE	
+other injuries of shoulder and upper arm	rotator cuff tear	EFO_1001250	Broad	S49	DONE	
+Effects of heat and light	Heat Stroke	EFO_1001340	Broad	T67	DONE	
+Other disorders of middle ear and mastoid	auditory system disease	EFO_1001455	Broad	H74	DONE	
+Atypical virus infections of CNS	central nervous system infection	EFO_1001456	Broad	A81	DONE	
+Female genital prolapse	uterine prolapse	EFO_1001864	Broad	N81	DONE	
+Dentofacial anomalies	abnormality of the mouth	HP_0000153	Broad	K07	DONE	
+Cleft palate with cleft lip	oral cleft	HP_0000202	Broad	Q37	DONE	
+Congenital malformations of nose	Abnormality of the nose	HP_0000366	Broad	Q30	DONE	
+Disorders of refraction and accommodation	Abnormality of refraction	HP_0000539	Broad	H52	DONE	
+Congenital malformations of gallbladder bile ducts and liver	Abnormality of the liver	HP_0001392	Broad	Q44	DONE	
+Obstructed labour due to maternal pelvic abnormality	abnormality of the abdomen morphology	HP_0001438	Broad	O65	DONE	
+Abnormal findings in specimens from respiratory organs and thorax	Abnormality of the respiratory system	HP_0002086	Broad	R84	DONE	
+Congenital malformations of lung	Abnormal lung morphology	HP_0002088	Broad	Q33	DONE	
+Other congenital malformations of peripheral vascular system	Abnormality of the vasculature	HP_0002597	Broad	Q27	DONE	
+Varicose veins of lower extremities	varicose veins	HP_0002619	Broad	I83	DONE	
+Varicose veins of other sites	Varicose veins	HP_0002619	Broad	I86	DONE	
+Acute lymphadenitis	lymphadenitis	HP_0002840	Broad	L04	DONE	
+Other abnormal findings in urine	abnormality of urine homeostasis	HP_0003110	Broad	R82	DONE	
+Unspecified abdominal hernia	hernia of the abdominal wall	HP_0004299	Broad	K46	DONE	
+Unspecified viral hepatitis	hepatitis	HP_0012115	Broad	B19	DONE	
+Other congenital malformations of digestive system	Abnormality of the digestive system	HP_0025031	Broad	Q45	DONE	
+Other congenital malformations of circulatory system	Abnormality of cardiovascular system morphology	HP_0030680	Broad	Q28	DONE	
+Other congenital malformations of skin	Malformation syndrome with skin/mucosae involvement	Orphanet_139027	Broad	Q82	DONE	
+Pneumoconiosis due to other inorganic dusts	pneumoconiosis	Orphanet_182098	Broad	J63	DONE	
+Corns and callosities	hereditary painful callosites	Orphanet_79141	Broad	L84	DONE	
+Disorders of lacrimal system and orbit in diseases classified elsewhere	rare lacrimal system disease	Orphanet_98602	Broad	H06	DONE	
+Alzheimer s disease	Alzheimer's disease	EFO_0000249	Exact	G30	DONE	
+Endocarditis valve unspecified	endocarditis	EFO_0000465	Exact	I38	DONE	
+Family history of other conditions	family history	EFO_0000493	Exact	Z84	DONE	
+Unspecified maternal hypertension	preeclampsia	EFO_0000668	Exact	O16	DONE	
+Stroke not specified as haemorrhage or infarction	stroke	EFO_0000712	Exact	I64	DONE	
+Subarachnoid haemorrhage	subarachnoid hemorrhage	EFO_0000713	Exact	I60	DONE	
+Unspecified human immunodeficiency virus	HIV infection	EFO_0000764	Exact	B24	DONE	
+Other endocrine disorders	endocrine system disease	EFO_0001379	Exact	E34	DONE	
+Other diseases of liver	liver disease	EFO_0001421	Exact	K76	DONE	
+Primary disorders of muscles	muscular disease	EFO_0002970	Exact	G71	DONE	
+Pervasive developmental disorders	pervasive developmental disorder - not otherwise specified	EFO_0003759	Exact	F84	DONE	
+Other cerebrovascular diseases	cerebrovascular disorder	EFO_0003763	Exact	I67	DONE	
+Other diseases of gallbladder	gallbladder disease	EFO_0003832	Exact	K82	DONE	
+Pain	pain	EFO_0003843	Exact	R52	DONE	
+Fracture of spine level unspecified	spinal fracture'	EFO_0003902	Exact	T08	DONE	
+Acute hepatitis B	hepatitis B infection	EFO_0004197	Exact	B16	DONE	
+Abnormalities of heart beat	cardiac arrythmia	EFO_0004269	Exact	R00	DONE	
+Scoliosis	scoliosis	EFO_0004273	Exact	M41	DONE	
+Other congenital malformations of heart	congenital heart malformation	EFO_0005269	Exact	Q24	DONE	
+Disorders of tooth development and eruption	tooth agenesis	EFO_0005410	Exact	K00	DONE	
+Intracerebral haemorrhage	intracerebral hemorrhage	EFO_0005669	Exact	I61	DONE	
+Retinal detachments and breaks	retinal detachment	EFO_0005773	Exact	H33	DONE	
+Tuberculosis of nervous system	central nervous system tuberculosis	EFO_0007199	Exact	A17	DONE	
+Acute hepatitis A	hepatitis A	EFO_0007305	Exact	B15	DONE	
+Hookworm diseases	hookworm infectious disease	EFO_0007314	Exact	B76	DONE	
+Female infertility	female infertility	EFO_0008560	Exact	N97	DONE	
+Sleep disorders	sleep disorder	EFO_0008568	Exact	G47	DONE	
+Thiamine deficiency	Thiamine deficiency	EFO_0008569	Exact	E51	DONE	
+Viral conjunctivitis	viral conjunctivitis	EFO_0008571	Exact	B30	DONE	
+Alcoholic liver disease	alcoholic liver disease	EFO_0008573	Exact	K70	DONE	
+Spinal osteochondrosis	Spinal Osteochondrosis	EFO_0008576	Exact	M42	DONE	
+Diseases of salivary glands	salivary gland disease	EFO_0008581	Exact	K11	DONE	
+Gender identity disorders	gender identity disorder	EFO_0008587	Exact	F64	DONE	
+Status asthmaticus	status asthmaticus	EFO_0008590	Exact	J46	DONE	
+Cystic kidney disease	cystic kidney disease	EFO_0008615	Exact	Q61	DONE	
+Polyp of female genital tract	female genital tract polyp	EFO_0008622	Exact	N84	DONE	
+Persistent mood	dysthymic disorder	EFO_0008623	Exact	F34	DONE	
+Disorders of vitreous body	vitreous body disease	EFO_0008624	Exact	H43	DONE	
+Ovarian dysfunction	ovarian dysfunction	EFO_0009003	Exact	E28	DONE	
+Other coagulation defects	blood coagulation disease	EFO_0009314	Exact	D68	DONE	
+Granulomatous disorders of skin and subcutaneous tissue	granulomatous dermatitis	EFO_1000705	Exact	L92	DONE	
+Excessive vomiting in pregnancy	hyperemesis gravidarum	EFO_1000971	Exact	O21	DONE	
+Hyperfunction of pituitary gland	hyperpituitarism	EFO_1000973	Exact	E22	DONE	
+Other nutritional deficiencies	nutritional deficiency disease	EFO_1001067	Exact	E63	DONE	
+Other rheumatic heart diseases	rheumatic heart disease	EFO_1001161	Exact	I09	DONE	
+Other helminthiases	Helminthiasis	EFO_1001342	Exact	B83	DONE	
+Unspecified viral infection of CNS	central nervous system infection	EFO_1001456	Exact	A89	DONE	
+Diverticular disease of intestine	diverticulitis	EFO_1001460	Exact	K57	DONE	
+Premature separation of placenta	Abruptio Placentae	EFO_1001754	Exact	O45	DONE	
+Retention of urine	Urinary retention	HP_0000016	Exact	R33	DONE	
+Unspecified urinary incontinence	Urinary incontinence	HP_0000020	Exact	R32	DONE	
+Isolated proteinuria	proteinuria	HP_0000093	Exact	R80	DONE	
+Cleft palate	cleft palate	HP_0000175	Exact	Q35	DONE	
+Hydrocephalus	hydrocephalus	HP_0000238	Exact	G91	DONE	
+Visual disturbances	Visual impairment	HP_0000505	Exact	H53	DONE	
+Unspecified dementia	dementia	HP_0000726	Exact	F03	DONE	
+Unspecified haematuria	hematuria	HP_0000790	Exact	R31	DONE	
+Cholecystitis	Cholecystitis	HP_0001082	Exact	K81	DONE	
+Dystonia	Dystonia	HP_0001332	Exact	G24	DONE	
+Ascites	Ascites	HP_0001541	Exact	R18	DONE	
+Iron deficiency anaemia	Iron deficiency anemia	HP_0001891	Exact	D50	DONE	
+Acute renal failure	acute kidney injury	HP_0001919	Exact	N17	DONE	
+Nonspecific lymphadenitis	lymphadenitis	HP_0002840	Exact	I88	DONE	
+Cachexia	cachexia	HP_0004326	Exact	R64	DONE	
+Disseminated intravascular coagulation	Disseminated intravascular coagulation	HP_0005521	Exact	D65	DONE	
+Senile cataract	age-related cataract	HP_0011141	Exact	H25	DONE	
+Agranulocytosis	Agranulocytosis	HP_0012234	Exact	D70	DONE	
+Helicobacter pylori	Helicobacter pylori	NCBITaxon_210	Exact	B98	DONE	
+Reduction defects of lower limb	Hemimelia	Orphanet_2130	Exact	Q72	DONE	
+Congenital hydrocephalus	Congenital hydrocephalus	Orphanet_2185	Exact	Q03	DONE	
+Immunodeficiency with predominantly antibody defects	Other immunodeficiency syndrome with predominantly antibody defects	Orphanet_331244	Exact	D80	DONE	
+Congenital malformations of oesophagus	Esophageal malformation	Orphanet_88993	Exact	Q39	DONE	
+Syndactyly	Syndactyly	Orphanet_90025	Exact	Q70	DONE	
+Other congenital malformations of intestine	Intestinal malformation	Orphanet_97945	Exact	Q43	DONE	
+Other functional intestinal disorders	intestinal disease	EFO_0009431	Broad	K59	DONE	
+Other disorders of peripheral nervous system	peripheral nervous system disease	EFO_0009387	Exact	G64	DONE	
+Spondylosis	spondyloarthropathy	EFO_0000706	Exact	M47	DONE	
+Hypofunction and other disorders of pituitary gland	hypopituitarism, pituitary gland disease	EFO_0001380, EFO_0009607	Exact	E23	DONE	
+Other retinal disorders	retinopathy	EFO_0003839	Exact	H35	DONE	
+Arterial embolism and thrombosis	venous thromboembolism	EFO_0004286	Exact	I74	DONE	
+Juvenile osteochondrosis of hip and pelvis	Legg-Calvé-Perthes disease	Orphanet_2380	Exact	M91	DONE	
+Encephalitis myelitis and encephalomyelitis	meningoencephalitis	EFO_0007364	Exact	G04	DONE	
+Atrial fibrillation and flutter	atrial fibrillation	EFO_0000275	Exact	I48	DONE	
+Dermatopolymyositis	dermatomyositis	EFO_0000398	Exact	M33	DONE	
+Lack of food	malnutrition	EFO_0008572	Exact	X53	DONE	
+Inflammatory diseases of prostate	prostatitis	EFO_0003830	Exact	N41	DONE	
+Chronic renal failure	chronic kidney disease	EFO_0003884	Exact	N18	DONE	
+Postpolio syndrome	postpoliomyelitis syndrome	EFO_0007454	Exact	G14	DONE	
+Dementia in Alzheimer s disease	Alzheimer's disease	EFO_0000249	Broad	F00	DONE	
+Other disorders of circulatory system in diseases classified elsewhere	cardiovascular disease	EFO_0000319	Broad	I98	DONE	
+Meningitis due to other causes	infectious meningitis	EFO_0000584	Broad	G03	DONE	
+Gestational hypertension with significant proteinuria	preeclampsia	EFO_0000668	Broad	O14	DONE	
+Respiratory disorders in diseases classified elsewhere	respiratory system disease	EFO_0000684	Broad	J99	DONE	
+Vitamin B12 deficiency anaemia	vitamin B12 deficiency	EFO_0000734	Broad	D51	DONE	
+Unspecified arthropod borne viral fever	viral disease	EFO_0000763	Broad	A94	DONE	
+HIV disease resulting in infectious and parasitic diseases	AIDS	EFO_0000765	Broad	B20	DONE	
+Chronic ischaemic heart disease	coronary heart disease	EFO_0001645	Broad	I25	DONE	
+Mental and behavioural disorders due to use of cocaine	cocaine dependence	EFO_0002610	Broad	F14	DONE	
+Benign mammary dysplasia	breast fibrocystic disease	EFO_0003014	Broad	N60	DONE	
+Depressive episode	unipolar depression	EFO_0003761	Broad	F32	DONE	
+Recurrent depressive disorder	unipolar depression	EFO_0003761	Broad	F33	DONE	
+Mental and behavioural disorders due to use of tobacco	nicotine dependence	EFO_0003768	Broad	F17	DONE	
+Mental and behavioural disorders due to use of alcohol	alcohol dependence	EFO_0003829	Broad	F10	DONE	
+Dorsalgia	pain	EFO_0003843	Broad	M54	DONE	
+Disorders of globe	eye disease	EFO_0003966	Broad	H44	DONE	
+Mental and behavioural disorders due to use of cannabinoids	cannabis dependence	EFO_0007191	Broad	F12	DONE	
+Osteochondrodysplasia with defects of growth of tubular bones and spine	osteochondrodysplasia	EFO_0005571	Broad	Q77	DONE	
+Mental and behavioural disorders due to use of opioids	opioid dependence	EFO_0005611	Broad	F11	DONE	
+Mosquito borne viral encephalitis	viral encephalitis	EFO_0007538	Broad	A83	DONE	
+Tick borne viral encephalitis	viral encephalitis	EFO_0007538	Broad	A84	DONE	
+Respiratory tuberculosis confimed	pulmonary tuberculosis	EFO_1000049	Broad	A15	DONE	
+Unspecified lump in breast	breast cyst	EFO_1000848	Broad	N63	DONE	
+Erysipeloid	Erysipelothrix rhusiopathiae infection	EFO_1000928	Broad	A26	DONE	
+Rheumatic fever without mention of heart involvement	rheumatic fever	EFO_1001160	Broad	I00	DONE	
+Pyogenic arthritis	infectious arthritis	EFO_1001351	Broad	M00	DONE	
+Toxic effect of metals	heavy metal poisoning	EFO_1001518	Broad	T56	DONE	
+Staphylococcal scalded skin syndrome	staphylococcal skin infection	EFO_1001849	Broad	L00	DONE	
+Phobic anxiety disorders	phobic disorder	EFO_1001908	Broad	F40	DONE	
+Adult osteomalacia	osteomalacia	EFO_1002027	Broad	M83	DONE	
+Functional disorders of polymorphonuclear neutrophils	Functional neutrophil defect	Orphanet_183681	Broad	D71	DONE	
+Encephalocele	isolated encephalocele	Orphanet_199647	Broad	Q01	DONE	
+Tuberculosis of other organs	tuberculosis	Orphanet_3389	Broad	A18	DONE	
+Localized adiposity	lipedema	Orphanet_77243	Broad	E65	DONE	
+Atopic dermatitis	atopic aczema	EFO_0000274	Exact	L20	DONE	
+Cardiomyopathy	cardiomyopathy	EFO_0000318	Exact	I42	DONE	
+other disorders of circulatory system	cardiovascular disease	EFO_0000319	Exact	I99	DONE	
+Crohn s disease	Crohn's disease	EFO_0000384	Exact	K50	DONE	
+Unspecified diabetes mellitus	diabetes mellitus	EFO_0000400	Exact	E14	DONE	
+Other specified diabetes mellitus	diabetes mellitus	EFO_0000400	Exact	E13	DONE	
+Epilepsy	epilepsy	EFO_0000474	Exact	G40	DONE	
+Glaucoma	glaucoma	EFO_0000516	Exact	H40	DONE	
+Irritable bowel syndrome	irritable bowel syndrome	EFO_0000555	Exact	K58	DONE	
+Schizophrenia	schizophrenia	EFO_0000692	Exact	F20	DONE	
+Ulcerative colitis	ulcerative colitis	EFO_0000729	Exact	K51	DONE	
+Viral infection of unspecified site	viral disease	EFO_0000763	Exact	B34	DONE	
+Myositis	myositis	EFO_0000783	Exact	M60	DONE	
+Other cataract	cataract	EFO_0001059	Exact	H26	DONE	
+Cytomegaloviral disease	cytomegalovirus infection	EFO_0001062	Exact	B25	DONE	
+Endometriosis	endometriosis	EFO_0001065	Exact	N80	DONE	
+Obesity	obesity	EFO_0001073	Exact	E66	DONE	
+Insulin dependent diabetes mellitus	type I diabetes mellitus	EFO_0001359	Exact	E10	DONE	
+Non insulin dependent diabetes mellitus	type II diabetes mellitus	EFO_0001360	Exact	E11	DONE	
+Parkinson s disease	Parkinson's disease	EFO_0002508	Exact	G20	DONE	
+Juvenile arthritis	chronic childhood arthritis	EFO_0002609	Exact	M08	DONE	
+Cellulitis	cellulitis	EFO_0003035	Exact	L03	DONE	
+Cushing s syndrome	Cushing syndrome	EFO_0003099	Exact	E24	DONE	
+Osteomyelitis	osteomyelitis	EFO_0003102	Exact	M86	DONE	
+Spina bifida	spina bifida	EFO_0003105	Exact	Q05	DONE	
+Heart failure	heart failure	EFO_0003144	Exact	I50	DONE	
+Vitamin D deficiency	vitamin D deficiency	EFO_0003762	Exact	E55	DONE	
+Dental caries	dental caries	EFO_0003819	Exact	K02	DONE	
+Migraine	migraine disorder	EFO_0003821	Exact	G43	DONE	
+Pulmonary embolism	pulmonary embolism	EFO_0003827	Exact	I26	DONE	
+Other peripheral vascular diseases	peripheral vascular disease	EFO_0003875	Exact	I73	DONE	
+Multiple sclerosis	multiple sclerosis	EFO_0003885	Exact	G35	DONE	
+Acne	acne	EFO_0003894	Exact	L70	DONE	
+Ankylosing spondylitis	ankylosing spondylitis	EFO_0003898	Exact	M45	DONE	
+Angina pectoris	angina pectoris	EFO_0003913	Exact	I20	DONE	
+Atherosclerosis	atherosclerosis	EFO_0003914	Exact	I70	DONE	
+Gastro oesophageal reflux disease	gastroesophageal reflux disease	EFO_0003948	Exact	K21	DONE	
+Sunburn	sunburn	EFO_0003958	Exact	L55	DONE	
+Cleft lip	cleft lip	EFO_0003959	Exact	Q36	DONE	
+Androgenic alopecia	androgenic alopecia	EFO_0004191	Exact	L64	DONE	
+Alopecia areata	alopecia areata	EFO_0004192	Exact	L63	DONE	
+Vitiligo	vitiligo	EFO_0004208	Exact	L80	DONE	
+Hypospadias	hypospadias	EFO_0004209	Exact	Q54	DONE	
+Otosclerosis	otosclerosis	EFO_0004213	Exact	H80	DONE	
+Conduct disorders	conduct disorder	EFO_0004216	Exact	F91	DONE	
+Male infertility	male infertility	EFO_0004248	Exact	N46	DONE	
+Meningococcal infection	meningococcal infection	EFO_0004249	Exact	A39	DONE	
+Calculus of kidney and ureter	nephrolithiasis	EFO_0004253	Exact	N20	DONE	
+Nephrotic syndrome	nephrotic syndrome	EFO_0004255	Exact	N04	DONE	
+Osteonecrosis	osteonecrosis	EFO_0004259	Exact	M87	DONE	
+Paget s disease of bone	osteitis deformans	EFO_0004261	Exact	M88	DONE	
+Other anaemias	anemia	EFO_0004272	Exact	D64	DONE	
+Gout	gout	EFO_0004274	Exact	M10	DONE	
+Diabetes mellitus in pregnancy	gestational diabetes	EFO_0004593	Exact	O24	DONE	
+Duodenal ulcer	duodenal ulcer	EFO_0004607	Exact	K26	DONE	
+Cholelithiasis	cholelithiasis	EFO_0004799	Exact	K80	DONE	
+Leishmaniasis	Leishmaniasis	EFO_0005044	Exact	B55	DONE	
+Eating disorders	eating disorder	EFO_0005203	Exact	F50	DONE	
+Hypotension	hypotension	EFO_0005251	Exact	I95	DONE	
+Unspecified contact dermatitis	contact dermatitis	EFO_0005319	Exact	L25	DONE	
+Schizoaffective disorders	schizoaffective disorder	EFO_0005411	Exact	F25	DONE	
+Urticaria	urticaria	EFO_0005531	Exact	L50	DONE	
+Seborrhoeic keratosis	seborrheic keratosis	EFO_0005584	Exact	L82	DONE	
+Shigellosis	shingellosis	EFO_0005585	Exact	A03	DONE	
+Other vitamin deficiencies	vitamin deficiency	EFO_0005878	Exact	E56	DONE	
+Zoster	Herpes Zoster	EFO_0006510	Exact	B02	DONE	
+Pyoderma gangrenosum	pyoderma gangrenosum	EFO_0006835	Exact	L88	DONE	
+Decubitus ulcer	decubitus ulcer	EFO_0007067	Exact	L89	DONE	
+Actinomycosis	actinomycosis	EFO_0007128	Exact	A42	DONE	
+Amoebiasis	amebiasis	EFO_0007144	Exact	A06	DONE	
+Unspecified appendicitis	appendicitis	EFO_0007149	Exact	K37	DONE	
+Ascariasis	ascariasis	EFO_0007154	Exact	B77	DONE	
+Aspergillosis	aspergillosis	EFO_0007157	Exact	B44	DONE	
+Varicella	chickenpox	EFO_0007204	Exact	B01	DONE	
+Cryptococcosis	cryptococcosis	EFO_0007229	Exact	B45	DONE	
+Echinococcosis	echinococcosis	EFO_0007245	Exact	B67	DONE	
+Enterobiasis	enterobiasis	EFO_0007254	Exact	B80	DONE	
+Granuloma inguinale	granuloma inguinale	EFO_0007291	Exact	A58	DONE	
+Histoplasmosis	histoplasmosis	EFO_0007310	Exact	B39	DONE	
+Infectious mononucleosis	infectious mononucleosis	EFO_0007326	Exact	B27	DONE	
+Leptospirosis	leptospirosis	EFO_0007344	Exact	A27	DONE	
+Listeriosis	listeriosis	EFO_0007347	Exact	A32	DONE	
+Miliary tuberculosis	miliary tuberculosis	EFO_0007368	Exact	A19	DONE	
+Myiasis	myiasis	EFO_0007389	Exact	B87	DONE	
+Optic neuritis	optic neuritis	EFO_0007405	Exact	H46	DONE	
+Placenta praevia	placenta praevia	EFO_0007442	Exact	O44	DONE	
+Plasmodium falciparum malaria	Plasmodium falciparum malaria	EFO_0007444	Exact	B50	DONE	
+Plasmodium vivax malaria	Plasmodium vivax malaria	EFO_0007445	Exact	B51	DONE	
+Acute poliomyelitis	poliomyelitis	EFO_0007450	Exact	A80	DONE	
+Scarlet fever	scarlet fever	EFO_0007477	Exact	A38	DONE	
+Strongyloidiasis	strongyloidiasis	EFO_0007501	Exact	B78	DONE	
+Suppurative and unspecified otitis media	suppurative otitis media	EFO_0007503	Exact	H66	DONE	
+other syphilis	syphilis	EFO_0007504	Exact	A53	DONE	
+Toxoplasmosis	toxoplasmosis	EFO_0007517	Exact	B58	DONE	
+Yaws	yaws	EFO_0007548	Exact	A66	DONE	
+Status epilepticus	status epilepticus	EFO_0008526	Exact	G41	DONE	
+Fracture of femur	femur fracture	EFO_0008553	Exact	S72	DONE	
+Diaphragmatic hernia	diaphragmatic hernia	EFO_0008561	Exact	K44	DONE	
+Niacin deficiency	vitamin B3 deficiency	EFO_0008570	Exact	E52	DONE	
+Gangrene	gangrene	EFO_0008574	Exact	R02	DONE	
+Acute myocardial infarction	acute myocardial infarction	EFO_0008583	Exact	I21	DONE	
+Subsequent myocardial infarction	Subsequent ST elevation (STEMI) and non-ST elevation (NSTEMI) myocardian infarction	EFO_0008584	Exact	I22	DONE	
+Peritonitis	peritonitis	EFO_0008588	Exact	K65	DONE	
+Diseases of spleen	splenic disease	EFO_0009002	Exact	D73	DONE	
+Typhus fever	typhus	EFO_0009117	Exact	A75	DONE	
+Other diseases of intestine	intestinal disease	EFO_0009431	Exact	K63	DONE	
+Fibroblastic disorders	fibroblastic disorder	EFO_0009432	Exact	M72	DONE	
+Unspecified acute lower respiratory infection	lower respiratory tract disease	EFO_0009433	Exact	J22	DONE	
+Other ill defined and unspecified causes of mortality	death by undetermined cause	EFO_0009434	Exact	R99	DONE	
+Cystitis	cystitis	EFO_1000025	Exact	N30	DONE	
+Lactose intolerance	lactose intolerance	EFO_1000062	Exact	E73	DONE	
+Thyroiditis	thyroid disease	EFO_1000627	Exact	E06	DONE	
+Acute pancreatitis	acute pancreatitis	EFO_1000652	Exact	K85	DONE	
+Acanthosis nigricans	acanthosis nigricans	EFO_1000660	Exact	L83	DONE	
+Allergic contact dermatitis	allergic contact dermatitis	EFO_1000668	Exact	L23	DONE	
+Cholesteatoma of middle ear	cholesteatoma of middle ear	EFO_1000678	Exact	H71	DONE	
+Erythema multiforme	erythema multiforme	EFO_1000694	Exact	L51	DONE	
+Hyperhidrosis	hypohidrosis	EFO_1000712	Exact	R61	DONE	
+Impetigo	impetigo	EFO_1000714	Exact	L01	DONE	
+Irritant contact dermatitis	irritant dermatitis	EFO_1000718	Exact	L24	DONE	
+Lichen planus	lichen planus	EFO_1000726	Exact	L43	DONE	
+Parapsoriasis	parapsoriasis	EFO_1000747	Exact	L41	DONE	
+Pemphigus	pemphigus	EFO_1000749	Exact	L10	DONE	
+Pityriasis rosea	pityriasis rosea	EFO_1000756	Exact	L42	DONE	
+Rosacea	rosacea	EFO_1000760	Exact	L71	DONE	
+Seborrhoeic dermatitis	seborrheic dermatitis	EFO_1000764	Exact	L21	DONE	
+Atrophic disorders of skin	skin atrophy	EFO_1000766	Exact	L90	DONE	
+Coxarthrosis	osteoarthritis, hip	EFO_1000786	Exact	M16	DONE	
+Coalworker s pneumoconiosis	anthracosis	EFO_1000814	Exact	J60	DONE	
+Ascorbic acid deficiency	ascorbic acid deficiency	EFO_1000822	Exact	E54	DONE	
+Bacterial meningitis	bacterial meningitis	EFO_1000831	Exact	G00	DONE	
+Dysplasia of cervix uteri	dysplasia of cervix	EFO_1000910	Exact	N87	DONE	
+Habitual aborter	habitual abortion	EFO_1000954	Exact	N96	DONE	
+Other rickettsioses	rickettsiosis	EFO_1001162	Exact	A79	DONE	
+Secondary parkinsonism	secondary Parkinson disease	EFO_1001175	Exact	G21	DONE	
+Viral meningitis	viral meningitis	EFO_1001236	Exact	A87	DONE	
+Vitamin A deficiency	vitamin A deficiency	EFO_1001237	Exact	E50	DONE	
+Spontaneous abortion	spontaneous abortion	EFO_1001255	Exact	O03	DONE	
+Phlebitis and thrombophlebitis	phlebitis || Thrombophlebitis	EFO_1001395, HP_0004418	Exact	I80	DONE	
+Unspecified renal colic	renal colic	EFO_1001412	Exact	N23	DONE	
+Taeniasis	taeniasis	EFO_1001433	Exact	B68	DONE	
+Synovitis and tenosynovitis	tenosynovitis	EFO_1001435	Exact	M65	DONE	
+Schistosomiasis	schistosomiasis	EFO_1001475	Exact	B65	DONE	
+Unspecified abortion	abortion	EFO_1001491	Exact	O06	DONE	
+Femoral hernia	femoral hernia	EFO_1001791	Exact	K41	DONE	
+Ventral hernia	ventral hernia	EFO_1001866	Exact	K43	DONE	
+Amyloidosis	amyloidosis	EFO_1001875	Exact	E85	DONE	
+Cicatricial alopecia	cicatrical alopecia	EFO_1002028	Exact	L66	DONE	
+Other disorders of nervous system	nervous system disease	EFO_0000618	Exact	G98	DONE	
+Polyuria	polyuria	HP_0000103	Exact	R35	DONE	
+Pruritus	prutitus	HP_0000989	Exact	L29	DONE	
+Nausea and vomiting	nausea and vomiting	HP_0002017	Exact	R11	DONE	
+Peptic ulcer site unspecified	peptic ulcer	HP_0004398	Exact	K27	DONE	
+Erythema nodosum	erythema nodosum	HP_0012219	Exact	L52	DONE	
+Oesophagitis	esophagitis	HP_0100633	Exact	K20	DONE	
+Common variable immunodeficiency	common variable immunodeficiency	Orphanet_1572	Exact	D83	DONE	
+Adrenogenital disorders	adrenogenital syndrome	Orphanet_181412	Exact	E25	DONE	
+Sickle cell disorders	sickle cell anemia	Orphanet_232	Exact	D57	DONE	
+Congenital malformations of great veins	congenital anomaly of the great veins	Orphanet_363189	Exact	Q26	DONE	
+Huntington s disease	Huntington disease	Orphanet_399	Exact	G10	DONE	
+Cystic fibrosis	cystic fibrosis	Orphanet_586	Exact	E84	DONE	
+Hypertrichosis	Hypertrichosis	Orphanet_79365	Exact	L68	DONE	
+Sarcoidosis	sarcoidosis	Orphanet_797	Exact	D86	DONE	
+Turner s syndrome	Turner syndrome	Orphanet_881	Exact	Q96	DONE	
+Congenital malformations of great arteries	congenital anomaly of the great arteries	Orphanet_98724	Exact	Q25	DONE	
+Hereditary factor VIII deficiency	hemophilia A	Orphanet_98878	Exact	D66	DONE	
+Hereditary factor IX deficiency	hemophilia B	Orphanet_98879	Exact	D67	DONE	
+Congenital malformations of cardiac chambers and connections	congenital heart malformation	EFO_0005269	Broad	Q20	DONE	
+Acute nephritic syndrome	nephritis	EFO_1002050	Broad	N00	DONE	
+Keratitis	keratitis	EFO_0009449	Exact	H16	DONE	
+Conjunctivitis	conjunctivitis	EFO_0009450	Exact	H10	DONE	
+Hypoparathyroidism	hypoparathyroidism	EFO_0009451	Exact	E20	DONE	
+Hyperaldosteronism	hyperaldosteonism	EFO_0009452	Exact	E26	DONE	
+Hemiplegia	hemiplagia	EFO_0009453	Exact	G81	DONE	
+Gastric ulcer	gastric ulcer	EFO_0009454	Exact	K25	DONE	
+Disorders of lacrimal system	lacrimal apparatus disease	EFO_0009455	Exact	H04	DONE	
+Exfoliative dermatitis	exfoliative dermatitis	EFO_0009456	Exact	L26	DONE	
+Apocrine sweat disorders	apocrine sweat gland disease	EFO_1002046	Exact	L75	DONE	
+Spotted fever	spotted fever	EFO_1002047	Exact	A77	DONE	
+Unspecified nephritic syndrome	nephritis	EFO_1002050	Exact	N05	DONE	
+Facial nerve disorders	facial nerve disease	EFO_1002051	Exact	G51	DONE	
+Essential primary hypertension	primary hypertension	EFO_1002032	Exact	I10	DONE	
+Congenital malformations of uterus and cervix	Abnormality of female internal genitalia	HP_0000008	Broad	Q51	DONE	
+Abnormal findings in specimens from female genital organs	Abnormality of female internal genitalia	HP_0000008	Broad	R87	DONE	
+Other congenital malformations of male genital organs	Abnormality of male internal genitalia	HP_0000022	Broad	Q55	DONE	
+Abnormal findings in specimens from male genital organs	Abnormality of male internal genitalia	HP_0000022	Broad	R86	DONE	
+Congenital lens malformations	Abnormality of the lens	HP_0000517	Broad	Q12	DONE	
+Congenital malformations of eyelid lacrimal apparatus and orbit	Abnormal nasolacrimal system morphology	HP_0000614	Broad	Q10	DONE	
+Enduring personality changes not attributable to brain damage and disease	Personality changes	HP_0000751	Broad	F62	DONE	
+Congenital malformations of breast	Abnormality of the breast	HP_0000769	Broad	Q83	DONE	
+Unspecified jaundice	jaundice	HP_0000952	Exact	R17	DONE	
+Iridocyclitis	iridocyclitis	HP_0001094	Exact	H20	DONE	
+Abnormalities of gait and mobility	gait disturbance	HP_0001288	Broad	R26	DONE	
+Hypoglycemic coma	hypoglycemic coma	HP_0001325	Broad	E15	DONE	
+Hepatic failure	hepatic failure	HP_0001399	Exact	K72	DONE	
+Umbilical hernia	umbilical hernia	HP_0001537	Exact	K42	DONE	
+Polyhydramnios	polyhydramnios	HP_0001561	Exact	O40	DONE	
+cardiac arrest	cardiac arrest	EFO_0009492	Exact	I46	DONE	
+Congenital deformities of feet	Abnormality of the foot	HP_0001760	Broad	Q66	DONE	
+Abnormalities of forces of labour	Abnormal delivery	HP_0001787	Broad	O62	DONE	
+Other assisted single delivery	Abnormal delivery	HP_0001787	Broad	O83	DONE	
+Multiple delivery	Abnormal delivery	HP_0001787	Broad	O84	DONE	
+Abnormality of red blood cells	abnormal erythrocyte morphology	HP_0001877	Exact	R71	DONE	
+Abnormal leukocyte morphology	abnormal leukocyte morphology	HP_0001881	Broad	R72	DONE	
+Hypothermia	hypothermia	HP_0002045	Exact	T68	DONE	
+Lymphadenopathy	lymphadenopathy	HP_0002716	Exact	R59	DONE	
+Abnormal findings in cerebrospinal fluid	abnormality of the cerebrospinal fluid	HP_0002921	Exact	R83	DONE	
+Glycosuria	glycosuria	HP_0003076	Exact	R81	DONE	
+Congenital malformations of posterior segment of eye	Abnormal morphology of the posterior segment of the globe	HP_0004329	Broad	Q14	DONE	
+Abnormality of aromatic amino acid family metabolism	abnormality of aromatic amino acid family metabolism	HP_0004338	Broad	E70	DONE	
+Abnormality of glycoprotein metabolism	abnormality of glycoprotein metabolism	HP_0004367	Exact	E77	DONE	
+Abnormality of glycosaminoglycan metabolism	abnormality of glycosaminoglycan metabolism	HP_0004371	Exact	E76	DONE	
+Congenital septal defect	Abnormal cardiac septum morphology	HP_0001671	Exact	Q21	DONE	
+Abscess of anal and rectal regions	Rectal abscess	HP_0005224	Broad	K61	DONE	
+Abnormalities of breathing	Breathing dysregulation	HP_0005957	Broad	R06	DONE	
+Paroxysmal tachycardia	paroxysmal tachycardia	EFO_0009493	Exact	I47	DONE	
+Congenital malformations of anterior segment of eye	Anterior segment developmental abnormality	HP_0007700	Exact	Q13	DONE	
+Gynecomastia	breast hypertrophy	HP_0010313	Exact	N62	DONE	
+Polydactyly	polydactyly	Orphanet_2913	Exact	Q69	DONE	
+Pilonidal cyst	Pilonidal asbcess	HP_0010771	Broad	L05	DONE	
+Congenital obstructive defects of renal pelvis and congenital malformations of ureter	Abnormality of the renal pelvis  || Abnormality of the ureter	HP_0010944, HP_0000069	Exact	Q62	DONE	
+Single delivery by forceps and vacuum extractor	Forceps delivery	HP_0011411	Broad	O81	DONE	
+Personality disorder	Personality disorder	HP_0012075	Broad	F60	DONE	
+Mixed and other personality disorders	Personality disorder	HP_0012075	Exact	F61	DONE	
+Acquired pure red cell aplasia	Pure red cell aplasia	HP_0012410	Exact	D60	DONE	
+Chorioretinitis	chorioretinitis	HP_0012424	Exact	H30	DONE	
+Other congenital malformations of upper alimentary tract	Morphological abnormality of the gastrointestinal tract	HP_0012718	Broad	Q40	DONE	
+Congenital malformations of larynx	Abnormal larynx morphology	HP_0025423	Exact	Q31	DONE	
+Cervicitis	cervicitis	HP_0030160	Broad	N72	DONE	
+Portal vein thrombosis	portal vein thrombosis	HP_0030242	Exact	I81	DONE	
+Cutaneous abscess furuncle and carbuncle	Cutaneous abscess	HP_0031292	Broad	L02	DONE	
+Congenital malformations of ear causing impairment of hearing	Abnormal ear morphology  || Hearing loss	HP_0031703, EFO_0004238	Broad	Q16	DONE	
+Other congenital malformations of ear	Abnormal ear morphology	HP_0031703	Exact	Q17	DONE	
+Abnormality of movement	abnormality of movement	HP_0100022	Broad	R25	DONE	
+Calcification and ossification of muscle	Calcification of muscles	HP_0100249	Broad	M61	DONE	
+Eclampsia	eclampsia	HP_0100601	Exact	O15	DONE	
+Other mosquito borne viral fevers	mosquito-borne hemorragic fever	EFO_0009575	Exact	A92	DONE	
+Internal derangement of knee	knee injury	EFO_0009507	Broad	M23	DONE	
+Fistulae involving female genital tract	female genital tract fistula	EFO_0009524	Exact	N82	DONE	
+Multiple gestation	multiple gestation	EFO_0009576	Exact	O30	DONE	
+Postpartum haemorrhage	postpartum hemorrhage	EFO_0009579	Exact	O72	DONE	
+Retained placenta and membranes without haemorrhage	placental retention	EFO_0009578	Exact	O73	DONE	
+Faecal incontinence	fecal incontinence	EFO_0009523	Exact	R15	DONE	
+Disturbances of skin sensation	disturbance of skin sensation	EFO_0009522	Exact	R20	DONE	
+Abnormal results of function studies	N/A	EFO_0009628	Exact	R94	DONE	
+Superficial injury of head	head injury	EFO_0009505	Broad	S00	DONE	
+Crushing injury of head	crush injury	EFO_0009504	Broad	S07	DONE	
+Crushing injury of head	head injury	EFO_0009505	Broad	S07	DONE	
+Injury of heart	heart injury	EFO_0009506	Exact	S26	DONE	
+Superficial injury of abdomen lower back and pelvis	abdominal injury	EFO_0009502	Narrow	S30	DONE	
+Injury of intra abdominal organs	abdominal injury	EFO_0009502	Broad	S36	DONE	
+Crushing injury of shoulder and upper arm	crush injury	EFO_0009504	Broad	S47	DONE	
+Fracture at wrist and hand level	wrist fracture	EFO_0009515	Narrow	S62	DONE	
+Open wound of hip and thigh	leg injury	EFO_0009508	Broad	S71	DONE	
+Injury of nerves at hip and thigh level	leg injury	EFO_0009508	Broad	S74	DONE	
+Injury of nerves at hip and thigh level	peripheral nerve injury	EFO_0009510	Broad	S74	DONE	
+Injury of blood vessels at hip and thigh level	leg injury	EFO_0009508	Broad	S75	DONE	
+Other and specified injuries of hip and thigh	leg injury	EFO_0009508	Broad	S79	DONE	
+Injury of nerves at lower leg level	leg injury	EFO_0009508	Broad	S84	DONE	
+Injury of nerves at lower leg level	peripheral nerve injury	EFO_0009510	Broad	S84	DONE	
+Fractures involving multiple body regions	multiple bone fractures	EFO_0009513	Exact	T02	DONE	
+Dislocations sprains and strains involving multiple body regions	dislocation	EFO_0009521	Narrow	T03	DONE	
+Dislocations sprains and strains involving multiple body regions	sprain	EFO_0009582	Narrow	T03	DONE	
+Crushing injuries involving multiple body regions	crush injury	EFO_0009504	Broad	T04	DONE	
+Fracture of upper limb level unspecified	upper extremity fracture	EFO_0009514	Exact	T10	DONE	
+Other injuries of upper limb level unspecified	limb injury	EFO_0009509	Broad	T11	DONE	
+Fracture of lower limb level unspecified	lower extremity fracture	EFO_0009512	Exact	T12	DONE	
+Other injuries of lower limb level unspecified	leg injury	EFO_0009508	Exact	T13	DONE	
+Foreign body in ear	foreign body	EFO_0009525	Broad	T16	DONE	
+Foreign body in alimentary tract	foreign body in gastrointestinal tract	EFO_0009526	Exact	T18	DONE	
+Burn and corrosion of ankle and foot	burn	EFO_0009516	Broad	T25	DONE	
+Burn and corrosion of ankle and foot	caustic injury	EFO_0009503	Broad	T25	DONE	
+Burns and corrosions of multiple body regions	burn	EFO_0009516	Broad	T29	DONE	
+Burns and corrosions of multiple body regions	caustic injury	EFO_0009503	Broad	T29	DONE	
+Burns classified according to extent of body surface involved	burn	EFO_0009516	Exact	T31	DONE	
+Frostbite involving multiple body regions and unspecified frostbite	frostbite	EFO_0009527	Broad	T35	DONE	
+Toxic effect of organic solvents	intoxication	EFO_0009574	Broad	T52	DONE	
+Toxic effect of soaps and detergents	intoxication	EFO_0009574	Broad	T55	DONE	
+Toxic effect of other gases fumes and vapours	intoxication	EFO_0009574	Broad	T59	DONE	
+Toxic effect of pesticides	intoxication	EFO_0009574	Broad	T60	DONE	
+Complications following infusion transfusion and therapeutic injection	complication	EFO_0009518	Broad	T80	DONE	
+Complications of cardiac and vascular prosthetic devices implants and grafts	device complication	EFO_0009519	Broad	T82	DONE	
+Complications of genitourinary prosthetic devices implants and grafts	device complication	EFO_0009519	Broad	T83	DONE	
+Complications of internal orthopaedic prosthetic devices implants and grafts	device complication	EFO_0009519	Broad	T84	DONE	
+Complications of other internal prosthetic devices implants and grafts	device complication	EFO_0009519	Broad	T85	DONE	
+Sequelae of injuries of head	head injury	EFO_0009505	Broad	T90	DONE	
+Sequelae of injuries of upper limb	limb injury	EFO_0009509	Broad	T92	DONE	
+Sequelae of injuries of lower limb	leg injury	EFO_0009508	Broad	T93	DONE	
+Sequelae of burns corrosions and frostbite	burn	EFO_0009516	Broad	T95	DONE	
+Sequelae of burns corrosions and frostbite	caustic injury	EFO_0009503	Broad	T95	DONE	
+Sequelae of burns corrosions and frostbite	frostbite	EFO_0009527	Narrow	T95	DONE	
+Unspecified fall	N/A	EFO_0009631	Exact	W19	DONE	
+Routine general health check up of defined subpopulation	checkup	EFO_0009517	Exact	Z10	DONE	
+Contraceptive management	contraception	EFO_0009520	Exact	Z30	DONE	
+Supervision of high risk pregnancy	high-risk pregnancy	EFO_0009573	Narrow	Z35	DONE	
+Prophylactic surgery	prophylactic surgery	EFO_0009580	Exact	Z40	DONE	
+Other orthopaedic follow up care	orthopedic nursing	EFO_0009577	Broad	Z47	DONE	
+Care involving use of rehabilitation procedures	rehabilitation	EFO_0009581	Exact	Z50	DONE	
+Disorders of mineral metabolism	mineral metabolism disease	EFO_0009556	Exact	E83	DONE	
+Other disorders of eye and adnexa in diseases classified elsewhere	eye adnexa disease	EFO_0009546	Broad	H58	DONE	
+Nonrheumatic tricuspid valve disorders	tricuspid valve disease	EFO_0009568	Broad	I36	DONE	
+Disorders of sclera and cornea in diseases classified elsewhere	corneal disease	EFO_0009464	Broad	H19	DONE	
+Other disorders of cornea	corneal disease	EFO_0009464	Exact	H18	DONE	
+uremia	kidney failure	EFO_1002048	Exact	N19	DONE	
+Oesophageal varices	esophageal varices	EFO_0009545	Exact	I85	DONE	
+Disorders of autonomic nervous system	autonomic nervous system disease	EFO_0009532	Exact	G90	DONE	
+marasmus	protein energy malnutrition	EFO_0009563	Exact	E46	DONE	
+Mononeuropathies of upper limb	mononeuropathy	EFO_0009558	Broad	G56	DONE	
+Mononeuropathies of lower limb	mononeuropathy	EFO_0009558	Broad	G57	DONE	
+Other disorders of binocular movement	binocular vision disease	EFO_0009535	Broad	H51	DONE	
+Inflammatory disease of uterus except cervix	uterine inflammatory disease	EFO_0009572	Exact	N71	DONE	
+Polyneuropathy in diseases classified elsewhere	polyneuropathy	EFO_0009562	Broad	G63	DONE	
+Noninflammatory disorders of ovary fallopian tube and broad ligament	fallopian tube disease	EFO_0009548	Broad	N83	DONE	
+Pain and other conditions associated with female genital organs and menstrual cycle	female reproductive system disease	EFO_0009549	Broad	N94	DONE	
+Anuria and oliguria	anuria	EFO_0009530	Broad	R34	DONE	
+Multiple valve diseases	heart valve disease	EFO_0009551	Broad	I08	DONE	
+Disorders of male genital organs in diseases classified elsewhere	male reproductive system disease	EFO_0009555	Broad	N51	DONE	
+Obstructive and reflux uropathy	urinary tract obstruction	EFO_0009571	Broad	N13	DONE	
+Disorders of eyelid in diseases classified elsewhere	eyelid disease	EFO_0009547	Broad	H03	DONE	
+Diseases of pulp and periapical tissues	dental pulp disease	EFO_0009540	Broad	K04	DONE	
+Disorders of trigeminal nerve	trigeminal nerve disease	EFO_0009569	Exact	G50	DONE	
+Pulmonary valve disorders	pulmonary valve disease	EFO_0009564	Exact	I37	DONE	
+Other disorders of tympanic membrane	tympanic membrane disease	EFO_0009570	Exact	H73	DONE	
+Other diseases of oesophagus	esophageal disease	EFO_0009544	Exact	K22	DONE	
+Nonrheumatic mitral valve disorders	mitral valve disease	EFO_0009557	Broad	I34	DONE	
+Rheumatic aortic valve diseases	aortic valve disease	EFO_0009531	Broad	I06	DONE	
+Nonrheumatic aortic valve disorders	aortic valve disease	EFO_0009531	Broad	I35	DONE	
+Other degenerative diseases of basal ganglia	basal ganglia disease	EFO_0009533	Broad	G23	DONE	
+Other inflammation of eyelid	blepharitis	EFO_0009536	Exact	H01	DONE	
+Otitis externa	otitis externa	EFO_0009560	Exact	H60	DONE	
+Other diseases of biliary tract	biliary tract disease	EFO_0009534	Exact	K83	DONE	
+Haemorrhoids	hemorrhoid	EFO_0009552	Exact	I84	DONE	
+Arthrosis of first carpometacarpal joint	joint disease	EFO_1000999	Broad	M18	DONE	
+Inflammatory polyneuropathy	chronic inflammatory demyelinating polyneuropathy	EFO_0009538	Broad	G61	DONE	
+Congenital malformations of aortic and mitral valves	congenital mitral malformation	EFO_0009539	Broad	Q23	DONE	
+HIV disease resulting in malignant neoplasms	HIV-associated cancer	EFO_0009553	Exact	B21	DONE	
+Anaemia due to enzyme disorders	anemia due to enzyme disorder	EFO_0009529	Exact	D55	DONE	
+Other disorders of peritoneum	disease of peritoneum	EFO_0009541	Exact	K66	DONE	
+Intestinal malabsorption	malabsorption syndrome	EFO_0009554	Broad	K90	DONE	
+Other headache syndromes	headache disorder	EFO_0009550	Exact	G44	DONE	
+Disorders resulting from impaired renal tubular function	renal tubule disease	EFO_0009566	Broad	N25	DONE	
+Unspecified intestinal parasitism	parasitic intestinal disease	EFO_0009561	Exact	B82	DONE	
+Nerve root and plexus disorders	nerve plexus disease	EFO_0009559	Exact	G54	DONE	
+HIV disease resulting in other specified diseases	AIDS-related disorder	EFO_0009528	Broad	B22	DONE	
+HIV disease resulting in other conditions	AIDS-related disorder	EFO_0009528	Broad	B23	DONE	
+Skin changes due to chronic exposure to nonionizing radiation	radiation-induced disorder	EFO_0009565	Broad	L57	DONE	
+Cervical disc disorders	cervical disc degenerative disease	EFO_0009537	Broad	M50	DONE	
+Other diseases of appendix	disorder of appendix	EFO_0009542	Exact	K38	DONE	
+Small kidney of unknown cause	small kidney	EFO_0009471	Exact	N27	DONE	
+Perforation of tympanic membrane	tympanic membrane perforation	EFO_0009472	Exact	H72	DONE	
+Other spirochaetal infections	Spirochaetales Infections	EFO_0009567	Exact	A69	DONE	
+Disturbances of smell and taste	disturbances of sensation of smell and taste	EFO_0009543	Exact	R43	DONE	
+Other diseases of jaws	jaw disease	EFO_0009468	Exact	K10	DONE	
+Diseases of Bartholin s gland	Bartholin's gland disease	EFO_0009469	Exact	N75	DONE	
+Soft tissue disorders related to use overuse and pressure	soft tissue disease	EFO_0009470	Broad	M70	DONE	
+Soft tissue disorders in diseases classified elsewhere	soft tissue disease	EFO_0009470	Broad	M73	DONE	
+Waist circumference	waist circumference	EFO_0004342	Exact	48	DONE	
+Hip circumference	hip circumference	EFO_0005093	Exact	49	DONE	
+Standing height	body height	EFO_0004339	Exact	50	DONE	
+Pulse rate, automated reading	heart rate	EFO_0004326	Broad	102	DONE	
+Sleep duration	sleep duration	EFO_0005271	Exact	1160	DONE	
+Morning/evening person (chronotype)	chronotype measurement	EFO_0008328	Exact	1180	DONE	
+Sleeplessness / insomnia	insomnia	EFO_0004698	Exact	1200	DONE	
+Snoring	snoring measurement	EFO_0008341	Exact	1210	DONE	
+Alcohol intake frequency.	alcohol consumption measurement	EFO_0007878	Exact	1558	DONE	
+Mood swings	mood swings	HP_0000720	Exact	1920	DONE	
+Irritability	irritability	HP_0000737	Exact	1940	DONE	
+Loneliness, isolation	loneliness measurement	EFO_0007865	Exact	2020	DONE	
+Frequency of tiredness / lethargy in last 2 weeks	tiredness measurement	EFO_0007946	Exact	2080	DONE	
+Hearing difficulty/problems with background noise	hearing loss	EFO_0004238	Exact	2257	DONE	
+Chest pain or discomfort	chest pain	HP_0100749	Exact	2335	DONE	
+Relative age voice broke	age at voice drop	EFO_0007888	Exact	2385	DONE	
+Age when periods started (menarche)	age at menarche	EFO_0004703	Exact	2714	DONE	
+Had menopause	menopause	EFO_0003922	Exact	2724	DONE	
+Forced vital capacity (FVC)	vital capacity	EFO_0004312	Exact	3062	DONE	
+Forced expiratory volume in 1-second (FEV1)	forced expiratory volume	EFO_0004314	Broad	3063	DONE	
+Neck/shoulder pain for 3+ months	shoulder pain  || neck pain	HP_0030834, HP_0030833	Broad	3404	DONE	
+Hip pain for 3+ months	hip pain	HP_0030838	Broad	3414	DONE	
+Back pain for 3+ months	back pain	HP_0003418	Broad	3571	DONE	
+Ever had hysterectomy (womb removed)	hysterectomy	EFO_0003881	Broad	3591	DONE	
+Length of menstrual cycle	menstrual cycle measurement	EFO_0007786	Exact	3710	DONE	
+Stomach/abdominal pain for 3+ months	pain in abdomen	EFO_0003766	Exact	3741	DONE	
+Headaches for 3+ months	headache disorder  || headache	EFO_0009550, HP_0002315	Exact	3799	DONE	
+Gestational diabetes only	gestational diabetes	EFO_0004593	Exact	4041	DONE	
+Diastolic blood pressure, automated reading	diastolic blood pressure	EFO_0006336	Exact	4079	DONE	
+Systolic blood pressure, automated reading	systolic blood pressure	EFO_0006335	Exact	4080	DONE	
+Pulse rate	heart rate	EFO_0004326	Exact	4194	DONE	
+Leg pain on walking	lower limb pain	HP_0012514	Broad	4728	DONE	
+Leg pain when standing still or sitting	lower limb pain	HP_0012514	Broad	5452	DONE	
+Leg pain in calf/calves	lower limb pain	HP_0012514	Broad	5463	DONE	
+Chest pain felt during physical activity	chest pain	HP_0100749	Broad	6015	DONE	
+Chest pain felt outside physical activity	chest pain	HP_0100749	Broad	6016	DONE	
+Maximum heart rate during fitness test	heart rate response to exercise	EFO_0009184	Exact	6033	DONE	
+Fluid intelligence score	intelligence	EFO_0004337	Exact	20016	DONE	
+Birth weight	birth weight	EFO_0004344	Exact	20022	DONE	
+Bipolar disorder status	bipolar disorder	EFO_0000289	Exact	20122	DONE	
+Neuroticism score	neuroticism measurement	EFO_0007660	Exact	20127	DONE	
+Forced expiratory volume in 1-second (FEV1), Best measure	forced expiratory volume	EFO_0004314	Broad	20150	DONE	
+Forced vital capacity (FVC), Best measure	vital capacity	EFO_0004312	Exact	20151	DONE	
+Body mass index (BMI)	body mass index	EFO_0004340	Exact	21001	DONE	
+Weight	body weight	EFO_0004338	Exact	21002	DONE	
+Pulse wave Arterial Stiffness index	arterial stiffness measurement	EFO_0004517	Exact	21021	DONE	
+hayfever or allergic rhinitis	seasonal allergic rhinitis	EFO_0003956	Exact	22126	DONE	
+asthma	asthma	EFO_0000270	Exact	22127	DONE	
+emphysema	emphysema	EFO_0000464	Exact	22128	DONE	
+chronic bronchitis	chronic bronchitis	EFO_0006505	Exact	22129	DONE	
+COPD (chronic obstructive pulmonary disease)	chronic obstructive pulmonary disease	EFO_0000341	Exact	22130	DONE	
+sarcoidosis	sarcoidosis	Orphanet_797	Exact	22133	DONE	
+bronchiectasis	bronchiectasis	HP_0002110	Exact	22134	DONE	
+idiopathic pulmonary fibrosis	idiopathic pulmonary fibrosis	EFO_0000768	Exact	22135	DONE	
+tuberculosis	tuberculosis	Orphanet_3389	Exact	22137	DONE	
+lung cancer (not mesothelioma)	lung carcinoma	EFO_0001071	Narrow	22140	DONE	
+Body fat percentage	body fat percentage	EFO_0007800	Exact	23099	DONE	
+Whole body fat mass	fat body mass	EFO_0005409	Exact	23100	DONE	
+Whole body fat-free mass	lean body mass	EFO_0004995	Exact	23101	DONE	
+Basal metabolic rate	base metabolic rate measurement	EFO_0007777	Exact	23105	DONE	
+Potassium in urine	abnormal urine potassium concentration	HP_0012598	Exact	30520	DONE	
+Sodium in urine	abnormal urine sodium concentration	HP_0012603	Exact	30530	DONE	
+Age at death	age at death	EFO_0005056	Exact	40007	DONE	
+lung cancer	lung carcinoma	EFO_0001071	Narrow	20001_1001	DONE	
+breast cancer	breast carcinoma	EFO_0000305	Narrow	20001_1002	DONE	
+skin cancer	skin carcinoma	EFO_0009259	Narrow	20001_1003	DONE	
+cancer of lip/mouth/pharynx/oral cavity	oral cavity cancer	EFO_0005570	Exact	20001_1004	DONE	
+larynx/throat cancer	laryngeal neoplasm	EFO_0003817	Broad	20001_1006	DONE	
+tongue cancer	tongue neoplasm	EFO_0003871	Broad	20001_1011	DONE	
+oesophageal cancer	esophageal carcinoma	EFO_0002916	Narrow	20001_1017	DONE	
+stomach cancer	stomach neoplasm	EFO_0003897	Broad	20001_1018	DONE	
+small intestine/small bowel cancer	small intestine carcinoma	EFO_0005588	Narrow	20001_1019	DONE	
+large bowel cancer/colorectal cancer	colorectal carcinoma	EFO_1001951	Narrow	20001_1020	DONE	
+colon cancer/sigmoid cancer	colon carcinoma	EFO_1001950	Narrow	20001_1022	DONE	
+rectal cancer	rectal cancer	EFO_1000657	Exact	20001_1023	DONE	
+liver/hepatocellular cancer	hepatocellular carcinoma	EFO_0000182	Narrow	20001_1024	DONE	
+eye and/or adnexal cancer	eye neoplasm	EFO_0003824	Broad	20001_1030	DONE	
+brain cancer / primary malignant brain tumour	brain neoplasm	EFO_0003833	Broad	20001_1032	DONE	
+kidney/renal cell cancer	kidney neoplasm	EFO_0003865	Broad	20001_1034	DONE	
+bladder cancer	bladder carcinoma	EFO_0000292	Narrow	20001_1035	DONE	
+ovarian cancer	ovarian carcinoma	EFO_0001075	Narrow	20001_1039	DONE	
+uterine/endometrial cancer	uterine carcinoma	EFO_0002919	Narrow	20001_1040	DONE	
+cervical cancer	cervical carcinoma	EFO_0001061	Narrow	20001_1041	DONE	
+prostate cancer	prostate carcinoma	EFO_0001663	Narrow	20001_1044	DONE	
+testicular cancer	testicular carcinoma	EFO_0005088	Narrow	20001_1045	DONE	
+lymphoma	lymphoma	EFO_0000574	Exact	20001_1047	DONE	
+leukaemia	leukemia	EFO_0000565	Exact	20001_1048	DONE	
+multiple myeloma	multiple myeloma	EFO_0001378	Exact	20001_1050	DONE	
+hodgkins lymphoma / hodgkins disease	Hodgkins lymphoma	EFO_0000183	Exact	20001_1052	DONE	
+non-hodgkins lymphoma	non-Hodgkins lymphoma	EFO_0005952	Exact	20001_1053	DONE	
+chronic lymphocytic	chronic lymphocytic leukemia	EFO_0000095	Exact	20001_1055	DONE	
+chronic myeloid	chronic myelogenous leukemia	EFO_0000339	Exact	20001_1056	DONE	
+malignant melanoma	melanoma	EFO_0000756	Exact	20001_1059	DONE	
+non-melanoma skin cancer	non-melanoma skin carcinoma	EFO_0009260	Narrow	20001_1060	DONE	
+basal cell carcinoma	basal cell carcinoma	EFO_0004193	Exact	20001_1061	DONE	
+squamous cell carcinoma	squamous cell carcinoma	EFO_0000707	Exact	20001_1062	DONE	
+primary bone cancer	bone neoplasm	EFO_0003820	Broad	20001_1063	DONE	
+thyroid cancer	thyroid carcinoma	EFO_0002892	Narrow	20001_1065	DONE	
+malignant lymph node, unspecified	lymphoid neoplasm	EFO_0001642	Broad	20001_1070	DONE	
+hypertension	hypertension	EFO_0000537	Exact	20002_1065	DONE	
+heart/cardiac problem	heart disease	EFO_0003777	Exact	20002_1066	DONE	
+peripheral vascular disease	peripheral vascular disease	EFO_0003875	Exact	20002_1067	DONE	
+venous thromboembolic disease	venous thrombosis	HP_0004936	Exact	20002_1068	DONE	
+essential hypertension	primary hypertension	EFO_1002032	Exact	20002_1072	DONE	
+gestational hypertension/pre-eclampsia	preeclampsia	EFO_0000668	Exact	20002_1073	DONE	
+angina	angina pectoris	EFO_0003913	Exact	20002_1074	DONE	
+heart attack/myocardial infarction	myocardial infarction	EFO_0000612	Exact	20002_1075	DONE	
+heart failure/pulmonary odema	heart failure	EFO_0003144	Exact	20002_1076	DONE	
+heart arrhythmia	cardiac arrhythmia	EFO_0004269	Exact	20002_1077	DONE	
+cardiomyopathy	cardiomyopathy	EFO_0000318	Exact	20002_1079	DONE	
+stroke	stroke	EFO_0000712	Exact	20002_1081	DONE	
+transient ischaemic attack (tia)	transient ischemic attack	EFO_0003764	Exact	20002_1082	DONE	
+subdural haemorrhage/haematoma	subdural hemorrhage	HP_0100309	Exact	20002_1083	DONE	
+subarachnoid haemorrhage	subarachnoid hemorrhage	EFO_0000713	Exact	20002_1086	DONE	
+leg claudication/ intermittent claudication	intermittent vascular claudication	EFO_0003876	Exact	20002_1087	DONE	
+pulmonary embolism +/- dvt	pulmonary embolism	EFO_0003827	Exact	20002_1093	DONE	
+deep venous thrombosis (dvt)	deep vein thrombosis	EFO_0003907	Exact	20002_1094	DONE	
+asthma	asthma	EFO_0000270	Exact	20002_1111	DONE	
+chronic obstructive airways disease/copd	chronic obstructive pulmonary disease	EFO_0000341	Exact	20002_1112	DONE	
+emphysema/chronic bronchitis	emphysema	EFO_0000464	Exact	20002_1113	DONE	
+bronchiectasis	bronchiectasis	HP_0002110	Exact	20002_1114	DONE	
+interstitial lung disease	interstitial lung disease	EFO_0004244	Exact	20002_1115	DONE	
+asbestosis	asbestosis	EFO_0007153	Exact	20002_1120	DONE	
+pulmonary fibrosis	pulmonary fibrosis	EFO_0009448	Exact	20002_1121	DONE	
+fibrosing alveolitis/unspecified alveolitis	pulmonary alveolitis	EFO_0009624	Exact	20002_1122	DONE	
+sleep apnoea	sleep apnea	EFO_0003877	Exact	20002_1123	DONE	
+pleurisy	pleurisy	EFO_1001825	Exact	20002_1125	DONE	
+spontaneous pneumothorax/recurrent pneumothorax	spontaneous pneumothorax	HP_0002108	Exact	20002_1126	DONE	
+gastro-oesophageal reflux (gord) / gastric reflux	gastroesophageal reflux disease	EFO_0003948	Exact	20002_1138	DONE	
+oesophagitis/barretts oesophagus	esophagitis  || Barrett's esophagus	HP_0100633, EFO_0000280	Exact	20002_1139	DONE	
+gastric/stomach ulcers	peptic ulcer	HP_0004398	Exact	20002_1142	DONE	
+gastritis/gastric erosions	gastritis	EFO_0000217	Exact	20002_1143	DONE	
+irritable bowel syndrome	irritable bowel syndrome	EFO_0000555	Exact	20002_1154	DONE	
+hepatitis	hepatitis	HP_0012115	Exact	20002_1155	DONE	
+infective/viral hepatitis	viral human hepatitis infection	EFO_0004196	Exact	20002_1156	DONE	
+liver failure/cirrhosis	cirrhosis of liver	EFO_0001422	Exact	20002_1158	DONE	
+gall bladder disease	gallbladder disease	EFO_0003832	Exact	20002_1161	DONE	
+cholelithiasis/gall stones	gallstones  || cholelithiasis	EFO_0004210, EFO_0004799	Exact	20002_1162	DONE	
+cholecystitis	cholecystitis	HP_0001082	Exact	20002_1163	DONE	
+pancreatitis	pancreatitis	EFO_0000278	Exact	20002_1165	DONE	
+peritonitis	peritonitis	EFO_0008588	Exact	20002_1190	DONE	
+gastrointestinal bleeding	gastrointestinal hemorrhage	HP_0002239	Exact	20002_1191	DONE	
+renal/kidney failure	kidney failure	EFO_1002048	Exact	20002_1192	DONE	
+urinary tract infection/kidney infection	urinary tract infection	EFO_0003103	Exact	20002_1196	DONE	
+kidney stone/ureter stone/bladder stone	nephrolithiasis  || ureterolithiasis  || bladder calculus	EFO_0004253, EFO_1001228, EFO_1000839	Exact	20002_1197	DONE	
+ureteric obstruction/hydronephrosis	hydronephrosis	EFO_0005562	Exact	20002_1200	DONE	
+urinary frequency / incontinence	urgency urinary incontinence	EFO_0006865	Exact	20002_1202	DONE	
+diabetes	diabetes	EFO_0000400	Exact	20002_1220	DONE	
+gestational diabetes	gestational diabetes	EFO_0004593	Exact	20002_1221	DONE	
+type 1 diabetes	type i diabetes mellitus	EFO_0001359	Exact	20002_1222	DONE	
+type 2 diabetes	type ii diabetes mellitus	EFO_0001360	Exact	20002_1223	DONE	
+hyperthyroidism/thyrotoxicosis	hyperthyroidism  || thyrotoxicosis	EFO_0009189, EFO_0009190	Exact	20002_1225	DONE	
+hypothyroidism/myxoedema	hypothyroidism  || myxedema	EFO_0004705, EFO_1001055	Exact	20002_1226	DONE	
+parathyroid hyperplasia/adenoma	parathyroid hyperplasia	EFO_1000457	Exact	20002_1230	DONE	
+pituitary adenoma/tumour	pituitary gland adenoma	EFO_1000478	Exact	20002_1238	DONE	
+encephalitis	encephalomyelitis	EFO_0001423	Exact	20002_1246	DONE	
+bell's palsy/facial nerve palsy	Bell's palsy	EFO_0007167	Exact	20002_1250	DONE	
+peripheral neuropathy	peripheral neuropathy	EFO_0003100	Exact	20002_1255	DONE	
+acute infective polyneuritis/guillain-barre syndrome	Guillain-Barre syndrome	EFO_0007292	Exact	20002_1256	DONE	
+multiple sclerosis	multiple sclerosis	EFO_0003885	Exact	20002_1261	DONE	
+parkinsons disease	Parkinson's disease	EFO_0002508	Exact	20002_1262	DONE	
+dementia/alzheimers/cognitive impairment	dementia  || Alzheimer's disease  || cognitive impairment	HP_0000726, EFO_0000249, HP_0100543	Exact	20002_1263	DONE	
+epilepsy	epilepsy	EFO_0000474	Exact	20002_1264	DONE	
+migraine	migraine disorder	EFO_0003821	Exact	20002_1265	DONE	
+spinal injury	spinal cord injury	EFO_1001919	Exact	20002_1267	DONE	
+eye infection	eye infection	EFO_1001888	Exact	20002_1274	DONE	
+retinal problem	retinopathy	EFO_0003839	Exact	20002_1275	DONE	
+glaucoma	glaucoma	EFO_0000516	Exact	20002_1277	DONE	
+cataract	cataract	EFO_0001059	Exact	20002_1278	DONE	
+retinal detachment	retinal detachment	EFO_0005773	Exact	20002_1281	DONE	
+retinal artery/vein occlusion	retinal artery occlusion  || retinal vein occlusion	EFO_1001154, EFO_1001157	Exact	20002_1282	DONE	
+depression	unipolar depression	EFO_0003761	Narrow	20002_1286	DONE	
+schizophrenia	schizophrenia	EFO_0000692	Exact	20002_1289	DONE	
+deliberate self-harm/suicide attempt	attempted suicide	EFO_0004321	Exact	20002_1290	DONE	
+mania/bipolar disorder/manic depression	bipolar disorder	EFO_0000289	Exact	20002_1291	DONE	
+bone disorder	bone disease	EFO_0004260	Exact	20002_1293	DONE	
+joint disorder	joint disease	EFO_1000999	Exact	20002_1295	DONE	
+osteomyelitis	osteomyelitis	EFO_0003102	Exact	20002_1308	DONE	
+osteoporosis	osteoporosis	EFO_0003882	Exact	20002_1309	DONE	
+ankylosing spondylitis	ankylosing spondylitis	EFO_0003898	Exact	20002_1313	DONE	
+myositis/myopathy	myositis  || myopathy	EFO_0000783, EFO_0004145	Exact	20002_1322	DONE	
+low platelets/platelet disorder	thrombocytopenia	HP_0001873	Exact	20002_1327	DONE	
+iron deficiency anaemia	iron deficiency anemia	HP_0001891	Exact	20002_1330	DONE	
+pernicious anaemia	pernicious anemia	EFO_0005576	Exact	20002_1331	DONE	
+thalassaemia	thalassemia	EFO_1001996	Exact	20002_1340	DONE	
+ovarian cyst or cysts	ovarian cyst	HP_0000138	Exact	20002_1349	DONE	
+polycystic ovaries/polycystic ovarian syndrome	polycystic ovary syndrome	EFO_0000660	Exact	20002_1350	DONE	
+uterine fibroids	uterine fibroid	EFO_0000731	Exact	20002_1351	DONE	
+vaginal prolapse/uterine prolapse	uterine prolapse	EFO_1001864	Exact	20002_1353	DONE	
+fibrocystic disease	breast fibrocystic disease	EFO_0003014	Exact	20002_1366	DONE	
+breast cysts	breast cyst	EFO_1000848	Exact	20002_1367	DONE	
+sarcoidosis	sarcoidosis	Orphanet_797	Exact	20002_1371	DONE	
+vasculitis	vasculitis	EFO_0006803	Exact	20002_1372	DONE	
+connective tissue disorder	connective tissue disease	EFO_1001986	Exact	20002_1373	DONE	
+allergy/hypersensitivity/anaphylaxis	allergy	EFO_0003785	Broad	20002_1374	DONE	
+giant cell/temporal arteritis	temporal arteritis	EFO_1001209	Exact	20002_1376	DONE	
+polymyalgia rheumatica	polymyalgia rheumatica	EFO_0008518	Exact	20002_1377	DONE	
+wegners granulmatosis	granulomatosis with polyangiitis	EFO_0005297	Exact	20002_1378	DONE	
+systemic lupus erythematosis/sle	systemic lupus erythematosus	EFO_0002690	Exact	20002_1381	DONE	
+sjogren's syndrome/sicca syndrome	Sjogren syndrome	EFO_0000699	Exact	20002_1382	DONE	
+scleroderma/systemic sclerosis	scleroderma  || systemic scleroderma	EFO_1001993, EFO_0000717	Exact	20002_1384	DONE	
+allergy or anaphylactic reaction to food	food allergy	EFO_1001890	Exact	20002_1385	DONE	
+hayfever/allergic rhinitis	seasonal allergic rhinitis  || allergic rhinitis	EFO_0003956, EFO_0005854	Exact	20002_1387	DONE	
+pneumonia	pneumonia	EFO_0003106	Exact	20002_1398	DONE	
+peptic ulcer	peptic ulcer	HP_0004398	Exact	20002_1400	DONE	
+endometriosis	endometriosis	EFO_0001065	Exact	20002_1402	DONE	
+female infertility	female infertility	EFO_0008560	Exact	20002_1403	DONE	
+alcohol dependency	alcohol dependence	EFO_0003829	Exact	20002_1408	DONE	
+ear/vestibular disorder	auditory system disease	EFO_1001455	Broad	20002_1415	DONE	
+chronic sinusitis	sinusitis	EFO_0007486	Broad	20002_1416	DONE	
+nasal polyps	nasal cavity polyp	EFO_1000391	Exact	20002_1417	DONE	
+otosclerosis	otosclerosis	EFO_0004213	Exact	20002_1420	DONE	
+meniere's disease	Meniere disease	EFO_0006862	Exact	20002_1421	DONE	
+cerebral aneurysm	brain aneurysm	EFO_0003870	Exact	20002_1425	DONE	
+myocarditis	myocarditis	EFO_0009609	Exact	20002_1426	DONE	
+polycystic kidney	polycystic kidney disease	EFO_0008620	Exact	20002_1427	DONE	
+thyroiditis	thyroid disease	EFO_1000627	Exact	20002_1428	DONE	
+hypopituitarism	hypopituitarism	EFO_0001380	Exact	20002_1430	DONE	
+cerebral palsy	cerebral palsy	EFO_1000632	Exact	20002_1433	DONE	
+optic neuritis	optic neuritis	EFO_0007405	Exact	20002_1435	DONE	
+headaches (not migraine)	headache	HP_0002315	Exact	20002_1436	DONE	
+myasthenia gravis	myasthenia gravis	EFO_0004991	Exact	20002_1437	DONE	
+polycythaemia vera	polycythemia vera	EFO_0002429	Exact	20002_1438	DONE	
+hiv/aids	HIV infection  || AIDS	EFO_0000764, EFO_0000765	Exact	20002_1439	DONE	
+tuberculosis (tb)	tuberculosis	Orphanet_3389	Exact	20002_1440	DONE	
+malaria	malaria	EFO_0001068	Exact	20002_1441	DONE	
+helicobacter pylori	Helicobacter pylori	NCBITaxon_210	Exact	20002_1442	DONE	
+anaemia	anemia	EFO_0004272	Exact	20002_1446	DONE	
+neutropenia/lymphopenia	neutropenia  || lymphopenia	HP_0001875, HP_0001888	Exact	20002_1448	DONE	
+eczema/dermatitis	eczema	HP_0000964	Exact	20002_1452	DONE	
+psoriasis	psoriasis	EFO_0000676	Exact	20002_1453	DONE	
+chronic skin ulcers	chronic ulcer of skin	EFO_0007066	Exact	20002_1455	DONE	
+malabsorption/coeliac disease	celiac disease	EFO_0001060	Exact	20002_1456	DONE	
+duodenal ulcer	duodenal ulcer	EFO_0004607	Exact	20002_1457	DONE	
+diverticular disease/diverticulitis	diverticulitis	EFO_1001460	Exact	20002_1458	DONE	
+colitis/not crohns or ulcerative colitis	colitis	EFO_0003872	Exact	20002_1459	DONE	
+rectal or colon adenoma/polyps	adenomatous colon polyp	EFO_1000633	Exact	20002_1460	DONE	
+inflammatory bowel disease	inflammatory bowel disease	EFO_0003767	Exact	20002_1461	DONE	
+crohns disease	Crohn's disease	EFO_0000384	Exact	20002_1462	DONE	
+ulcerative colitis	ulcerative colitis	EFO_0000729	Exact	20002_1463	DONE	
+rheumatoid arthritis	rheumatoid arthritis	EFO_0000685	Exact	20002_1464	DONE	
+osteoarthritis	osteoarthritis	EFO_0002506	Exact	20002_1465	DONE	
+gout	gout	EFO_0004274	Exact	20002_1466	DONE	
+post-traumatic stress disorder	post-traumatic stress disorder	EFO_0001358	Exact	20002_1469	DONE	
+anorexia/bulimia/other eating disorder	eating disorder	EFO_0005203	Broad	20002_1470	DONE	
+atrial fibrillation	atrial fibrillation	EFO_0000275	Exact	20002_1471	DONE	
+emphysema	emphysema	EFO_0000464	Exact	20002_1472	DONE	
+high cholesterol	hypercholesterolemia	HP_0003124	Exact	20002_1473	DONE	
+hiatus hernia	hiatus hernia	HP_0002036	Exact	20002_1474	DONE	
+sciatica	sciatica	HP_0011868	Exact	20002_1476	DONE	
+psoriatic arthropathy	psoriatic arthritis	EFO_0003778	Exact	20002_1477	DONE	
+rheumatic fever	rheumatic fever	EFO_1001160	Exact	20002_1479	DONE	
+chronic fatigue syndrome	chronic fatigue syndrome	EFO_0004540	Exact	20002_1482	DONE	
+irregular heart beat	cardiac arrhythmia	EFO_0004269	Exact	20002_1485	DONE	
+brain haemorrhage	intracranial hemorrhage	EFO_0000551	Exact	20002_1491	DONE	
+varicose veins	varicose veins	HP_0002619	Exact	20002_1494	DONE	
+lymphoedema	lymphedema	Orphanet_79383	Exact	20002_1495	DONE	
+pneumothorax	pneumothorax	HP_0002107	Exact	20002_1497	DONE	
+labyrinthitis	labyrinthitis	EFO_0009604	Exact	20002_1499	DONE	
+vertigo	vertigo	HP_0002321	Exact	20002_1500	DONE	
+pyloric stenosis	pyloric stenosis	EFO:0009626	Exact	20002_1501	DONE	
+appendicitis	appendicitis	EFO_0007149	Exact	20002_1502	DONE	
+anal fissure	anal fissure	HP_0012390	Exact	20002_1504	DONE	
+haemorrhoids / piles	hemorrhoid	EFO_0009552	Exact	20002_1505	DONE	
+jaundice (unknown cause)	jaundice	HP_0000952	Exact	20002_1508	DONE	
+gastroenteritis/dysentry	gastroenteritis  || dysentery	EFO_1001463, EFO_1001869	Exact	20002_1509	DONE	
+dyspepsia / indigestion	dyspepsia	EFO_0008533	Exact	20002_1510	DONE	
+abdominal hernia	hernia of the abdominal wall	HP_0004299	Exact	20002_1511	DONE	
+umbilical hernia	umbilical hernia	HP_0001537	Exact	20002_1512	DONE	
+inguinal hernia	inguinal hernia	HP_0000023	Exact	20002_1513	DONE	
+cystitis	cystitis	EFO_1000025	Exact	20002_1514	DONE	
+bph / benign prostatic hypertrophy	benign prostatis hypertrophy	EFO_0000284	Exact	20002_1516	DONE	
+prostatitis	prostatitis	EFO_0003830	Exact	20002_1517	DONE	
+erectile dysfunction / impotence	erectile dysfunction	EFO_0004234	Exact	20002_1518	DONE	
+grave's disease	Graves disease	EFO_0004237	Exact	20002_1522	DONE	
+trigemminal neuralgia	trigeminal neuralgia	EFO_1001219	Exact	20002_1523	DONE	
+benign / essential tremor	essential tremor	EFO_0003108	Exact	20002_1525	DONE	
+polio / poliomyelitis	poliomyelitis	EFO_0007450	Exact	20002_1526	DONE	
+dry eyes	dry eye syndrome	EFO_1000906	Exact	20002_1529	DONE	
+iritis	iritis	EFO_1000997	Exact	20002_1530	DONE	
+post-natal depression	postpartum depression	EFO_0007453	Exact	20002_1531	DONE	
+disc degeneration	lumbar disc degeneration	EFO_0004994	Exact	20002_1533	DONE	
+back pain	back pain	HP_0003418	Exact	20002_1534	DONE	
+scoliosis	scoliosis	EFO_0004273	Exact	20002_1535	DONE	
+spinal stenosis	spinal stenosis	EFO_0007490	Exact	20002_1536	DONE	
+joint pain	arthralgia	HP_0002829	Exact	20002_1537	DONE	
+arthritis (nos)	arthritis	EFO_0005856	Exact	20002_1538	DONE	
+plantar fascitis	plantar fasciitis	EFO_1001909	Exact	20002_1540	DONE	
+carpal tunnel syndrome	carpal tunnel syndrome	EFO_0004143	Exact	20002_1541	DONE	
+fibromyalgia	fibromyalgia	EFO_0005687	Exact	20002_1542	DONE	
+dupuytren's contracture	Dupuytren contracture	EFO_0004229	Exact	20002_1544	DONE	
+acne/acne vulgaris	acne	EFO_0003894	Exact	20002_1548	DONE	
+lichen planus	lichen planus	EFO_1000726	Exact	20002_1549	DONE	
+lichen sclerosis	lichen disease	EFO_1000724	Broad	20002_1550	DONE	
+cervical intra-epithelial neoplasia (cin) / precancerous cells cervix	dysplasia of cervix	EFO_1000910	Exact	20002_1554	DONE	
+menorrhagia (unknown cause)	menorrhagia	HP_0000132	Exact	20002_1556	DONE	
+ectopic pregnancy	ectopic pregnancy	HP_0031456	Exact	20002_1558	DONE	
+miscarriage	spontaneous abortion	EFO_1001255	Broad	20002_1559	DONE	
+breast fibroadenoma	Fibroadenoma	EFO_1000254	Exact	20002_1560	DONE	
+raynaud's phenomenon/disease	Raynaud disease	EFO_1001145	Exact	20002_1561	DONE	
+food intolerance	food allergy	EFO_1001890	Exact	20002_1562	DONE	
+urticaria	urticaria	EFO_0005531	Exact	20002_1563	DONE	
+infectious mononucleosis / glandular fever / epstein barr virus (ebv)	infectious mononucleosis  || Epstein-Barr virus infection	EFO_0007326, EFO_0000769	Exact	20002_1567	DONE	
+measles / morbillivirus	measles	EFO_1002025	Exact	20002_1568	DONE	
+mumps / epidemic parotitis	mumps infectious disease	EFO_0007383	Exact	20002_1569	DONE	
+rubella / german measles	rubella	EFO_1002026	Exact	20002_1570	DONE	
+chickenpox	chickenpox	EFO_0007204	Exact	20002_1571	DONE	
+whooping cough / pertussis	whooping cough	EFO_0000650	Exact	20002_1572	DONE	
+shingles	Herpes Zoster	EFO_0006510	Exact	20002_1573	DONE	
+herpes simplex	herpes simplex infection	EFO_1002022	Exact	20002_1575	DONE	
+hepatitis a	hepatitis a	EFO_0007305	Exact	20002_1578	DONE	
+hepatitis b	hepatitis b infection	EFO_0004197	Exact	20002_1579	DONE	
+hepatitis c	hepatitis c infection	EFO_0003047	Exact	20002_1580	DONE	
+mitral regurgitation / incompetence	mitral valve disease	EFO_0009557	Broad	20002_1585	DONE	
+aortic regurgitation / incompetence	aortic valve insufficiency	EFO_0007148	Exact	20002_1587	DONE	
+hypertrophic cardiomyopathy (hcm / hocm)	hypertrophic cardiomyopathy	EFO_0000538	Exact	20002_1588	DONE	
+pericarditis	pericarditis	EFO_0007427	Exact	20002_1589	DONE	
+respiratory infection	pneumonia	EFO_0003106	Narrow	20002_1594	DONE	
+tinnitus / tiniitis	tinnitus	HP_0000360	Exact	20002_1597	DONE	
+tonsiltis	tonsillitis	HP_0011110	Exact	20002_1598	DONE	
+constipation	constipation	HP_0002019	Exact	20002_1599	DONE	
+rectal prolapse	rectal prolapse	HP_0002035	Exact	20002_1603	DONE	
+femoral hernia	femoral hernia	EFO_1001791	Exact	20002_1605	DONE	
+incisional hernia	incisional hernia	HP_0004872	Exact	20002_1606	DONE	
+nephritis	nephritis	EFO_1002050	Exact	20002_1608	DONE	
+thyroid goitre	goiter	EFO_0004283	Exact	20002_1610	DONE	
+blepharitis / eyelid infection	blepharitis	EFO_0009536	Exact	20002_1613	DONE	
+obsessive compulsive disorder (ocd)	obsessive-compulsive disorder	EFO_0004242	Exact	20002_1615	DONE	
+insomnia	insomnia	EFO_0004698	Exact	20002_1616	DONE	
+osteopenia	osteopenia	HP_0000938	Exact	20002_1617	DONE	
+tendonitis / tendinitis / tenosynovitis	tendinopathy  || tenosynovitis	EFO_1001434, EFO_1001435	Exact	20002_1619	DONE	
+bursitis	frozen shoulder	EFO_1000941	Exact	20002_1620	DONE	
+tennis elbow / lateral epicondylitis	lateral epicondylitis	EFO_1001896	Exact	20002_1623	DONE	
+cellulitis	cellulitis	EFO_0003035	Exact	20002_1625	DONE	
+fracture skull / head	skull fractures	EFO_1001425	Exact	20002_1626	DONE	
+fracture radius	radius fracture	EFO_0003957	Exact	20002_1635	DONE	
+fracture ulna	ulna fracture	EFO_0003950	Exact	20002_1636	DONE	
+fracture tibia	tibia fracture	EFO_0003944	Exact	20002_1652	DONE	
+septicaemia / sepsis	sepsis	HP_0100806	Exact	20002_1657	DONE	
+meningioma / benign meningeal tumour	meningioma	Orphanet_2495	Exact	20002_1659	DONE	
+rosacea	rosacea	EFO_1000760	Exact	20002_1660	DONE	
+vitiligo	vitiligo	EFO_0004208	Exact	20002_1661	DONE	
+cervical erosion	cervix erosion	EFO_1000862	Exact	20002_1662	DONE	
+dysmenorrhoea / dysmenorrhea	dysmenorrhea	HP_0100607	Exact	20002_1664	DONE	
+menopausal symptoms / menopause	menopause	EFO_0003922	Exact	20002_1665	DONE	
+alopecia / hair loss	alopecia	Orphanet_79364	Exact	20002_1667	DONE	
+scarlet fever / scarlatina	scarlet fever	EFO_0007477	Exact	20002_1677	DONE	
+undescended testicle	cryptorchidism	EFO_0004562	Exact	20002_1679	DONE	
+Hearing difficulty/problems: Yes	hearing loss	EFO_0004238	Exact	2247_1	DONE	
+Comparative height size at age 10	body height	EFO_0004339	Broad	1697	DONE	
+Miserableness	emotional symptom measurement	EFO_0007803	Broad	1930	DONE	
+Sensitivity / hurt feelings	emotional symptom measurement	EFO_0007803	Broad	1950	DONE	
+Fed-up feelings	emotional symptom measurement	EFO_0007803	Broad	1960	DONE	
+Nervous feelings	emotional symptom measurement	EFO_0007803	Broad	1970	DONE	
+Guilty feelings	emotional symptom measurement	EFO_0007803	Broad	2030	DONE	
+Risk taking	behavioural disinhibition measurement	EFO_0006946	Broad	2040	DONE	
+Overall health rating	self rated health	EFO_0004778	Exact	2178	DONE	
+Number of live births	birth measurement	EFO_0006921	Broad	2734	DONE	
+General pain for 3+ months	Chronic pain	HP_0012532	Exact	2956	DONE	
+Chest pain or discomfort walking normally	chest pain	HP_0100749	Broad	3606	DONE	
+Chest pain due to walking ceases when standing still	chest pain	HP_0100749	Broad	3616	DONE	
+Chest pain or discomfort when walking uphill or hurrying	chest pain	HP_0100749	Broad	3751	DONE	
+Knee pain for 3+ months	knee pain	HP_0030839	Broad	3773	DONE	
+Number of spontaneous miscarriages	spontaneous abortion	EFO_1001255	Exact	3839	DONE	
+Heel bone mineral density (BMD) T-score, automated (left)	bone density	EFO_0003923	Broad	4106	DONE	
+Heel bone mineral density (BMD) T-score, automated (right)	bone density	EFO_0003923	Broad	4125	DONE	
+Pulse wave reflection index	reflection wave amplitude	EFO_0009804	Exact	4195	DONE	
+Family relationship satisfaction	wellbeing measurement  || family relaitonship	EFO_0007869, EFO_0004424	Broad	4559	DONE	
+Maximum workload during fitness test	exercise test	EFO_0004328	Broad	6032	DONE	
+Prospective memory result	episodic memory	EFO_0004333	Broad	20018	DONE	
+Cough on most days	cough	HP_0012735	Exact	22502	DONE	
+Years of cough on most days	cough	HP_0012735	Exact	22503	DONE	
+liver/biliary/pancreas problem	liver disease  || biliary tract disease  || pancreas disease	EFO_0001421, EFO_0009534, EFO_0009605	Exact	20002_1136	DONE	
+psychological/psychiatric problem	mental or behavioural disorder	EFO_0005407	?	20002_1243	DONE	
+head injury	head injury	EFO_0009505	Exact	20002_1266	DONE	
+gynaecological disorder (not cancer)	female reproductive system disease	EFO_0009549	Exact	20002_1348	DONE	
+peripheral nerve injury	peripheral nerve injury	EFO_0009510	Exact	20002_1394	DONE	
+fracture jaw	jaw fracture	EFO_0009612	Exact	20002_1627	DONE	
+fracture nose	nose injury	EFO_0009623	Exact	20002_1628	DONE	
+fracture face / orbit / eye socket	orbital fracture	EFO_0009611	Narrow	20002_1629	DONE	
+fracture clavicle / collar bone	clavicle facture	EFO_0009614	Exact	20002_1631	DONE	
+fracture shoulder / scapula	shoulder fracture	EFO_0009621	Exact	20002_1632	DONE	
+fracture forearm / wrist	wrist fracture	EFO_0009515	Exact	20002_1634	DONE	
+fracture wrist / colles fracture	wrist fracture	EFO_0009515	Exact	20002_1637	DONE	
+fracture hand	hand fracture	NCIT_C27161	Exact	20002_1638	DONE	
+fracture finger	finger fracture	EFO_0009616	Exact	20002_1639	DONE	
+fracture thumb	finger fracture	EFO_0009616	Broad	20002_1640	DONE	
+fracture rib	rib fracture	EFO_0009620	Exact	20002_1644	DONE	
+fracture pelvis	facture of pelvis	EFO_0009622	Exact	20002_1647	DONE	
+fracture neck of femur / hip	femur fracture  || hip fracture	EFO_0008553, EFO_0003964	Broad	20002_1648	DONE	
+fracture shaft of femur	femur fracture	EFO_0008553	Broad	20002_1649	DONE	
+fracture patella / knee	knee fracture	EFO_0009617	Exact	20002_1650	DONE	
+fracture lower leg / ankle	ankle fracture  || lower extremity fracture	EFO_0009615, EFO_0009512	Exact	20002_1651	DONE	
+fracture fibula	fibula fracture	EFO_0009613	Exact	20002_1653	DONE	
+fracture foot	foot fracture	EFO_0009618	Exact	20002_1654	DONE	
+fracture metatarsal	bone fracture	EFO_0003931	Broad	20002_1655	DONE	
+fracture toe	foot fracture	EFO_0009618	Broad	20002_1656	DONE	
+Hair/balding pattern: Pattern 2	androgenic alopecia  || balding measurement	EFO_0004191, EFO_0007825	Broad	2395_2	DONE	
+Hair/balding pattern: Pattern 3	androgenic alopecia  || balding measurement	EFO_0004191, EFO_0007825	Broad	2395_3	DONE	
+Hair/balding pattern: Pattern 4	androgenic alopecia  || balding measurement	EFO_0004191, EFO_0007825	Broad	2395_4	DONE	
+Hand grip strength (left)	grip strength measurement	EFO_0006941	Exact	46	DONE	
+Hand grip strength (right)	grip strength measurement	EFO_0006941	Exact	47	DONE	
+Heel bone mineral density (BMD) T-score, automated	heel bone mineral density	EFO_0009270	Exact	78	DONE	
+Age completed full time education	self reported educational attainment	EFO_0004784	Exact	845	DONE	
+Daytime dozing / sleeping (narcolepsy)	excessive daytime sleepiness  || narcolepsy without cataplexy	EFO_0007875, EFO_0005855	Exact	1220	DONE	
+Current tobacco smoking	smoking behavior	EFO_0004318	Broad	1239	DONE	
+Past tobacco smoking	smoking cessation	EFO_0004319	Broad	1249	DONE	
+Exposure to tobacco smoke at home	environmental tobacco smoke exposure measurement	EFO_0008361	Broad	1269	DONE	
+Exposure to tobacco smoke outside home	environmental tobacco smoke exposure measurement	EFO_0008361	Broad	1279	DONE	
+Worrier / anxious feelings	anxiety	EFO_0005230	Exact	1980	DONE	
+Frequency of depressed mood in last 2 weeks	emotional symptom measurement	EFO_0007803	Broad	2050	DONE	
+Frequency of unenthusiasm / disinterest in last 2 weeks	emotional symptom measurement	EFO_0007803	Broad	2060	DONE	
+Diabetes diagnosed by doctor	diabetes mellitus	EFO_0000400	Exact	2443	DONE	
+Cancer diagnosed by doctor	cancer	EFO_0000311	Exact	2453	DONE	
+Fractured/broken bones in last 5 years	bone fracture	EFO_0003931	Exact	2463	DONE	
+Ever had stillbirth, spontaneous miscarriage or termination	spontaneous abortion	EFO_1001255	Broad	2774	DONE	
+Ever used hormone-replacement therapy (HRT)	hormone replacement therapy	EFO_0003961	Exact	2814	DONE	
+Fracture resulting from simple fall	bone fracture	EFO_0003931	Broad	3005	DONE	
+Facial pains for 3+ months	facial pain	EFO_0009625	Broad	4067	DONE	
+Longest period of depression	depressive episode measurement	EFO_0007704	Exact	4609	DONE	
+Number of depression episodes	depressive episode measurement	EFO_0007704	Exact	4620	DONE	
+Longest period of unenthusiasm / disinterest	emotional symptom measurement	EFO_0007803	Broad	5375	DONE	
+Mean time to correctly identify matches	reaction time measurement	EFO_0008393	Broad	20023	DONE	
+Creatinine (enzymatic) in urine	creatine clearance measurement	EFO_0007934	Exact	30510	DONE	
+Handedness (chirality/laterality): Left-handed	functional laterality	EFO_0003889	Broad	1707_2	DONE	
+Handedness (chirality/laterality): Use both right and left hands equally	functional laterality	EFO_0003889	Broad	1707_3	DONE	
+sarcoma/fibrosarcoma	sarcoma  || fibrosarcoma	EFO_0000691, EFO_0002087	Exact	20001_1068	DONE	
+cin/pre-cancer cells cervix	dysplasia of cervix	EFO_1000910	Exact	20001_1072	DONE	
+rodent ulcer	basal cell carcinoma	EFO_0004193	?	20001_1073	DONE	
+heart valve problem/heart murmur	heart valve disease	EFO_0009551	Exact	20002_1078	DONE	
+pericardial problem	pericarditis	EFO_0007427	Exact	20002_1080	DONE	
+other respiratory problems	respiratory system disease	EFO_0000684	Exact	20002_1117	DONE	
+oesophageal disorder	esophageal disease	EFO_0009544	Exact	20002_1134	DONE	
+stomach disorder	stomach disease	EFO_0009608	Exact	20002_1135	DONE	
+non-infective hepatitis	hepatitis	HP_0012115	Broad	20002_1157	DONE	
+renal failure requiring dialysis	kidney failure	EFO_1002048	Broad	20002_1193	DONE	
+renal failure not requiring dialysis	kidney failure	EFO_1002048	Broad	20002_1194	DONE	
+parathyroid gland problem (not cancer)	parathyroid disease	EFO_0005754	Exact	20002_1229	DONE	
+meningitis	infectious meningitis	EFO_0000584	?	20002_1247	DONE	
+chronic/degenerative neurological problem	neurodegenerative disease	EFO_0005772	Exact	20002_1258	DONE	
+anxiety/panic attacks	anxiety  || panic disorder	EFO_0005230, EFO_0004262	Exact	20002_1287	DONE	
+muscle/soft tissue problem	soft tissue disease	EFO_0009470	Exact	20002_1297	DONE	
+spine arthritis/spondylitis	osteoarthritis, spine	EFO_1000787	Narrow	20002_1311	DONE	
+prolapsed disc/slipped disc	lumbar disc herniation	EFO_1002005	Narrow	20002_1312	DONE	
+other renal/kidney problem	kidney disease	EFO_0003086	Exact	20002_1405	DONE	
+bronchitis	bronchial disease	EFO_1002018	Broad	20002_1412	DONE	
+other joint disorder	joint disease	EFO_1000999	Exact	20002_1467	DONE	
+diabetic neuropathy/ulcers	diabetic neuropathy	EFO_1000783	Exact	20002_1468	DONE	
+cervical spondylosis	spondylosis, cervical	EFO_0009610	Exact	20002_1478	DONE	
+svt / supraventricular tachycardia	supraventricular tachycardia	HP_0004755	Exact	20002_1487	DONE	
+anal problem	abnormality of the anus	HP_0004378	Exact	20002_1503	DONE	
+macular degeneration	macular degeneration	EFO_0009606	Exact	20002_1528	DONE	
+bowel / intestinal obstruction	gastrointestinal obstruction	HP_0004796	Exact	20002_1602	DONE	
+stress	psychosocial stress measurement	EFO_1001920	?	20002_1614	DONE	
+fracture upper arm / humerus / elbow	upper extremity fracture	EFO_0009514	Broad	20002_1633	DONE	
+fracture vertebra / crush fracture / vertebral collapse	spinal fracture	EFO_0003902	Broad	20002_1646	DONE	
+allergy to house dust mite	response to biological dust exposure	EFO_0006992	Broad	20002_1668	DONE	
+benign neuroma	neuroma	EFO_0009619	Exact	20002_1683	DONE	
+Hearing difficulty/problems: I am completely deaf	deafness	EFO_0001063	Exact	2247_99	DONE	
+Which eye(s) are affected by cataract: Right eye	cataract	EFO_0001059	Exact	5441_1	DONE	
+Which eye(s) are affected by cataract: Left eye	cataract	EFO_0001059	Exact	5441_2	DONE	
+Number of self-reported cancers	cancer	EFO_0009800	Exact	134	DONE	
+Number of self-reported non-cancer illnesses	disease	EFO_0009801	Exact	135	DONE	
+Number of operations, self-reported	medical prodecure	EFO_0009802	Exact	136	DONE	
+Number of treatments/medications taken	treatment	EFO_0009803	Exact	137	DONE	
+Townsend deprivation index at recruitment		EFO_0009711	Broad	189	DONE	
+Number of incorrect matches in round	cognitive function measurement	EFO_0008354	Broad	399	DONE	
+Getting up in morning		EFO_0009817	Exact	1170	DONE	
+Nap during day	Need to sleep during day	EFO_0009818	Exact	1190	DONE	
+Comparative body size at age 10	body height	EFO_0009819	Exact	1687	DONE	
+Father's age at death	age at death	EFO_0009712	Exact	1807	DONE	
+Number of full brothers	number of siblings	EFO_0009713	Broad	1873	DONE	
+Number of full sisters	number of siblings	EFO:0009713	Broad	1883	DONE	
+Tense / 'highly strung'	feeling tense measurement	EFO:0009596	Narrow	1990	DONE	
+Worry too long after embarrassment	worry measurement	EFO_0009589	Broad	2000	DONE (but fix typo in label 'worry measurment')	Fix typo: https://github.com/EBISPOT/efo/issues/377
+Suffer from 'nerves'	nervousness	NCIT_C74532	Exact	2010	DONE	
+Seen doctor (GP) for nerves, anxiety, tension or depression	mental or behavioural disorder	EFO_0009820	Exact	2090	DONE	
+Seen a psychiatrist for nerves, anxiety, tension or depression	mental or behavioural disorder	EFO_0009821	Exact	2100	DONE	
+Long-standing illness, disability or infirmity	chronic	EFO_0009714	Broad	2188	DONE	
+Falls in the last year	fall	EFO_0009631	Broad	2296	DONE	
+Wheeze or whistling in the chest in last year	wheezing	EFO_0009715	Broad	2316	DONE	
+Relative age of first facial hair	puberty onset measurement	EFO_0009716	Exact	2375	DONE	
+Number of children fathered	number of children ever born measurement	EFO_0009814	Exact	2405	DONE	
+Birth weight of first child	birth weight	EFO_0004344	Broad	2744	DONE	
+Age at first live birth	age at first birth measurement	EFO_0009101	Exact	2754	DONE	
+Age at last live birth	age at last pregnancy	EFO_0009440	Broad	2764	DONE	
+Bilateral oophorectomy (both ovaries removed)	bilateral oophorectomy	EFO_0009717	Exact	2834	DONE	
+Peak expiratory flow (PEF)	peak expiratory flow	EFO_0009718	Exact	3064	DONE	
+Pace-maker	cardiac pacemaker	EFO_0009719	Exact	3079	DONE	
+Hearing aid user	hearing assistance system/able to hear with hearing aids	EFO_0009720	Broad	3393	DONE	
+Mother's age at death	age at death	EFO_0009721	Exact	3526	DONE	
+Number of stillbirths	?	EFO_0009722	Exact	3829	DONE	
+Age of primiparous women at birth of child	age at first birth measurement	EFO_0009101	Exact	3872	DONE	
+Pulse wave reflection index	reflection wave amplitude	EFO_0009804	Exact	4195	DONE	
+Happiness	emotional symptom measurement	EFO_0007803	Broad	4526	DONE	
+Work/job satisfaction	job satisfaction	EFO_0009723	Exact	4537	DONE	
+Health satisfaction	satisfaction	EFO_0009724	Exact	4548	DONE	
+Friendships satisfaction	satisfaction	EFO_0009725	Exact	4570	DONE	
+Financial situation satisfaction	satisfied with current financial situation	EFO_0009726	Exact	4581	DONE	
+Ever depressed for a whole week	depressive episode measurement	EFO_0007704	Broad	4598	DONE	
+Ever unenthusiastic/disinterested for a whole week	depressive symptom measurement	EFO_0007006	Broad	4631	DONE [Paola] I'd say broad, not narrow	
+Ever manic/hyper for 2 days	manic episode measurement	EFO_0007705	Exact	4642	DONE	
+Ever highly irritable/argumentative for 2 days	irritability measurement	EFO_0009594	Exact	4653	DONE	
+Shortness of breath walking on level ground	have shortness of breath	EFO_0009727	Broad	4717	DONE	
+Cochlear implant	cochlear implants	EFO_0009728	Exact	4792	DONE	
+Tinnitus severity/nuisance	tinnitus	HP_0000360	Broad	4814	DONE	
+Number of unenthusiastic/disinterested episodes	depressive episode measurement	EFO_0007704	Broad	5386	DONE	
+Surgery on leg arteries (other than for varicose veins)	medical procedure	EFO_0009729	Broad	5529	DONE	
+Length of longest manic/irritable episode	manic episode measurement||irritability measurement	EFO_0007705||EFO_0009594	Exact	5663	DONE	
+Severity of manic/irritable episodes	manic episode measurement||irritability measurement	EFO_0007705||EFO_0009594	Exact	5674	DONE	
+Able to walk or cycle unaided for 10 minutes	physical activity	EFO_0009822	Exact	6017	DONE	
+Target heart rate achieved	heart rate	EFO_0009823	Exact	6034	DONE	
+Sitting height	sitting height ratio	EFO_0007118	Exact	20015	DONE	
+Cascot confidence score	quantitative confidence value	EFO_0009815	Exact	20121	DONE	
+Bring up phlegm/sputum/mucus on most days	?	EFO_0009824	Exact	22504	DONE	
+Whole body water mass	body weight	EFO_0009805	Exact	23102	DONE	
+Reported occurrences of cancer	cancer	EFO_0000311	Exact	40009	DONE	
+Procreative_management	family planning services	EFO_0009787	Broad	Z31	DONE	
+other abdominal problem	pain in abdomen	EFO_0003766	Narrow	20002_1137	DONE	
+oesophageal stricture	esophageal stricture	HP_0002043	Exact	20002_1140	DONE	
+bladder problem (not cancer)	bladder disease	EFO_1000018	Exact	20002_1201	DONE	
+prostate problem (not cancer)	prostate disease	EFO_0009602	Exact	20002_1207	DONE	
+testicular problems (not cancer)	testicular disease	EFO_0009601	Exact	20002_1214	DONE	
+thyroid problem (not cancer)	thyroid disease	EFO_1000627	Exact	20002_1224	DONE	
+thyroid radioablation therapy	thyroid radioablation therapy	EFO_0009600	Exact	20002_1228	DONE	
+adrenocortical insufficiency/addison's disease	adrenocortical insufficiency	EFO_0009491	Exact	20002_1234	DONE	
+neurological injury/trauma	nervous system injury	EFO_0009490	Exact	20002_1240	DONE	
+eye/eyelid problem	eye disease	EFO_0003966	Broad	20002_1242	DONE	
+cranial nerve problem/palsy	cranial nerve palsy	EFO_0009489	Exact	20002_1249	DONE	
+spinal cord disorder	spinal cord disease	EFO_0009488	Exact	20002_1251	DONE	
+peripheral nerve disorder	peripheral nervous system disease	EFO_0009387	Exact	20002_1254	DONE	
+trapped nerve/compressed nerve	nerve compression syndrome	EFO_0009487	Exact	20002_1257	DONE	
+diabetic eye disease	diabetic eye disease	EFO_0009486	Exact	20002_1276	DONE	
+eye trauma	eye injury	EFO_0009485	Exact	20002_1279	DONE	
+nervous breakdown	mental or behavioural disorder	EFO_0000677	Broad	20002_1288	DONE	
+back problem	back pain	HP_0003418	Exact	20002_1294	DONE	
+uterine polyps	uterine polyp	EFO_0009484	Exact	20002_1352	DONE	
+breast disease (not cancer)	breast disease	EFO_0009483	Broad	20002_1364	DONE	
+allergy or anaphylactic reaction to drug	drug allergy	EFO_0009482	Exact	20002_1386	DONE	
+enlarged prostate	benign prostatic hyperplasia	EFO_0000284	Exact	20002_1396	DONE	
+muscle or soft tissue injuries	injury	EFO_0000546	Broad	20002_1406	DONE	
+burns	burn	EFO_0009516	Exact	20002_1407	DONE	
+nasal/sinus disorder	paranasal sinus disease	EFO_0009481	Exact	20002_1413	DONE	
+throat or larynx disorder	throat disease	EFO_0009479	Exact	20002_1414	DONE	
+vocal cord polyp	vocal cord polyp	EFO_0009478	Exact	20002_1419	DONE	
+other neurological problem	nervous system disease	EFO_0000618	Exact	20002_1434	DONE	
+clotting disorder/excessive bleeding	blood coagulation disease	EFO_0009314	Exact	20002_1445	DONE	
+hereditary/genetic haematological disorder	hematologic disease	EFO_0005803	Broad	20002_1451	DONE	
+blistering/desquamating skin disorder	bullous skin disease	EFO_1000673	Narrow	20002_1454	DONE	
+disc problem	vertebral joint disease	EFO_0009477	Exact	20002_1532	DONE	
+neck problem/injury	neck injury	EFO_0009476	Broad	20002_1545	DONE	
+cervical polyps	cervical polyp	EFO_0009475	Exact	20002_1555	DONE	
+soft tissue inflammation	soft tissue disease	EFO_0009470	Broad	20002_1618	DONE	
+abnormal smear (cervix)	abnormal PAP smear	EFO_0009511	Exact	20002_1663	DONE	
+benign breast lump	breast fibrocystic disease	EFO_0003014	Exact	20002_1666	DONE	
+Problems_related_to_social_environment	social problems	EFO_0009788	Broad	Z60	DONE	
+Problems_related_to_life_management_difficulty	?	EFO_0009786	Broad	Z73	DONE	
+Volume_depletion	?	HP0011106	Exact	E86	DONE	
+Spondylopathies_in_diseases_classified_elsewhere	vertebral joint disease	EFO_0004260	Broad	M49	DONE	
+Shoulder_lesions	NA	EFO_0009470	Broad	M75	DONE	
+Maternal_care_for_known_or_suspected_malpresentation_of_fetus	NA	EFO_0009682	Broad	O32	DONE	
+Maternal_care_for_known_or_suspected_disproportion	NA	EFO_0009682	Broad	O33	DONE	
+Maternal_care_for_known_or_suspected_abnormality_of_pelvic_organs	NA	EFO_0009682	Broad	O34	DONE	
+Long_labour	birthing labor	EFO_0009682	Broad	O63	DONE	
+Perineal_laceration_during_delivery	first degree perineal laceration	EFO_0009816	Exact	O70	DONE	
+Other_obstetric_trauma	obstetric labor complications	EFO_0009682	Broad	O71	DONE	
+Complications_of_anaesthesia_during_the_puerperium	complication of the puerperium	EFO_0009683	Broad	O89	DONE	
+Intrauterine_hypoxia	hypoxia	EFO_1001793	Exact	P20	DONE	
+Abnormal_serum_enzyme_levels	liver enzyme measurement	EFO_0009826	Exact	R74	DONE	
+Injury_of_blood_vessels_at_neck_level	injury		EFO_0009886	Broad	S15	DONE
+Injury_of_other_intrathoracic_organs	injury	EFO_0009887	Exact	S27	DONE	
+Injury_of_blood_vessels_at_abdomen_lower_back_and_pelvis_level	injury	EFO_0009886	Broad	S35	DONE	
+Injury_of_blood_vessels_at_shoulder_and_upper_arm_level	injury	EFO_0009886	Broad	S45	DONE	
+Other_fluke_infections	infectious disease	EFO_1001342	Exact	B66	DONE	
+Other_postsurgical_states	NA	EFO_0009789	Broad	Z98	DONE	
+Acquired_haemolytic_anaemia	hemolytic anemia	EFO_0005558	Broad	D59	DONE	
+Artificial_opening_status	opening	EFO_0009789	Broad	Z93	DONE	
+Persons encountering health services in other circumstances	NA	EFO_0009786	Broad	Z76	DONE	
+Persons encountering health services for other counselling and medical advice, not elsewhere classified	NA	EFO_0009786	Broad	Z71	DONE	
+Hereditary_ataxia	hereditary ataxia	EFO_0009671	Exact	G11	DONE	
+Mycetoma	eumycotic mycetoma	EFO_0007265	Exact	B47	DONE	
+Viral_warts	warts	EFO_0009662	Exact	B07	DONE	
+Acquired_absence_of_limb	amputation	EFO_0009632	Narrow	Z89	DONE	
+Convalescence	caonvalescence	EFO_0009630	Exact	Z54	DONE	
+Pemphigoid	bullous skin disease	EFO_1000673	Broad	L12	DONE	
+Eccrine_sweat_disorders	sweat gland disease	EFO_1000772	Broad	L74	DONE	
+Traumatic_amputations_involving_multiple_body_regions	amputation	EFO_0009632	Broad	T05	DONE	
+Need_for_immunization_against_certain_single_viral_diseases	immunization	EFO_0004292	Broad	Z24	DONE	
+Need_for_immunization_against_other_single_viral_diseases	immunization	EFO_0004292	Broad	Z25	DONE	
+Need_for_immunization_against_other_single_infectious_diseases	immunization	EFO_0004292	Broad	Z26	DONE	
+Need_for_immunization_against_combinations_of_infectious_diseases	immunization	EFO_0004292	Broad	Z27	DONE	
+Transplanted_organ_and_tissue_status	transplant outcome measurement	EFO_0005198	Broad	Z94	DONE	
+Persons encountering health services for specifie procedures, not carried out	NA	EFO_0009786	Broad	Z53	DONE	
+Haemorrhage_from_respiratory_passages	hemorrhage	MP_0001914	Broad	R04	DONE	
+Renal_tubulo_interstitial_disorders_in_diseases_classified_elsewhere	renal tubule disease	EFO_0009566	Broad	N16	DONE	
+Occlusion_and_stenosis_of_cerebral_arteries_notcerebral_infarction	cerebrovascular disorder	EFO_0003763	Broad	I66	DONE	
+Orchitis_and_epididymitis	orchitis	EFO_1001078	Broad	N45	DONE	
+Other_disorders_of_nervous_system	nervous system disease	EFO_0000618	Exact	G98	DONE	
+Rheumatic_fever_with_heart_involvement	rheumatic heart disease	EFO_1001161	Broad	I01	DONE	
+Rapidly_progressive_nephritic_syndrome	kidney disease	EFO_0003086	Broad	N01	DONE	
+Dizziness_and_giddiness	vertigo	HP_0002321	Broad	R42	DONE	
+Chlamydia_psittaci_infection	chlamydophila psittaci infection	EFO_1001288	Broad	A70	DONE	
+Glomerular_disorders_in_diseases_classified_elsewhere	glomerular disease	EFO_1002049	Broad	N08	DONE	
+Hypertensive_renal_disease	renal hypertension	EFO_1002039	Exact	I12	DONE	
+Congenital_ichthyosis	congenital ichthyosis	Orphanet:281097	Narrow	Q80	DONE	
+Fracture of skull and facial bones	skull factures	EFO_1001425	Broad	S02	DONE	
+Headache	Headache	HP_0002315	Exact	R51	DONE	
+Fever of unknown origin	fever of unknown origin	EFO_0003952	Exact	R50	DONE	
+Dysphagia	Dysphagia	HP_0002015	Exact	R13	DONE	
+Heartburn	dyspepsia	EFO_0008533	Broad	R12	DONE	
+Cough	Cough	HP_0012735	Exact	R05	DONE	
+Urethritis and urethral syndrome	Urethritis	EFO_0003878	Broad	N34	DONE	
+Other arthritis	arthritis	EFO_0005856	Exact	M13	DONE	
+Systemic lupus erythematosus	systemic lupus erythematosus	EFO_0002690	Exact	M32	DONE	
+Systemic sclerosis	systemic scleroderma	EFO_0000717	Exact	M34	DONE	
+Psoriasis	psoriasis	EFO_0000676	Exact	L40	DONE	
+Follicular cysts of skin and subcutaneous tissue	Follicular cysts	EFO_1001329	Broad	L72	DONE	
+Other disorders of pigmentation	pigmentation disease	EFO_1000755	Exact	L81	DONE	
+Ulcer of lower limb, not elsewhere classified	ulcer of lower limb	EFO_0007068	Exact	L97	DONE	
+Dyspepsia	dyspepsia	EFO_0008533	Exact	K30	DONE	
+Inguinal hernia	inguinal hernia	HP_0000023	Exact	K40	DONE	
+Acute sinusitis	sinusitis	EFO_0007486	Broad	J01	DONE	
+Pneumonia due to Streptococcus pneumoniae	pneumococcal infection	EFO_0000772	Broad	J13	DONE	
+Bacterial pneumonia, not elsewhere classified	bacterial pneumonia	EFO_1001272	Exact	J15	DONE	
+Pneumonia, organism unspecified	pneumonia	EFO_0003106	Exact	J18	DONE	
+Nasal polyp	nasal cavity polyp	EFO_1000391	Exact	J33	DONE	
+Peritonsillar abscess	peritonsillar abscess	EFO_0007429	Exact	J36	DONE	
+Emphysema	emphysema	EFO_0000464	Exact	J43	DONE	
+Other chronic obstructive pulmonary disease	chronic obstructive pulmonary disease	EFO_0000341	Exact	J44	DONE	
+Asthma	asthma	EFO_0000270	Exact	J45	DONE	
+Bronchiectasis	Bronchiectasis	HP_0002110	Exact	J47	DONE	
+Other interstitial pulmonary diseases	interstitial lung disease	EFO_0004244	Exact	J84	DONE	
+Other respiratory disorders	respiratory system disease	EFO_0000684	Exact	J98	DONE	
+Aortic aneurysm and dissection	aortic aneurysm	EFO_0001666	Broad	I71	DONE	
+Hordeolum and chalazion	Hordeolum	EFO_0007315	Broad	H00	DONE	
+Myasthenia gravis and other myoneural disorders	Myasthenia gravis	EFO_0004991	Broad	G70	DONE	
+Manic episode	manic or hypomanic episode	EFO_0007706	Broad	F30	DONE	
+Bipolar affective disorder	bipolar disorder	EFO_0000289	Exact	F31	DONE	
+Sexual dysfunction, not caused by organic disorder or disease	sexual dysfunction	EFO_0004714	Exact	F52	DONE	
+Other hypothyroidism	hypothyroidism	EFO_0004705	Exact	E03	DONE	
+Melanoma in situ	Clark level I melanoma	EFO_0004957	Exact	D03	DONE	
+Haemangioma and lymphangioma, any site	Hemangioma	EFO_1000635	Broad	D18	DONE	
+Leiomyoma of uterus	uterine fibroid	EFO_0000731	Broad	D25	DONE	
+Benign neoplasm of ovary	benign ovarian neoplasm	EFO_1000116	Exact	D27	DONE	
+Benign neoplasm of other and unspecified female genital organs	Genital neoplasm, female	EFO_1001331	Broad	D28	DONE	
+Benign neoplasm of brain and other parts of central nervous system	Benign brain neoplasm	EFO_1000107	Broad	D33	DONE	
+Benign neoplasm of thyroid gland	benign thyroid gland neoplasm	EFO_1000122	Exact	D34	DONE	
+Polycythaemia vera	Polycythaemia vera	EFO_0002429	Exact	D45	DONE	
+Myelodysplastic syndromes	myelodysplastic syndrome	EFO_0000198	Exact	D46	DONE	
+Purpura and other haemorrhagic conditions	Purpura	HP_0000979	Broad	D69	DONE	
+Malignant neoplasm of colon	colon carcinoma	EFO_1001950	Exact	C18	DONE	
+Malignant neoplasm of larynx	Malignant Laryngeal Neoplasm	EFO_1000354	Exact	C32	DONE	
+Mesothelioma	mesothelioma	EFO_0000588	Exact	C45	DONE	
+Secondary and unspecified malignant neoplasm of lymph nodes	metastasis to lymph node	EFO_0004906	Broad	C77	DONE	
+Hodgkin's disease	Hodgkins lymphoma	EFO_0000183	Exact	C81	DONE	
+Follicular [nodular] non-Hodgkin's lymphoma	Cutaneous Follicular Lymphoma	EFO_1000211	Broad	C82	DONE	
+Multiple myeloma and malignant plasma cell neoplasms	multiple myeloma	EFO_0001378	Broad	C90	DONE	
+Lymphoid leukaemia	lymphoid leukemia	EFO_0004289	Exact	C91	DONE	
+Myeloid leukaemia	acute myeloid leukemia	EFO_0000222	Exact	C92	DONE	
+Fracture of shoulder and upper arm	Bone fracture from OLS	EFO_0003931	Broad	S42	DONE	
+Elevated blood glucose level	fasting blood glucose measurement rather than elvated	EFO_0004468	Broad	R73	DONE	
+Other necrotising vasculopathies	vasculitis	EFO_0006803	Broad	M31	DONE	
+Other local infections of skin and subcutaneous tissue	General skin disease term	EFO_0000701	Broad	L08	DONE	
+Retinal vascular occlusions	retinal vein occlusion	EFO_1001157	Narrow	H34	DONE	
+Reaction to severe stress, and adjustment disorders	psychosocial stress measurement	EFO_0006783	Broad	F43	DONE	
+Benign neoplasm of colon, rectum, anus and anal canal	anal neoplasm, not malignant specific	EFO_0003835	Broad	D12	DONE	
+Benign neoplasm of breast	breast neoplasm, not malignant specific	EFO_0003869	Broad	D24	DONE	
+Malignant neoplasm of rectosigmoid junction	rectal cancer, not malignant specific	EFO_1000657	Broad	C19	DONE	
+Malignant neoplasm of breast	breast neoplasm, not necessarily malignant	EFO_0003869	Broad	C50	DONE	
+Malignant neoplasm of prostate	prostate carcinoma	EFO_0001663	Broad	C61	DONE	
+Malignant neoplasm of testis	testicular carcinoma, not malignant spcific	EFO_0005088	Broad	C62	DONE	
+Malignant neoplasm of brain	brain neoplasm, not malignant specific	EFO_0003833	Broad	C71	DONE	
+Failure and rejection of transplanted organs and tissues	transplant outcome measurement	EFO_0005198	Broad	T86	DONE	
+Poisoning by diuretics and other and unspecified drugs, medicaments and biological substances	poisoning	EFO_0008546	Broad	T50	DONE	
+Poisoning by psychotropic drugs, not elsewhere classified	poisoning	EFO_0008546	Broad	T43	DONE	
+Poisoning by antiepileptic, sedative-hypnotic and anti-Parkinsonism drugs	poisoning	EFO_0008546	Broad	T42	DONE	
+Poisoning by narcotics and psychodysleptics [hallucinogens]	poisoning	EFO_0008546	Broad	T40	DONE	
+Poisoning by nonopioid analgesics, antipyretics and antirheumatics	poisoning	EFO_0008546	Broad	T39	DONE	
+Dislocation, sprain and strain of joints and ligaments at ankle and foot level	ankle injury	EFO_1002021	Broad	S93	DONE	
+Fracture of foot, except ankle	Bone fracture	EFO_0003931	Broad	S92	DONE	
+Fracture of forearm	Bone fracture	EFO_0003931	Broad	S52	DONE	
+Abdominal and pelvic pain	pain in abdomen	EFO_0003766	Broad	R10	DONE	
+Medical abortion	abortion	EFO_1001491	Broad	O04	DONE	
+Other disorders of bladder	bladder disease	EFO_1000018	Exact	N32	DONE	
+Hydrocele and spermatocele	testicular hydrocele || spermatocele EFO_1001189	EFO_1001859, EFO_1001189	Broad	N43	DONE	
+Redundant prepuce, phimosis and paraphimosis	phimosis	EFO_1001104	Broad	N47	DONE	
+Salpingitis and oophoritis	Pelvic Inflammatory Disease	EFO_1001388	Broad	N70	DONE	
+Other inflammation of vagina and vulva	vaginal inflammation	EFO_0005757	Exact	N76	DONE	
+Other rheumatoid arthritis	rheumatoid arthritis	EFO_0000685	Exact	M06	DONE	
+Other joint disorders, not elsewhere classified	joint disease	EFO_1000999	Exact	M25	DONE	
+Osteoporosis without pathological fracture	osteoporosis	EFO_0003882	Broad	M81	DONE	
+Lichen simplex chronicus and prurigo	lichen disease	EFO_1000724	Broad	L28	DONE	
+Other disorders of skin and subcutaneous tissue, not elsewhere classified	skin disease	EFO_0000701	Exact	L98	DONE	
+Acute appendicitis	appendicitis	EFO_0007149	Broad	K35	DONE	
+Chronic sinusitis	sinusitis	EFO_0007486	Broad	J32	DONE	
+Pneumothorax	spontaneous pneumothorax	HP_0002108	Broad	J93	DONE	
+Acute pericarditis	pericarditis	EFO_0007427	Broad	I30	DONE	
+Other nontraumatic intracranial haemorrhage	intracranial hemorrhage NOS	EFO_0000551	Broad	I62	DONE	
+Cerebral infarction	brain infarction	EFO_0004277	Broad	I63	DONE	
+Other aneurysm	aneurysm	EFO_0009659	Exact	I72	DONE	
+Other hearing loss	hearing loss	EFO_0004238	Exact	H91	DONE	
+Transient cerebral ischaemic attacks and related syndromes	transient ischemic attack	EFO_0003764	Broad	G45	DONE	
+Acute and transient psychotic disorders	General psycotic symptoms term	EFO_0005940	Exact	F23	DONE	
+Other anxiety disorders	General anxiety disorder	EFO_0006788	Exact	F41	DONE	
+Mental disorder, not otherwise specified	General mental or behavioural disorder term	EFO_0000677	Broad	F99	DONE	
+Other disorders of thyroid	General throid disorder term	EFO_1000627	Exact	E07	DONE	
+Hyperparathyroidism and other disorders of parathyroid gland	Hyperparathyroidism	EFO_0008506	Broad	E21	DONE	
+Carcinoma in situ of skin	skin neoplasm	EFO_0004198	Broad	D04	DONE	
+Carcinoma in situ of breast	breast carcinoma	EFO_0000305	Broad	D05	DONE	
+Carcinoma in situ of cervix uteri	cervical carcinoma	EFO_0001061	Broad	D06	DONE	
+Benign neoplasm of mouth and pharynx	mouth neoplasm	EFO_0003868	Broad	D10	DONE	
+Benign neoplasm of major salivary glands	salivary gland neoplasm	EFO_0003826	Broad	D11	DONE	
+Other benign neoplasms of uterus	uterus neoplasm	EFO_0003859	Broad	D26	DONE	
+Neoplasm of uncertain or unknown behaviour of female genital organs	Genital neoplasm, female	EFO_1001331	Exact	D39	DONE	
+Neoplasm of uncertain or unknown behaviour of endocrine glands	endocrine neoplasm	EFO_0003769	Exact	D44	DONE	
+Malignant neoplasm of other and unspecified parts of tongue	tongue neoplasm	EFO_0003871	Broad	C02	DONE	
+Malignant neoplasm of tonsil	tonsil cancer	EFO_1001214	Exact	C09	DONE	
+Malignant neoplasm of oesophagus	esophageal carcinoma	EFO_0002916	Narrow	C15	DONE	
+Malignant neoplasm of stomach	stomach neoplasm	EFO_0003897	Broad	C16	DONE	
+Malignant neoplasm of rectum	rectum cancer	EFO_1000657	Exact	C20	DONE	
+Malignant neoplasm of anus and anal canal	anal neoplasm	EFO_0003835	Broad	C21	DONE	
+Malignant neoplasm of liver and intrahepatic bile ducts	Liver neoplasm	EFO_1001513	Broad	C22	DONE	
+Malignant neoplasm of pancreas	pancreatic carcinoma	EFO_0002618	Narrow	C25	DONE	
+Malignant neoplasm of bronchus and lung	Lung carcinoma	EFO_0001071	Broad	C34	DONE	
+Malignant melanoma of skin	cutaneous melanoma	EFO_0000389	Exact	C43	DONE	
+Malignant neoplasm of cervix uteri	cervical carcinoma	EFO_0001061	Broad	C53	DONE	
+Malignant neoplasm of corpus uteri	uterine corpus cancer	EFO_0007532	Broad	C54	DONE	
+Malignant neoplasm of ovary	Not malignant specific	EFO_0003893	Broad	C56	DONE	
+Malignant neoplasm of kidney, except renal pelvis	kidney neoplasm	EFO_0003865	Broad	C64	DONE	
+Malignant neoplasm of bladder	bladder carcinoma	EFO_0000292	Narrow	C67	DONE	
+Malignant neoplasm of eye and adnexa	eye neoplasm	EFO_0003824	Broad	C69	DONE	
+Malignant neoplasm of thyroid gland	thyroid carcinoma	EFO_0002892	Narrow	C73	DONE	
+Diffuse non-Hodgkin's lymphoma	non-Hodgkins lymphoma	EFO_0005952	Broad	C83	DONE	
+Chronic viral hepatitis	viral hepatitis	EFO_0007540	Broad	B18	DONE	
+Diarrhoea and gastro-enteritis of presumed infectious origin	diarrhoea||gastroenteritis	EFO_1001463, EFO_1001463	Broad	A09	DONE	
+Other septicaemia	sepsis	HP_0100806	Exact	A41	DONE	
+Personal history of other diseases and conditions	clinical history	EFO_0000352	Broad	Z87	DONE	
+Family history of malignant neoplasm	There is only family history of breast or lung cancer, could use a parent term like family history of cancer?	EFO:0009640	Exact	Z80	DONE	
+Other medical care	health care delivery	EFO_0009786	Broad	Z51	DONE	
+Fitting and adjustment of other devices	?	EFO_0009786	Broad	Z46	DONE	
+Adjustment and management of implanted device	?	EFO_0009786	Broad	Z45	DONE	
+Donors of organs and tissues	organ donor||tissue donor	EFO_0009634, EFO_0009633	Exact	Z52	DONE	
+Fitting and adjustment of external prosthetic device	prosthesis fitting	EFO_0009786	Broad	Z44	DONE	
+Other surgical follow-up care	follow-up	EFO:0009642	Broad	Z48	DONE	
+Attention to artificial openings	?	EFO_0009786	Broad	Z43	DONE	
+Postpartum care and examination	patient care? follow-up care?	EFO_0009787	Broad	Z39	DONE	
+Antenatal screening	screening	EFO_0009787	Broad	Z36	DONE	
+Certain early complications of trauma, not elsewhere classified	complication	EFO_0009888	Broad	T79	DONE	
+Follow-up care involving plastic surgery	follow-up	EFO:0009642	Broad	Z42	DONE	
+Procedures for purposes other than remedying health state	medical procedure	EFO_0002571	Broad	Z41	DONE	
+Abnormal findings on diagnostic imaging of other body structures	abnormal finding	EFO_0009827	Exact	R93	DONE	
+Symptoms and signs concerning food and fluid intake	sign or symptom	EFO_0009825	Exact	R63	DONE	
+Pregnancy examination and test	pregnancy test	EFO:0009643	Exact	Z32	DONE	
+Special screening examination for other diseases and disorders	medical examination	EFO_0009517	Broad	Z13	DONE	
+Special screening examination for neoplasms	medical examination	EFO_0009517	Broad	Z12	DONE	
+Special screening examination for infectious and parasitic diseases	medical examination	EFO_0009517	Broad	Z11	DONE	
+Follow-up examination after treatment for conditions other than malignant neoplasms	follow-up	EFO:0009642	Broad	Z09	DONE	
+Follow-up examination after treatment for malignant neoplasm	follow-up	EFO:0009642	Broad	Z08	DONE	
+Examination and observation for other reasons	medical examination	EFO_0009517	Broad	Z04	DONE	
+Medical observation and evaluation for suspected diseases and conditions	medical examination	EFO_0009517	Broad	Z03	DONE	
+Other special examinations and investigations of persons without complaint or reported diagnosis	medical examination	EFO_0009517	Broad	Z01	DONE	
+General examination and investigation of persons without complaint or reported diagnosis	medical examination	EFO_0009517	Broad	Z00	DONE	
+Other complications of surgical and medical care, not elsewhere classified	complication	EFO_0009518	Broad	T88	DONE	
+Complications peculiar to reattachment and amputation	complication	EFO_0009518	Broad	T87	DONE	
+Complications of procedures, not elsewhere classified	complication	EFO_0009518	Broad	T81	DONE	
+Certain early complications of trauma, not elsewhere classified	complication	EFO_0009518	Broad	T79	DONE	
+Adverse effects, not elsewhere classified	No general adverse effects term	EFO_0009658	Exact	T78	DONE	
+Foreign body in respiratory tract	foreign body	EFO_0009525	Broad	T17	DONE	
+Injury of unspecified body region	injury	EFO_0000546	Exact	T14	DONE	
+Open wound of ankle and foot	ankle injury||skin wound	EFO_1002021||EFO_0005756	Broad	S91	DONE	
+Other and unspecified injuries of lower leg	injury	EFO_0000546	Broad	S89	DONE	
+Injury of muscle and tendon at lower leg level	injury	EFO_0000546	Broad	S86	DONE	
+Dislocation, sprain and strain of joints and ligaments of knee	knee injury	EFO_0009507		S83	DONE	
+Fracture of lower leg, including ankle	lower extremity fracture	EFO_0009512	Broad	S82	DONE	
+Open wound of lower leg	leg injury	EFO_0009508	Broad	S81	DONE	
+Superficial injury of lower leg	leg injury	EFO_0009508	Broad	S80	DONE	
+Injury of muscle and tendon at hip and thigh level	leg injury	EFO_0009508	Broad	S76	DONE	
+Other and unspecified injuries of wrist and hand	injury	EFO_0000546	Broad	S69	DONE	
+Traumatic amputation of wrist and hand	amputation	EFO_0009632	Broad	S68	DONE	
+Crushing injury of wrist and hand	crush injury	EFO_0009504	Broad	S67	DONE	
+Injury of muscle and tendon at wrist and hand level	injury	EFO_0000546	Broad	S66	DONE	
+Dislocation, sprain and strain of joints and ligaments at wrist and hand level	dislocation||sprain	EFO_0009521||EFO_0009582	Broad	S63	DONE	
+Open wound of wrist and hand	skin wound	EFO_0005756	Broad	S61	DONE	
+Superficial injury of wrist and hand	injury	EFO_0000546	Broad	S60	DONE	
+Injury of muscle and tendon at forearm level	injury	EFO_0000546	Broad	S56	DONE	
+Open wound of forearm	skin wound	EFO_0005756	Broad	S51	DONE	
+Injury of muscle and tendon at shoulder and upper arm level	shoulder impingement syndrome	EFO_1001178	Narrow	S46	DONE	
+Dislocation, sprain and strain of joints and ligaments of shoulder girdle	dislocation||sprain	EFO_0009521||EFO_0009582	Broad	S43	DONE	
+Other and unspecified injuries of abdomen, lower back and pelvis	abdominal injury	EFO_0009502	Broad	S39	DONE	
+Open wound of abdomen, lower back and pelvis	abdominal injury	EFO_0009502	Broad	S31	DONE	
+Fracture of rib(s), sternum and thoracic spine	rib fracture	EFO_0009620	Narrow	S22	DONE	
+Superficial injury of thorax	injury	EFO_0000546	Broad	S20	DONE	
+Dislocation, sprain and strain of joints and ligaments at neck level	neck injury	EFO_0009476	Exact	S13	DONE	
+Fracture of neck	spinal fracture	EFO_0003902	Broad	S12	DONE	
+Other and unspecified injuries of head	head injury	EFO_0009505	Broad	S09	DONE	
+Intracranial injury	head injury	EFO_0009505	Broad	S06	DONE	
+Injury of eye and orbit	eye injury	EFO_0009485	Broad	S05	DONE	
+Open wound of head	head injury	EFO_0009505	Broad	S01	DONE	
+Other abnormal products of conception	conception	EFO_0009682	Broad	O02	DONE	
+Abnormal findings on diagnostic imaging of lung	abnormality of the lung	HP_0002088	Broad	R91	DONE	
+Abnormal findings on diagnostic imaging of central nervous system	morphological abnormality of the central nervous system	HP_0002011	?	R90	DONE	
+Other abnormal findings of blood chemistry	abnormal blood homeostasis	HP_0001871	Broad	R79	DONE	
+Other abnormal immunological findings in serum	abnormality of the immune system	HP_0002715	Broad	R76	DONE	
+Unknown and unspecified causes of morbidity	disease	EFO_0000408	?	R69	DONE	
+Other general symptoms and signs	sign or symptom	EFO_0003765	Exact	R68	DONE	
+Maternal care for other conditions predominantly related to pregnancy	patient care?	EFO_0009682	Broad	O26	DONE	
+Oedema, not elsewhere classified	edema	EFO_0009373	Exact	R60	DONE	
+Convulsions, not elsewhere classified	seizures	HP_0001250	Narrow	R56	DONE	
+Syncope and collapse	syncope	HP_0001279	Exact	R55	DONE	
+Senility	cognitive impairment	HP_0100543	Broad	R54	DONE	
+Malaise and fatigue	fatigue||malaise	HP_0012378 | EFO_0009641	Exact	R53	DONE	
+Voice disturbances	voice disturbance	EFO_0009692	Exact	R49	DONE	
+Speech disturbances, not elsewhere classified	speech apraxia	HP_0011098	Narrow	R47	DONE	
+Other symptoms and signs involving cognitive functions and awareness	cognitive impairment	HP_0100543	Broad	R41	DONE	
+Somnolence, stupor and coma	coma	HP_0001259	Broad	R40	DONE	
+Other symptoms and signs involving the urinary system	abnormality of the urinary system	HP_0000079	Exact	R39	DONE	
+Other symptoms and signs involving the nervous and musculoskeletal systems	abnormality of the musculature||abnormality of the skeletal system||abnormality of the nervous system	HP_0003011||HP_0000924||HP_0000707	Broad	R29	DONE	
+Other skin changes	abnormality of the skin	HP_0000951	Exact	R23	DONE	
+Localised swelling, mass and lump of skin and subcutaneous tissue	lymphedema	Orphanet_79383	?	R22	DONE	
+Rash and other nonspecific skin eruption	skin disease	EFO_0000701	Broad	R21	DONE	
+Other symptoms and signs involving the digestive system and abdomen	abnormality of the digestive system	HP_0025031	Broad	R19	DONE	
+Flatulence and related conditions	flatulence	EFO_0009669	Exact	R14	DONE	
+Other symptoms and signs involving the circulatory and respiratory systems	abnormality of the respiratory system||abnormality of the cardiovascular system	HP_0002086||HP_0001626	Broad	R09	DONE	
+Pain in throat and chest	pain	EFO_0003843	Broad	R07	DONE	
+Other congenital malformations of tongue, mouth and pharynx	rare genetic developmental defect during embryogenesis	Orphanet_183530	Broad	Q38	DONE	
+Other congenital malformations of face and neck	rare genetic developmental defect during embryogenesis	Orphanet_183530	Broad	Q18	DONE	
+Ectopic pregnancy	ectopic pregnancy	HP_0031456	Exact	O00	DONE	
+Maternal care for known or suspected foetal abnormality and damage	fetal disorder? patient care? 	EFO_0009682	Broad	O35	DONE	
+Gestational [pregnancy-induced] hypertension without significant proteinuria	preeclampsia||proteinuria	EFO_0000668||HP_0000093	Broad	O13	DONE	
+Haemorrhage in early pregnancy	hemorrhage	MP_0001914	Broad	O20	DONE	
+Maternal care for other known or suspected foetal problems	fetal disorder? patient care? 	EFO_0009682	Broad	O36	DONE	
+Other deforming dorsopathies	-	EFO_0002461	Broad	M43	DONE	
+Other inflammatory spondylopathies	-	EFO_0004260	Broad	M46	DONE	
+Other disorders of amniotic fluid and membranes	abnormality of the amniotic fluid	HP_0001560	Exact	O41	DONE	
+Antepartum haemorrhage, not elsewhere classified	antepartum hemorrhage	HP_0025328	Exact	O46	DONE	
+False labour	Braxton-Hicks contraction	EFO:0009639	Exact	O47	DONE	
+Prolonged pregnancy	post term pregnancy	EFO_0009681	Exact	O48	DONE	
+Obstructed labour due to malposition and malpresentation of foetus	abnormal delivery	HP_0001787	Broad	O64	DONE	
+Other obstructed labour	abnormal delivery	HP_0001787	Broad	O66	DONE	
+Labour and delivery complicated by foetal stress [distress]	abnormal delivery	HP_0001787	Broad	O68	DONE	
+Labour and delivery complicated by umbilical cord complications	abnormal delivery	HP_0001787	Broad	O69	DONE	
+Other complications of labour and delivery, not elsewhere classified	abnormal delivery	HP_0001787	Broad	O75	DONE	
+Single spontaneous delivery	spontaneous labor and birth	EFO:0009638	Exact	O80	DONE	
+Single delivery by Caesarean section	cesarean section	EFO:0009636	Broad	O82	DONE	
+Complications of the puerperium, not elsewhere classified	puerperal disorder	EFO_0009683	Exact	O90	DONE	
+Other maternal diseases classifiable elsewhere but complicating pregnancy, childbirth and the puerperium	pregnancy disorder	EFO_0009682	Exact	O99	DONE	
+Recurrent and persistent haematuria	hematuria	HP_0000790	Broad	N02	DONE	
+Acute tubulo-interstitial nephritis	nephritis	EFO_1002050	Broad	N10	DONE	
+Tubulo-interstitial nephritis, not specified as acute or chronic	nephritis	EFO_1002050	Broad	N12	DONE	
+Calculus of lower urinary tract	ureterolithiasis	EFO_1001228	Exact	N21	DONE	
+Other disorders of kidney and ureter, not elsewhere classified	urinary system disease	EFO_0009690	Broad	N28	DONE	
+Neuromuscular dysfunction of bladder, not elsewhere classified	neurogenic bladder	HP_0000011	Exact	N31	DONE	
+Other disorders of urethra	urethral disease	EFO_0009689	Exact	N36	DONE	
+Other disorders of urinary system	urinary system disease	EFO_0009690	Exact	N39	DONE	
+Hyperplasia of prostate	benign prostatic hyperplasia	EFO_0000284	Exact	N40	DONE	
+Other disorders of prostate	prostate disease	EFO_0009602	Exact	N42	DONE	
+Other disorders of penis	male reproductive system disease	EFO_0009555	Broad	N48	DONE	
+Inflammatory disorders of male genital organs, not elsewhere classified	male reproductive system disease	EFO_0009555	Broad	N49	DONE	
+Other disorders of male genital organs	male reproductive system disease	EFO_0009555	Broad	N50	DONE	
+Inflammatory disorders of breast	mastitis	EFO_1001034	Broad	N61	DONE	
+Other disorders of breast	breast disease	EFO_0009483	Exact	N64	DONE	
+Other female pelvic inflammatory diseases	pelvic inflammatory disease	EFO_1001388	Broad	N73	DONE	
+Other noninflammatory disorders of uterus, except cervix	female reproductive system disease	EFO_0009549	Broad	N85	DONE	
+Erosion and ectropion of cervix uteri	cervix erosion	EFO_1000862	Exact	N86	DONE	
+Other noninflammatory disorders of cervix uteri	female reproductive system disease	EFO_0009549	Broad	N88	DONE	
+Other noninflammatory disorders of vagina	female reproductive system disease	EFO_0009549	Broad	N89	DONE	
+Other noninflammatory disorders of vulva and perineum	female reproductive system disease	EFO_0009549	Broad	N90	DONE	
+Excessive, frequent and irregular menstruation	menorrhagia	HP_0000132	Broad	N92	DONE	
+Other abnormal uterine and vaginal bleeding	metrorrhagia	HP_0100608	Exact	N93	DONE	
+Menopausal and other perimenopausal disorders	menopause	EFO_0003922	Broad	N95	DONE	
+Postprocedural disorders of genito-urinary system, not elsewhere classified	disease of genitourinary system	EFO_0009663	Broad	N99	DONE	
+Other arthrosis	osteoarthritis	EFO_0002506	Exact	M19	DONE	
+Acquired deformities of fingers and toes	congenital deformities of fingers	Orphanet_294947	Broad	M20	DONE	
+Other acquired deformities of limbs	congenital deformities of limbs	Orphanet_294944	Exact	M21	DONE	
+Disorders of patella	abnormality of the patella	EFO_0009665	Exact	M22	DONE	
+Other specific joint derangements	joint disease	EFO_1000999	Broad	M24	DONE	
+Other systemic involvement of connective tissue	connective tissue disease	EFO_1001986	Broad	M35	DONE	
+Other spondylopathies	-	EFO_0004260	Broad	M48	DONE	
+Other dorsopathies, not elsewhere classified	-	EFO_0009676	Broad	M53	DONE	
+Other spondylopathies	spondyloarthropathy	EFO_0004260	Broad	M48	DONE	
+Other intervertebral disk disorders	discitis	EFO_1000900	Narrow	M51	DONE	
+Other dorsopathies, not elsewhere classified	back pain	EFO_0009676	Broad	M53	DONE	
+Other disorders of muscle	muscular disease	EFO_0002970	Exact	M62	DONE	
+Spontaneous rupture of synovium and tendon	tendon rupture	HP_0100550	Broad	M66	DONE	
+Other disorders of synovium and tendon	tenosynovitis	EFO_1001435	Exact	M67	DONE	
+Other bursopathies	joint disease	EFO_1000999	Broad	M71	DONE	
+Enthesopathies of lower limb, excluding foot	enthesopathy	EFO_0009666	Broad	M76	DONE	
+Other enthesopathies	enthesopathy	EFO_0009666	Exact	M77	DONE	
+Other soft tissue disorders, not elsewhere classified	soft tissue disease	EFO_0009470	Exact	M79	DONE	
+Osteoporosis with pathological fracture	osteoporosis	EFO_0003882	Broad	M80	DONE	
+Disorders of continuity of bone	bone disease	EFO_0004260	Broad	M84	DONE	
+Other disorders of bone density and structure	bone density	EFO_0003923	Broad	M85	DONE	
+Other disorders of bone	bone disease	EFO_0004260	Exact	M89	DONE	
+Other disorders of cartilage	cartilage disease	EFO_0005802	Exact	M94	DONE	
+Other acquired deformities of musculoskeletal system and connective tissue	musculoskeletal system disease | connective tissue disease	EFO_0009676 | EFO_1001986	Exact	M95	DONE	
+Postprocedural musculoskeletal disorders, not elsewhere classified	musculoskeletal system disease	EFO_0009676	Broad	M96	DONE	
+Dermatitis due to substances taken internally	dermatitis due to unspecified substance taken internally	HP_0000964	Broad	L27	DONE	
+Other dermatitis	skin disease	EFO_0000701	Broad	L30	DONE	
+Other erythematous conditions	skin disease	EFO_0000701	Broad	L53	DONE	
+Nail disorders	genetic nail anomaly	Orphanet_183454	Narrow	L60	DONE	
+Other follicular disorders	folliculitis	EFO_1000702	Narrow	L73	DONE	
+Other epidermal thickening	epidermal thickening	HP_0011368	Exact	L85	DONE	
+Embedded and impacted teeth	impacted tooth	HP_0011079	Exact	K01	DONE	
+Gingivitis and periodontal diseases	periodontitis	EFO_0000649	Broad	K05	DONE	
+Other disorders of gingiva and edentulous alveolar ridge	gingival disease	EFO_0009670	Narrow	K06	DONE	
+Other disorders of teeth and supporting structures	tooth disease	EFO_1001216	Exact	K08	DONE	
+Cysts of oral region, not elsewhere classified	mouth neoplasm	EFO_0003868	Broad	K09	DONE	
+Stomatitis and related lesions	stomatitis	EFO_0009688	Exact	K12	DONE	
+Other diseases of lip and oral mucosa	mouth disease	EFO_1001047	Broad	K13	DONE	
+Diseases of tongue	mouth disease	EFO_1001047	Broad	K14	DONE	
+Other diseases of stomach and duodenum	digestive system disease	EFO_0000405	Broad	K31	DONE	
+Other non-infective gastro-enteritis and colitis	gastroenteritis	EFO_1001463	Broad	K52	DONE	
+Paralytic ileus and intestinal obstruction without hernia	gastrointestinal obstruction	HP_0004796	Broad	K56	DONE	
+Fissure and fistula of anal and rectal regions	anal fistula	HP_0012390	Narrow	K60	DONE	
+Other diseases of anus and rectum	anus disease||rectal disease	EFO_0009660 | EFO_0009685	Exact	K62	DONE	
+Other inflammatory liver diseases	liver disease	EFO_0001421	Broad	K75	DONE	
+Other diseases of pancreas	pancreas disease	EFO_0009605	Exact	K86	DONE	
+Postprocedural disorders of digestive system, not elsewhere classified	digestive system disease	EFO_0000405	Broad	K91	DONE	
+Other diseases of digestive system	digestive system disease	EFO_0000405	Exact	K92	DONE	
+Acute pharyngitis	pharyngitis	EFO_0009657	Exact	J02	DONE	
+Acute tonsillitis	tonsillitis	HP_0011110	Broad	J03	DONE	
+Acute upper respiratory infections of multiple and unspecified sites	respiratory system disease	EFO_0000684	Broad	J06	DONE	
+Chronic rhinitis, nasopharyngitis and pharyngitis	rhinitis	EFO_0008521	Broad	J31	DONE	
+Other disorders of nose and nasal sinuses	respiratory system disease	EFO_0000684	Broad	J34	DONE	
+Chronic diseases of tonsils and adenoids	lympathic system disease	EFO_0007352	Broad	J35	DONE	
+Diseases of vocal cords and larynx, not elsewhere classified	laryngeal disease	EFO_0009673	Exact	J38	DONE	
+Other diseases of upper respiratory tract	respiratory system disease	EFO_0000684	Broad	J39	DONE	
+Bronchitis, not specified as acute or chronic	bronchitis	EFO_0009661	Exact	J40	DONE	
+Pyothorax	pleural empyema	EFO_0009680	Exact	J86	DONE	
+Pleural effusion, not elsewhere classified	pleural effusion	EFO:0009637	Exact	J90	DONE	
+Respiratory failure, not elsewhere classified	respiratory failure	EFO_0009686	Exact	J96	DONE	
+Rheumatic mitral valve diseases	mitral valve disease	EFO_0009557	Broad	I05	DONE	
+Other diseases of pericardium	pericarditis	EFO_0007427	Exact	I31	DONE	
+Acute and subacute endocarditis	endocarditis	EFO_0000465	Broad	I33	DONE	
+Atrioventricular and left bundle-branch block	bundle branch block	EFO_0004138	Broad	I44	DONE	
+Other conduction disorders	conduction system disease	EFO_0005137	Exact	I45	DONE	
+Other cardiac arrhythmias	cardiac arrythmia	EFO_0004269	Exact	I49	DONE	
+Occlusion and stenosis of precerebral arteries, not resulting in cerebral infarction	occlusion precerebral artery	EFO_0009677	Exact	I65	DONE	
+Other disorders of arteries and arterioles	vascular disease	EFO_0004264	Broad	I77	DONE	
+Diseases of capillaries	vascular disease	EFO_0004264	Broad	I78	DONE	
+Other venous embolism and thrombosis	venous thromboembolism	EFO_0004286	Exact	I82	DONE	
+Other disorders of veins	vascular disease	EFO_0004264	Broad	I87	DONE	
+Other non-infective disorders of lymphatic vessels and lymph nodes	lymphatic system disease	EFO_0007352	Exact	I89	DONE	
+Other disorders of eyelid	eyelid disease	EFO_0009547	Exact	H02	DONE	
+Disorders of orbit	disease of orbital region	EFO_0009664	Exact	H05	DONE	
+Other disorders of conjunctiva	conjunctival disorder	EFO_1000203	Exact	H11	DONE	
+Other disorders of lens	lens disease	EFO_0009674	Exact	H27	DONE	
+Paralytic strabismus	paralytic strabismus	EFO_0009678	Exact	H49	DONE	
+Other strabismus	strabismus	HP_0000486	Exact	H50	DONE	
+Other disorders of eye and adnexa	eye adnexa disease	EFO_0009546	Exact	H57	DONE	
+Postprocedural disorders of eye and adnexa, not elsewhere classified	eye adnexa disease	EFO_0009546	Broad	H59	DONE	
+Other disorders of external ear	external ear disease	EFO_0009668	Exact	H61	DONE	
+Nonsuppurative otitis media	non-suppurative otitis media	EFO_0007415	Narrow	H65	DONE	
+Other disorders of Eustachian tube	eustachian tube disease	EFO_0009667	Exact	H69	DONE	
+Disorders of vestibular function	vestibular disease	EFO_0009691	Exact	H81	DONE	
+Other diseases of inner ear	inner ear disease	EFO_0009672	Exact	H83	DONE	
+Otalgia and effusion of ear	ear pain||otitis media with effusion	HP_0030766 | EFO_0007415	Exact	H92	DONE	
+Other disorders of ear, not elsewhere classified	auditory system disease	EFO_1001455	Exact	H93	DONE	
+Other demyelinating diseases of central nervous system	CNS demyelinating autoimmune disease	EFO_1000870	Narrow?	G37	DONE	
+Other mononeuropathies	mononeuropathy	EFO_0009558	Exact	G58	DONE	
+Other polyneuropathies	polyneuropathy	EFO_0009562	Exact	G62	DONE	
+Paraplegia and tetraplegia	paraplegia	EFO_0009679 | EFO_0009684	Exact	G82	DONE	
+Other disorders of brain	brain disease	EFO_0005774	Exact	G93	DONE	
+Other diseases of spinal cord	spinal cord disease	EFO_0009488	Exact	G95	DONE	
+Somatoform disorders	somatoform disorder	EFO_0009687	Exact	F45	DONE	
+Other non-toxic goitre	goiter	EFO_0004283	Broad	E04	DONE	
+Thyrotoxicosis [hyperthyroidism]	hyperthyroidism	EFO_0009189	Exact	E05	DONE	
+Other disorders of pancreatic internal secretion	pancreas disease	EFO_0009605	Broad	E16	DONE	
+Other disorders of fluid, electrolyte and acid-base balance	abnormality of metabolism/homeostasis	HP_0001939	Exact	E87	DONE	
+Carcinoma in situ of other and unspecified genital organs	urogenital neoplasm	EFO_0003863	Broad	D07	DONE	
+Carcinoma in situ of other and unspecified sites	carcinoma	EFO_0000313	Broad	D09	DONE	
+Benign neoplasm of other and ill-defined parts of digestive system	digestive system neoplasm	EFO_0008549	Broad	D13	DONE	
+Benign neoplasm of middle ear and respiratory system	respiratory system neoplasm	EFO_0003853	Broad	D14	DONE	
+Benign neoplasm of bone and articular cartilage	bone neoplasm	EFO_0003820	Broad	D16	DONE	
+Benign lipomatous neoplasm	lipoma	EFO_0000759	Exact	D17	DONE	
+Other benign neoplasms of connective and other soft tissue	soft tissue neoplasm	EFO_1000541	Broad	D21	DONE	
+Melanocytic naevi	Melanocytic nevus	EFO_0009675	Exact	D22	DONE	
+Other benign neoplasms of skin	skin neoplasm	EFO_0004198	Broad	D23	DONE	
+Benign neoplasm of urinary organs	urogenital neoplasm	EFO_0003863	Broad	D30	DONE	
+Benign neoplasm of meninges	benign brain neoplasm	EFO_1000107	Broad	D32	DONE	
+Benign neoplasm of other and unspecified endocrine glands	endocrine neoplasm	EFO_0003769	Exact	D35	DONE	
+Benign neoplasm of other and unspecified sites	benign neoplasm	EFO_0002422	Exact	D36	DONE	
+Neoplasm of uncertain or unknown behaviour of oral cavity and digestive organs	digestive system neoplasm	EFO_0008549	Exact	D37	DONE	
+Neoplasm of uncertain or unknown behaviour of middle ear and respiratory and intrathoracic organs	respiratory system neoplasm	EFO_0003853	Broad	D38	DONE	
+Neoplasm of uncertain or unknown behaviour of urinary organs	urogenital neoplasm	EFO_0003863	Broad	D41	DONE	
+Other neoplasms of uncertain or unknown behaviour of lymphoid, haematopoietic and related tissue	lymphoid neoplasm||common hematopoietic neoplasm	EFO_0001642||EFO_1000201	Exact	D47	DONE	
+Neoplasm of uncertain or unknown behaviour of other and unspecified sites	neoplasm	EFO_0000616	Broad	D48	DONE	
+Other aplastic anaemias	aplastic anemia	HP_0001915	Exact	D61	DONE	
+Other diseases of blood and blood-forming organs	hematologic disease	EFO_0005803	Exact	D75	DONE	
+Other disorders involving the immune mechanism, not elsewhere classified	immune system disease	EFO_0000540	Exact	D89	DONE	
+Other malignant neoplasms of skin	skin neoplasm	EFO_0004198	Broad	C44	DONE	
+Malignant neoplasm of other connective and soft tissue	soft tissue neoplasm	EFO_1000541	Broad	C49	DONE	
+Secondary malignant neoplasm of respiratory and digestive organs	respiratory system neoplasm||digestive system neoplasm	EFO_0009812	Broad	C78	DONE	
+Secondary malignant neoplasm of other sites	neoplasm	EFO_0009812	Broad	C79	DONE	
+Malignant neoplasm without specification of site	cancer	EFO_0000311	Broad	C80	DONE	
+Other and unspecified types of non-Hodgkin's lymphoma	non-Hodgkins lymphoma	EFO_0005952	Exact	C85	DONE	
+Candidiasis	Candidiasis, Invasive	EFO_1001283	Narrow	B37	DONE	
+Other bacterial intestinal infections	intestinal disease||bacterial disease	EFO_0009431||EFO_0000771	Broad	A04	DONE	
+Viral and other specified intestinal infections	intestinal disease||viral disease	EFO_0009431||EFO_0000763	Broad	A08	DONE	
+Other predominantly sexually transmitted diseases, not elsewhere classified	bacterial sexually transmitted disease	EFO_0003955	Narrow	A63	DONE	
+Other disorders of adrenal gland	adrenal gland disease	EFO_0005539	Exact	E27	DONE	
