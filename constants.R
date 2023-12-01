@@ -59,8 +59,8 @@ gwas_loglog_trans = function() {
   scales::trans_new("gwas_loglog", transform = pvalue_to_ll, inverse = ll_to_pvalue)
 }
 
-get_ukb_data_url = function() {
-  return(paste0('https://storage.googleapis.com/ukb-diverse-pops-public-free/sumstats_qc_analysis/'))
+get_ukb_data_url = function(parent_folder = 'sumstats_qc_analysis/') {
+  return(paste0('https://storage.googleapis.com/ukb-diverse-pops-public-free/', parent_folder))
 }
 
 check_size = function(local_fname, url) {
@@ -80,9 +80,9 @@ check_size = function(local_fname, url) {
   }
 }
 
-get_or_download_ukb_file = function(base_fname, subfolder='', local_name='', use_local=F) {
+get_or_download_ukb_file = function(base_fname, subfolder='', local_name='', use_local=F, parent_folder='sumstats_qc_analysis/') {
   fname = paste0(data_dir, ifelse(local_name != '', local_name, base_fname))
-  url = paste0(get_ukb_data_url(), subfolder, base_fname)
+  url = paste0(get_ukb_data_url(parent_folder), subfolder, base_fname)
   if (!file.exists(fname)) {
     download.file(url, fname)
   } else {
@@ -95,8 +95,8 @@ get_or_download_ukb_file = function(base_fname, subfolder='', local_name='', use
   return(fname)
 }
 
-load_ukb_file = function(base_fname, subfolder='', local_name='', force_cols=cols(), use_local=F) {
-  fname = get_or_download_ukb_file(base_fname, subfolder, local_name, use_local=use_local)
+load_ukb_file = function(base_fname, subfolder='', local_name='', force_cols=cols(), use_local=F, parent_folder='sumstats_qc_analysis/') {
+  fname = get_or_download_ukb_file(base_fname, subfolder, local_name, use_local=use_local, parent_folder=parent_folder)
   if (endsWith(fname, '.gz') | endsWith(fname, '.bgz')) {
     fname = gzfile(fname)
   }
