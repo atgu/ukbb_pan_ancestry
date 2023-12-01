@@ -1,4 +1,5 @@
 source('~/ukbb_pan_ancestry/constants.R')
+library(magick)
 
 efo = read_tsv(gzfile('data/known_ukbb_loci.meta_hq_annotated.txt.bgz'),
                col_types = cols(locus=col_character(),
@@ -129,22 +130,117 @@ known_novel_efo = function() {
               p_frac + theme(plot.margin = margin(0,8,0,0, "pt"))))
 }
 
+all_variants = read_tsv(gzfile('data/top_meta_with_top_pop_by_variant_full.txt.bgz'))
 
+all_genes = all_variants %>%
+  select(gene=nearest_genes) %>%
+  separate_rows(gene) %>% distinct
 
-p4a_subs = known_novel_efo()
-p4b = haploinsufficiency_plot()
-# pitx = readPNG("PITX2_pan_ukb_4_112282681_META_800000_continuous-5099-both_sexes--irnt.png")
-pitx = image_read_pdf("PITX2_pan_ukb_4_112282681_META_650000_1Mb_continuous-5099-both_sexes--irnt_test.pdf")
-p4c = ggplot() +
-  annotation_raster(pitx, xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf) +
-  geom_blank() + theme_nothing()
-gdf5 = image_read_pdf("GDF5_pan_ukb_20_34025756_META_500000_1Mb_phecode-716.2-both_sexes--.pdf")
-p4d = ggplot() +
-  annotation_raster(gdf5, xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf) +
-  geom_blank() + theme_nothing()
+gene_lists = load_all_gene_list_data()
+
+efo %>%
+  group_by(trait_efo_category, idx) %>% # , trait_type, phenocode, pheno_sex, coding, modifier, lead_locus, nearest_genes) %>%
+  mutate(any_same_category=any(trait_efo_category == trait_efo_category_otg, na.rm=T)) %>%
+  filter(!any_same_category) %>%
+  select(matches("lead_locus") | (!contains("otg") & !matches("locus"))) %>%
+  distinct %>% ungroup %>%
+  select(gene=nearest_genes) %>%
+  separate_rows(gene) %>%
+  distinct -> all_novel_genes
+
+# Of 22,776,573 variants 
+nrow(all_variants)
+
+# 1,589,664 had at least one significant association
+all_variants %>%
+  filter(Pvalue < 5e-8) %>%
+  nrow
+
+# near 17,285 genes
+all_variants %>%
+  filter(Pvalue < 5e-8) %>%
+  select(gene=nearest_genes) %>%
+  separate_rows(gene) %>% distinct %>%
+  nrow
+
+# of 19,842 genes
+all_genes %>% nrow
+
+# We filtered the 19,842 available genes to 17,428 that are in the gene list "universe"
+gene_lists %>% filter(gene_list == 'universe' & gene %in% all_genes$gene) %>% nrow
+
+haploinsufficiency_plot = function(novel=T, sig_threshold=5e-8) {
+  sig_genes = all_variants %>%
+    filter(Pvalue < sig_threshold) %>%
+    select(gene=nearest_genes) %>%
+    separate_rows(gene) %>% distinct
+  
+  gene_lists %>% filter(gene_list == 'universe' & gene %in% all_genes$gene) %>%
+    mutate(novel_gwas_hit = gene %in% all_novel_genes$gene,
+           gwas_hit = gene %in% sig_genes$gene) %>% 
+    select(gene, novel_gwas_hit, gwas_hit) -> annotated_genes
+  
+  genes_in_lists = annotated_genes %>%
+    left_join(gene_lists, multiple = 'all') %>%
+    mutate(gene_list = if_else(grepl('haploinsufficiency', gene_list), 'Haploinsufficient', gene_list),
+           presence = 1)
+  if (novel) {
+    genes_in_lists %<>% mutate(hit=novel_gwas_hit)
+  } else {
+    genes_in_lists %<>% mutate(hit=gwas_hit)
+  }
+  
+  gene_list_order = c('Haploinsufficient', 'Autosomal Dominant', 'Clinvar P/LP', 'Autosomal Recessive', 'All genes')
+  
+  gene_list_gwas_data = genes_in_lists %>%
+    complete(gene_list, hit, fill = list(presence = 0)) %>%
+    count(gene_list, hit, wt = presence) %>%
+    group_by(gene_list) %>%
+    mutate(prop_in_bin = n / sum(n)) %>%
+    ungroup %>%
+    mutate(
+      gene_list = fct_recode(gene_list, 'Autosomal Recessive' = "all_ar", 'Autosomal Dominant' = "all_ad",
+                             'Clinvar P/LP' = "clinvar_path_likelypath", 'All genes' = 'universe'),
+      gene_list = fct_relevel(gene_list, gene_list_order))
+  
+  gene_list_gwas_data %>%
+    count(gene_list, wt = n) %>%
+    mutate(label=paste0(gene_list, '\n(n = ', comma(n), ')')) -> gene_list_labels_df
+  
+  gene_list_labels = gene_list_labels_df$label
+  names(gene_list_labels) = gene_list_labels_df$gene_list
+  
+  gene_list_colors['Clinvar P/LP'] = colour_ramp(c(color_dominant, color_recessive))(0.5)
+  gene_list_colors['All genes'] = 'lightgray'
+  
+  gene_list_gwas_data %>%
+    filter(gene_list %in% gene_list_order) %>%
+    ggplot + aes(x = gene_list, y = prop_in_bin, alpha = hit, fill=gene_list) +
+    geom_bar(stat='identity') + 
+    scale_fill_manual(values=gene_list_colors) +
+    scale_y_continuous(labels=percent, name='Percentage of gene list') +
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+    scale_x_discrete(labels=gene_list_labels, name=NULL) +
+    guides(fill=F) + scale_alpha_discrete(name=paste0(if_else(novel, 'Novel a', 'A'), 'ssociation near gene')) +
+    theme(legend.position = 'bottom') +
+    guides(alpha = guide_legend(title.position="top", title.hjust = 0.5)) %>% 
+    return
+}
 
 
 figure4 = function(output_format = 'png', create_subplots=F) {
+  p4a_subs = known_novel_efo()
+  p4b = haploinsufficiency_plot()
+  # pitx = readPNG("PITX2_pan_ukb_4_112282681_META_800000_continuous-5099-both_sexes--irnt.png")
+  pitx = image_read_pdf("PITX2_pan_ukb_4_112282681_META_650000_1Mb_continuous-5099-both_sexes--irnt.pdf")
+  p4c = ggplot() +
+    annotation_raster(pitx, xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf) +
+    geom_blank() + theme_nothing()
+  dmd = image_read_pdf("DMD_pan_ukb_X_31854782_META_500000_1Mb_continuous-23100-both_sexes--irnt.pdf")
+  p4d = ggplot() +
+    annotation_raster(dmd, xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf) +
+    geom_blank() + theme_nothing()
+  
   # image_widths = c(image_info(pitx)$width, image_info(gdf5)$width)/300
   # image_heights = c(image_info(pitx)$height, image_info(gdf5)$height)/300
   
@@ -176,82 +272,14 @@ figure4 = function(output_format = 'png', create_subplots=F) {
 figure4()
 figure4('pdf')
 
-all_variants = read_tsv(gzfile('data/top_meta_with_top_pop_by_variant_full.txt.bgz'))
+s_figure_32 = function(output_format = 'png', create_subplots=F) {
+  p1 = haploinsufficiency_plot(F)
+  output_type(output_format, paste0('s_figure_32.', output_format), height=4, width=4)
+  print(p1)
+  dev.off()
+}
+s_figure_32()
 
-all_genes = all_variants %>%
-  select(gene=nearest_genes) %>%
-  separate_rows(gene) %>% distinct
-
-gene_lists = load_all_gene_list_data()
-
-all_variants %>%
-  mutate(Pvalue=if_else(Pvalue < 1e-10, 1e-10, Pvalue)) %>%
-  ggplot + aes(x = Pvalue) + geom_histogram(bins=100) + scale_x_log10()
-
-sig_genes = all_variants %>%
-  filter(Pvalue < 5e-8) %>%
-  select(gene=nearest_genes) %>%
-  separate_rows(gene) %>% distinct
-
-novel_hits = efo %>%
-  group_by(trait_efo_category, idx) %>% # , trait_type, phenocode, pheno_sex, coding, modifier, lead_locus, nearest_genes) %>%
-  mutate(any_same_category=any(trait_efo_category == trait_efo_category_otg, na.rm=T)) %>%
-  filter(!any_same_category) %>%
-  select(matches("lead_locus") | (!contains("otg") & !matches("locus"))) %>%
-  distinct %>% ungroup
-
-novel_hits %>%
-  select(gene=nearest_genes) %>%
-  separate_rows(gene) %>%
-  distinct -> all_novel_genes
-
-gene_lists %>% filter(gene_list == 'universe' & gene %in% all_genes$gene) %>%
-  mutate(novel_gwas_hit = gene %in% all_novel_genes$gene,
-         gwas_hit = gene %in% sig_genes$gene) %>% 
-  select(gene, novel_gwas_hit, gwas_hit) -> annotated_genes
-
-genes_in_lists = annotated_genes %>%
-  left_join(gene_lists, multiple = 'all') %>%
-  mutate(gene_list = if_else(grepl('haploinsufficiency', gene_list), 'Haploinsufficient', gene_list),
-         presence = 1)
-
-genes_in_lists %>% 
-  filter(gene == 'ATP8A2')
-
-gene_list_order = c('Haploinsufficient', 'Autosomal Dominant', 'Clinvar P/LP', 'Autosomal Recessive', 'All genes')
-
-gene_list_gwas_data = genes_in_lists %>%
-  complete(gene_list, novel_gwas_hit, fill = list(presence = 0)) %>%
-  count(gene_list, novel_gwas_hit, wt = presence) %>%
-  group_by(gene_list) %>%
-  mutate(prop_in_bin = n / sum(n)) %>%
-  ungroup %>%
-  mutate(
-    gene_list = fct_recode(gene_list, 'Autosomal Recessive' = "all_ar", 'Autosomal Dominant' = "all_ad",
-                           'Clinvar P/LP' = "clinvar_path_likelypath", 'All genes' = 'universe'),
-    gene_list = fct_relevel(gene_list, gene_list_order))
-
-gene_list_gwas_data %>%
-  count(gene_list, wt = n) %>%
-  mutate(label=paste0(gene_list, '\n(n = ', n, ')')) -> gene_list_labels_df
-
-gene_list_labels = gene_list_labels_df$label
-names(gene_list_labels) = gene_list_labels_df$gene_list
-
-gene_list_colors['Clinvar P/LP'] = colour_ramp(c(color_dominant, color_recessive))(0.5)
-gene_list_colors['All genes'] = 'lightgray'
-
-p4b = gene_list_gwas_data %>%
-  filter(gene_list %in% gene_list_order) %>%
-  ggplot + aes(x = gene_list, y = prop_in_bin, alpha = novel_gwas_hit, fill=gene_list) +
-  geom_bar(stat='identity') + 
-  scale_fill_manual(values=gene_list_colors) +
-  scale_y_continuous(labels=percent, name='Percentage of gene list') +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
-  scale_x_discrete(labels=gene_list_labels, name=NULL) +
-  guides(fill=F) + scale_alpha_discrete(name='Novel assocation near gene') +
-  theme(legend.position = 'bottom') +
-  guides(alpha = guide_legend(title.position="top", title.hjust = 0.5))
 
 novel_hits %>%
   rename(gene=nearest_genes) %>%

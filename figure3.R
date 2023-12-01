@@ -63,27 +63,6 @@ meta_eur_comparison %>%
   filter(Pvalue_meta > log_orig_threshold & high_quality & freq_max >= 0.01 & freq_EUR < 0.01 & Pvalue_EUR < log_orig_threshold) %>%
   summarize(clumped=sum(!is.na(in_clump)), n=n())
 
-plot_n_sig_per_pheno = function(indep_only=T) {
-  plot_data = meta_eur_comparison %>%
-    filter(Pvalue_meta > -log10(5e-8) & high_quality)
-  
-  if (indep_only) plot_data %<>% filter(!is.na(in_clump))
-  axis_name = paste0('Number of significant', if_else(indep_only, ' independent', ''), ' associations')
-  
-  plot_data %>%
-    group_by_at(key_fields) %>%
-    summarize(n=n()) %>%
-    ggplot + aes(x = n) +
-    geom_histogram(bins=50) + 
-    scale_x_log10(labels=comma, name=axis_name) +
-    ylab('Number of phenotypes') %>%
-    return
-}
-p1 = plot_n_sig_per_pheno(F)
-p2 = plot_n_sig_per_pheno()
-
-print(p1 | p2)
-
 meta_eur_freq_fc = function(pop = 'CSA', threshold=1e-10, clump_only=F) {
   plot_data = meta_eur_comparison %>%
     filter(Pvalue_meta > -log10(threshold) | Pvalue_EUR > -log10(threshold)) 

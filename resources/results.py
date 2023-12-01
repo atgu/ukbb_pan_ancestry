@@ -100,12 +100,16 @@ def get_prs_mt_path(high_quality: bool = True):
     return f'{bucket}/prs/all_combos_prs{"" if high_quality else "_raw"}.mt'
 
 
-def get_clump_sumstats_bm_path(high_quality: bool = True):
-    return f'{public_bucket}/misc/prs/clumped_sumstats{"" if high_quality else "_raw"}.bm'
+def get_clump_sumstats_bm_path(high_quality: bool = True, pop: str = 'full'):
+    return f'{public_bucket}/misc/prs/clumped_sumstats{"" if high_quality else "_raw"}{f"_{pop}" if pop else ""}.bm'
 
 
-def get_clump_sumstats_col_ht_path(high_quality: bool = True):
-    return f'{public_bucket}/misc/prs/clumped_sumstats{"" if high_quality else "_raw"}.cols.ht'
+def get_clump_sumstats_col_ht_path(high_quality: bool = True, pop: str = 'full'):
+    return f'{public_bucket}/misc/prs/clumped_sumstats{"" if high_quality else "_raw"}{f"_{pop}" if pop else ""}.cols.ht'
+
+
+def get_clump_sumstats_row_ht_path(high_quality: bool = True, pop: str = 'full'):
+    return f'{public_bucket}/misc/prs/clumped_sumstats{"" if high_quality else "_raw"}{f"_{pop}" if pop else ""}.rows.ht'
 
 
 def get_distance_clumping_results_path(pop: str, radius: int, merged: bool = True, extension: str = "ht"):
