@@ -7,17 +7,19 @@ from hail.expr.functions import _sort_by
 from hail.utils import hadoop_open, new_temp_file
 import pyranges as pr
 from ukbb_pan_ancestry import (
-    get_meta_analysis_results_path,
-    get_pheno_manifest_path,
     get_distance_clumping_results_path,
-    get_ukb_pheno_efo_mapping_path,
-    get_munged_otg_v2d_path,
     get_known_ukbb_loci_path,
+    get_meta_analysis_results_path,
+    get_munged_otg_v2d_path,
+    get_munged_round2_path,
+    get_pheno_manifest_path,
+    get_ukb_pheno_efo_mapping_path,
     load_final_sumstats_mt,
     otg_release,
 )
 
 OPENTARGET_PREFIX = "gs://ukbb-diverse-open-targets-genetics-releases/releases"
+
 
 def get_efo_otg_mappings(release: str = otg_release):
     # EFO mappings from OpenTargets Genetics
@@ -107,9 +109,7 @@ def get_obsolete_efo_dict():
         df = pd.read_csv(f, delimiter="\t")
     df["cls"] = df["cls"].str.split("/").str[-1]
     df["replCls"] = df["replCls"].str.split("/").str[-1]
-    obsolete_efo_dict = hl.literal(
-        df[["cls", "replCls"]].drop_duplicates().set_index("cls").T.to_dict("records")[0]
-    )
+    obsolete_efo_dict = hl.literal(df[["cls", "replCls"]].drop_duplicates().set_index("cls").T.to_dict("records")[0])
     return obsolete_efo_dict
 
 
@@ -117,7 +117,12 @@ def get_efo_dicts():
     # GWAS catalog EFO Parent category
     df = pd.read_csv("https://www.ebi.ac.uk/gwas/api/search/downloads/trait_mappings", delimiter="\t")
     df["efo"] = df["EFO URI"].str.split("/").str[-1]
-    efo_category = hl.literal(df[["efo", "Parent term"]].drop_duplicates().set_index("efo").T.to_dict("records")[0])
+    efo_category = df[["efo", "Parent term"]].drop_duplicates().set_index("efo").T.to_dict("records")[0]
+    # for the sake of novel loci discovery, manually annotate SBP/DBP/MAP as "Cardiovascular measurement"
+    for x in ["EFO_0006336", "EFO_0006340", "EFO_0006335"]:
+        efo_category[x] = "Cardiovascular measurement"
+    efo_category["EFO_0011011"] = "Body measurement"
+    efo_category = hl.literal(efo_category)
     efo_term = hl.literal(df[["efo", "EFO term"]].drop_duplicates().set_index("efo").T.to_dict("records")[0])
 
     return efo_category, efo_term
@@ -134,8 +139,17 @@ def munge_otg_variant_index(release: str = otg_release):
     return ht
 
 
-def munge_otg_v2d(efo_category, efo_term, release: str = otg_release):
-    ukbb_sources = hl.set(["NEALE", "SAIGE"])
+def munge_otg_v2d(efo_category, efo_term, release: str = otg_release, ukbb_exclusion: str = "NEALE_SAIGE"):
+    if ukbb_exclusion == "NEALE_SAIGE":
+        ukbb_sources = hl.set(["NEALE", "SAIGE"])
+    elif ukbb_exclusion == "NEALE":
+        ukbb_sources = hl.set(["NEALE"])
+    elif ukbb_exclusion == "SAIGE":
+        ukbb_sources = hl.set(["SAIGE"])
+    elif ukbb_exclusion == "":
+        ukbb_sources = hl.empty_set(hl.tstr)
+    else:
+        raise ValueError()
 
     ht = hl.read_table(f"{OPENTARGET_PREFIX}/{release}/v2d.ht")
     ht = ht.filter(~ukbb_sources.contains(ht.source) & (hl.len(ht.trait_efos) > 0))
@@ -250,7 +264,8 @@ def main(args):
         ht = hl.import_table(
             # get_pheno_manifest_path(),
             "gs://ukb-diverse-pops/combined_results/221215_phenotype_manifest.tsv.bgz",
-            key=["trait_type", "phenocode", "pheno_sex", "coding", "modifier"], impute=True
+            key=["trait_type", "phenocode", "pheno_sex", "coding", "modifier"],
+            impute=True,
         )
         ht = ht.annotate(
             trait_efos=hl.case()
@@ -297,12 +312,6 @@ def main(args):
     else:
         ht_efo = hl.read_table(get_ukb_pheno_efo_mapping_path())
 
-    if args.munge_otg_v2d:
-        ht_v2d = munge_otg_v2d(efo_category, efo_term)
-        ht_v2d = ht_v2d.checkpoint(get_munged_otg_v2d_path(), overwrite=args.overwrite)
-    else:
-        ht_v2d = hl.read_table(get_munged_otg_v2d_path())
-
     if args.distance_clump:
         if args.sumstats_pop == "meta_hq":
             mt = hl.read_matrix_table(get_meta_analysis_results_path(filter_pheno_h2_qc=True))
@@ -327,13 +336,21 @@ def main(args):
             ht = mt.entries()
             ht = ht.annotate(Pvalue=ht.summary_stats.Pvalue)
         elif args.sumstats_pop == "EUR_round2":
-            # TODO: match phenotype keys
             mt = hl.experimental.load_dataset(
                 name="UK_Biobank_Rapid_GWAS_both_sexes", version="v2", reference_genome="GRCh37"
             )
             mt = mt.filter_cols(mt.variable_type != "continuous_raw")
             ht = mt.entries()
-            ht = ht.annotate(Pvalue=ht.pval)
+            ht = ht.select(Pvalue=hl.log(ht.pval))
+            mt_biomarker = hl.read_matrix_table(
+                "gs://ukb31063-mega-gwas/biomarkers/results-matrix-tables/ukb31063.biomarker_gwas_results.both_sexes.mt"
+            )
+            mt_biomarker = mt_biomarker.filter_cols(mt_biomarker.code.endswith("irnt")).key_cols_by()
+            mt_biomarker = mt_biomarker.annotate_cols(phenotype=mt_biomarker.code).key_cols_by("phenotype")
+            ht_biomarker = mt_biomarker.entries()
+            ht_biomarker = ht_biomarker.select(Pvalue=hl.log(ht_biomarker.p_value))
+            ht = ht.union(ht_biomarker)
+            ht = ht.filter(hl.is_finite(ht.Pvalue))
         else:
             raise ValueError()
 
@@ -370,6 +387,57 @@ def main(args):
             )
         )
 
+    if args.munge_otg_v2d:
+        ht_v2d = munge_otg_v2d(efo_category, efo_term, ukbb_exclusion=args.ukbb_exclusion)
+        ht_v2d = ht_v2d.checkpoint(
+            get_munged_otg_v2d_path(ukbb_exclusion=args.ukbb_exclusion), overwrite=args.overwrite
+        )
+    else:
+        ht_v2d = hl.read_table(get_munged_otg_v2d_path(ukbb_exclusion=args.ukbb_exclusion))
+
+    if args.munge_ukbb_round2:
+        # extract UKBB EFOs for Round 2
+        ht_round2_efo = ht_efo.filter(ht_efo.trait_type != "phecode")
+        ht_round2_efo = ht_round2_efo.key_by("phenocode", "coding", "modifier")
+
+        ht_round2 = hl.read_table(get_distance_clumping_results_path(pop="EUR_round2", radius=500000, merged=True))
+        ht_round2 = ht_round2.drop("n_lead_loci").explode("distance_clumps")
+        ht_round2 = ht_round2.transmute(**ht_round2.distance_clumps)
+        ht_round2 = ht_round2.annotate(
+            **hl.rbind(
+                ht_round2.phenotype.split("_"),
+                lambda x: hl.if_else(
+                    hl.len(x) > 1,
+                    hl.struct(
+                        phenocode=x[0],
+                        coding=hl.if_else(x[1] != "irnt", x[1], ""),
+                        modifier=hl.if_else(x[1] == "irnt", x[1], ""),
+                    ),
+                    hl.struct(
+                        phenocode=x[0],
+                        coding="",
+                        modifier="",
+                    ),
+                ),
+            )
+        )
+        ht_round2 = ht_round2.select(
+            locus=ht_round2.lead_locus,
+            trait_efos=ht_round2_efo[ht_round2.phenocode, ht_round2.coding, ht_round2.modifier].trait_efos,
+            study_id=hl.set(["NEALE2_" + ht_round2.phenotype]),
+        )
+        ht_round2 = ht_round2.explode("trait_efos", name="trait_efo")
+        ht_round2 = ht_round2.annotate(
+            trait_efo_term=hl.or_missing(efo_term.contains(ht_round2.trait_efo), efo_term[ht_round2.trait_efo]),
+            trait_efo_category=hl.or_missing(
+                efo_category.contains(ht_round2.trait_efo), efo_category[ht_round2.trait_efo]
+            ),
+        )
+        ht_round2 = ht_round2.key_by("locus", "trait_efo").drop("phenotype")
+        ht_round2 = ht_round2.checkpoint(get_munged_round2_path(), overwrite=args.overwrite)
+    else:
+        ht_round2 = hl.read_table(get_munged_round2_path())
+
     if args.annotate_known_loci:
 
         def _to_pandas(ht):
@@ -379,6 +447,10 @@ def main(args):
             return df
 
         # munge v2d for pyranges
+        if "NEALE" not in args.ukbb_exclusion:
+            # use round2 instead of OTG
+            ht_v2d = ht_v2d.filter(~ht_v2d.study_id.all(lambda x: x.startswith("NEALE2_")))
+            ht_v2d = ht_v2d.union(ht_round2)
         ht_v2d = ht_v2d.annotate(
             study_id=hl.delimit(ht_v2d.study_id),
             Chromosome=ht_v2d.locus.contig,
@@ -461,20 +533,25 @@ def main(args):
             print(len(na_match))
 
         ht = ht.key_by("trait_type", "phenocode", "pheno_sex", "coding", "modifier", "idx")
-        ht = ht.checkpoint(get_known_ukbb_loci_path(pop=args.sumstats_pop), overwrite=args.overwrite)
-        ht.export(get_known_ukbb_loci_path(pop=args.sumstats_pop, extension="tsv.bgz"))
+        ht = ht.checkpoint(
+            get_known_ukbb_loci_path(pop=args.sumstats_pop, ukbb_exclusion=args.ukbb_exclusion),
+            overwrite=args.overwrite,
+        )
+        ht.export(
+            get_known_ukbb_loci_path(pop=args.sumstats_pop, ukbb_exclusion=args.ukbb_exclusion, extension="tsv.bgz")
+        )
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--annotate-efo-mappings",
-        help="XXXX",
+        help="Annotate EFO mappings for UKBB phenotypes",
         action="store_true",
     )
     parser.add_argument(
         "--munge-otg-v2d",
-        help="XXXX",
+        help="Munge OTG v2d for known loci annotation",
         action="store_true",
     )
     parser.add_argument(
@@ -484,26 +561,42 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--distance-clump",
-        help="XXXX",
+        help="Distance-based clumping for meta-analysis results",
         action="store_true",
     )
     parser.add_argument(
-        "--sumstats-pop", default="meta_hq", type=str, choices=["meta_hq", "meta_raw", "EUR", "EUR_round2"], help="XXXX"
+        "--munge-ukbb-round2",
+        help="Munge UKBB Round 2 results for known loci annotation",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--sumstats-pop",
+        default="meta_hq",
+        type=str,
+        choices=["meta_hq", "meta_raw", "EUR", "EUR_round2"],
+        help="Population for summary statistics",
     )
     parser.add_argument(
         "--not-merge-overlapping-loci",
-        help="XXXX",
+        help="Do not merge overlapping loci for distance-based clumping",
         action="store_true",
     )
     parser.add_argument(
         "--annotate-known-loci",
-        help="XXXX",
+        help="Annotate known loci using OTG and UKBB Round 2 results",
         action="store_true",
     )
     parser.add_argument(
         "--otg-release",
         default=otg_release,
         help="Release version of OpenTargets Genetics",
+    )
+    parser.add_argument(
+        "--ukbb-exclusion",
+        default="NEALE_SAIGE",
+        type=str,
+        choices=["NEALE_SAIGE", "NEALE", "SAIGE", "NA", ""],
+        help="Exclude specific UKBB sources from OpenTargets Genetics",
     )
     parser.add_argument(
         "--p-threshold",
@@ -519,5 +612,8 @@ if __name__ == "__main__":
     )
     parser.add_argument("--overwrite", help="Overwrite data", action="store_true")
     args = parser.parse_args()
+
+    if args.ukbb_exclusion == "NA":
+        args.ukbb_exclusion = ""
 
     main(args)
