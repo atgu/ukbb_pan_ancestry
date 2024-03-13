@@ -1,9 +1,5 @@
 source('~/gnomad_lof/R/constants.R')
 library(ggthemes)
-library(ggbreak)
-library(ggpmisc)
-library(IsoplotR)
-library(png)
 # BiocManager::install('ggbio')
 
 theme_set(theme_classic())
@@ -22,18 +18,14 @@ pops_with_gnomad_data = c('AFR', 'AMR', 'EAS', 'EUR')
 ukb_pop_colors = pop_colors[ukb_gnomad_pop_mapping]
 names(ukb_pop_colors) = pops
 ukb_pop_colors['MID'] = '#EEA9B8'
-pops_by_sample_size = c('EUR', 'CSA', 'AFR', 'EAS', 'MID', 'AMR')
-  
+
 ukb_pop_names = c('African', 'Admixed American', 'Central/South Asian', 'East Asian', 'European', 'Middle Eastern')
 names(ukb_pop_names) = pops
 
-pop_size_order = c('EUR', 'CSA', 'AFR', 'EAS', 'MID', 'AMR')
-
-l = 'Genetic\nancestry'
-pop_color_scale = scale_color_manual(values=ukb_pop_colors, name=l)
-pop_color_scale_named = scale_color_manual(values=ukb_pop_colors, name=l, labels=ukb_pop_names)
-pop_fill_scale = scale_fill_manual(values=ukb_pop_colors, name=l)
-pop_fill_scale_named = scale_fill_manual(values=ukb_pop_colors, name=l, labels=ukb_pop_names)
+pop_color_scale = scale_color_manual(values=ukb_pop_colors, name='Population')
+pop_color_scale_named = scale_color_manual(values=ukb_pop_colors, name='Population', labels=ukb_pop_names)
+pop_fill_scale = scale_fill_manual(values=ukb_pop_colors, name='Population')
+pop_fill_scale_named = scale_fill_manual(values=ukb_pop_colors, name='Population', labels=ukb_pop_names)
 xyline = geom_abline(slope = 1, intercept = 0, linetype='dashed')
 
 trait_types = c("biomarkers", "continuous", "categorical", "phecode", "icd10", "prescriptions")
@@ -41,7 +33,7 @@ trait_type_colors = c('#334195', '#d56f3e', '#43aa8b', '#4f345a', '#b594b6', '#8
 names(trait_type_colors) = trait_types
 trait_type_names = c('Biomarkers', 'Continuous', 'Categorical', 'Disease (phecode)', 'Disease (ICD)', 'Prescriptions')
 names(trait_type_names) = trait_types
-# trait_type_colors['hide'] = 'gray'
+trait_type_colors['hide'] = 'gray'
 trait_color_scale = scale_color_manual(breaks = trait_types, values=trait_type_colors, name='Trait type', labels=trait_type_names)
 trait_fill_scale = scale_fill_manual(breaks = trait_types, values=trait_type_colors, name='Trait type', labels=trait_type_names)
 
@@ -59,8 +51,8 @@ gwas_loglog_trans = function() {
   scales::trans_new("gwas_loglog", transform = pvalue_to_ll, inverse = ll_to_pvalue)
 }
 
-get_ukb_data_url = function(parent_folder = 'sumstats_qc_analysis/') {
-  return(paste0('https://storage.googleapis.com/ukb-diverse-pops-public-free/', parent_folder))
+get_ukb_data_url = function() {
+  return(paste0('https://storage.googleapis.com/ukb-diverse-pops-public-free/sumstats_qc_analysis/'))
 }
 
 check_size = function(local_fname, url) {
@@ -80,9 +72,9 @@ check_size = function(local_fname, url) {
   }
 }
 
-get_or_download_ukb_file = function(base_fname, subfolder='', local_name='', use_local=F, parent_folder='sumstats_qc_analysis/') {
+get_or_download_ukb_file = function(base_fname, subfolder='', local_name='', use_local=F) {
   fname = paste0(data_dir, ifelse(local_name != '', local_name, base_fname))
-  url = paste0(get_ukb_data_url(parent_folder), subfolder, base_fname)
+  url = paste0(get_ukb_data_url(), subfolder, base_fname)
   if (!file.exists(fname)) {
     download.file(url, fname)
   } else {
@@ -95,8 +87,8 @@ get_or_download_ukb_file = function(base_fname, subfolder='', local_name='', use
   return(fname)
 }
 
-load_ukb_file = function(base_fname, subfolder='', local_name='', force_cols=cols(), use_local=F, parent_folder='sumstats_qc_analysis/') {
-  fname = get_or_download_ukb_file(base_fname, subfolder, local_name, use_local=use_local, parent_folder=parent_folder)
+load_ukb_file = function(base_fname, subfolder='', local_name='', force_cols=cols(), use_local=F) {
+  fname = get_or_download_ukb_file(base_fname, subfolder, local_name, use_local=use_local)
   if (endsWith(fname, '.gz') | endsWith(fname, '.bgz')) {
     fname = gzfile(fname)
   }

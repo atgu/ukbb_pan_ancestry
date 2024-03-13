@@ -106,19 +106,29 @@ generate_heritability_table = function(size = 10) {
   return(ggtab)
 }
 
-get_phenos = function(anc_x='EUR', anc_y='CSA', indep_only=TRUE, remove_questionnaire=FALSE) {
-  phenotypes %>% 
-    filter_to_pass(anc_x) %>%
-    filter_to_pass(anc_y) %>%
-    # filter(num_pops_pass_qc > 2) %>%
+get_phenos = function(anc_x='EUR', anc_y='CSA', indep_only=TRUE, remove_questionnaire=FALSE,
+                      filter_to_pass=TRUE, filter_EUR_z=FALSE) {
+  if (filter_to_pass) {
+    dat = phenotypes %>% 
+      filter_to_pass(anc_x) %>%
+      filter_to_pass(anc_y)
+  } else {
+    field_x = paste0(if_else(anc_x == 'EUR', 'sldsc_25bin_h2_', 'rhemc_25bin_50rv_h2_'), 'observed_', anc_x)
+    field_y = paste0(if_else(anc_y == 'EUR', 'sldsc_25bin_h2_', 'rhemc_25bin_50rv_h2_'), 'observed_', anc_y)
+    dat = phenotypes %>%
+      filter(!is.na(get(field_x)) & !is.na(get(field_y)))
+  }
+  dat %>%
+    filter(!filter_EUR_z | (sldsc_25bin_h2_z_EUR > 4)) %>%
     filter(!remove_questionnaire | !grepl('question', description_more, ignore.case = TRUE)) %>%
     filter(!indep_only | in_max_independent_set) %>%
     return
 }
 
 heritability_correlations = function(anc_x='EUR', anc_y='CSA', type='observed',
-                                     indep_only=TRUE, remove_questionnaire=TRUE, return_plot=T,
-                                     omit_guide=T, omit_type=T) {
+                                     indep_only=TRUE, remove_questionnaire=F,
+                                     filter_to_pass=TRUE, filter_EUR_z=FALSE,
+                                     return_plot=T, omit_guide=T, omit_type=T) {
   field_x = paste0(if_else(anc_x == 'EUR', 'sldsc_25bin_h2_', 'rhemc_25bin_50rv_h2_'), type)
   field_y = paste0(if_else(anc_y == 'EUR', 'sldsc_25bin_h2_', 'rhemc_25bin_50rv_h2_'), type)
   label_x = paste0('Heritability in ', anc_x, '\n(', if_else(anc_x == 'EUR', 'S-LDSC', 'RHE-mc'), if_else(omit_type, "", paste(";", type)), ')')
@@ -127,7 +137,9 @@ heritability_correlations = function(anc_x='EUR', anc_y='CSA', type='observed',
   y_point = paste0(field_y, '_', anc_y)
   x_se = paste0(field_x, '_se_', anc_x)
   y_se = paste0(field_y, '_se_', anc_y)
-  plot_data = get_phenos(anc_x=anc_x, anc_y=anc_y, indep_only=indep_only, remove_questionnaire=remove_questionnaire)
+  plot_data = get_phenos(anc_x=anc_x, anc_y=anc_y, indep_only=indep_only,
+                         remove_questionnaire=remove_questionnaire,
+                         filter_to_pass=filter_to_pass, filter_EUR_z=filter_EUR_z)
   print(paste(nrow(plot_data), 'phenotypes remain'))
   if (nrow(plot_data) == 0) {
     if (return_plot) {
@@ -139,7 +151,10 @@ heritability_correlations = function(anc_x='EUR', anc_y='CSA', type='observed',
   dat = matrix(c(plot_data[[x_point]], plot_data[[x_se]], plot_data[[y_point]], plot_data[[y_se]]), ncol=4)
   york_res = york(dat)
   print(paste("York slope =", york_res$b[[1]], "; intercept =", york_res$a[[1]], "; p =", york_res$p.value))
-  res = cor.test(plot_data[[x_point]], plot_data[[y_point]], method='spearman')
+  # res = cor.test(plot_data[[x_point]], plot_data[[y_point]])
+  # print(res)
+  # res = cor.test(plot_data[[x_point]], plot_data[[y_point]], method='spearman')
+  # print(res)
   p = plot_data %>%
     filter(rhemc_25bin_50rv_h2_liability_CSA + rhemc_25bin_50rv_h2_liability_se_CSA < 1 &
              sldsc_25bin_h2_liability_EUR + sldsc_25bin_h2_liability_se_EUR < 1) %>%
@@ -160,85 +175,43 @@ heritability_correlations = function(anc_x='EUR', anc_y='CSA', type='observed',
     }
     return(p)
   } else {
-    # return(data.frame(estimate=york_res$b[[1]], p=york_res$p.value, n_phenos=nrow(plot_data)))
-    return(data.frame(estimate=res$estimate[[1]], p=res$p.value, n_phenos=nrow(plot_data)))
+    return(data.frame(estimate=york_res$b[[1]], p=york_res$p.value, n_phenos=nrow(plot_data)))
+    # return(data.frame(estimate=res$estimate[[1]], p=res$p.value, n_phenos=nrow(plot_data)))
   }
 }
-heritability_correlations(type='observed', remove_questionnaire = F)
+heritability_correlations()
 
+# all_pairs = map_dfr(pops, function(x) {
+#   map_dfr(pops, function(y) heritability_correlations(x, y, remove_questionnaire = F, return_plot=F) %>%
+#     mutate(pop1=x, pop2=y)
+#   )
+# })
+# all_pairs %>%
+#   filter(n_phenos > 2 & pop1 < pop2)
 
-heritability_histograms = function() {
-  upper_bound = 10
-  lower_bound = -5
+# phenotypes %>%
+#   filter_to_pass('EUR') %>%
+#   compute_neff('EUR') %>%
+#   ggplot + aes(x = n_eff_EUR, y = 1 / (sldsc_25bin_h2_liability_se_EUR ^ 2)) + geom_point()
+
+passing_traits = function() {
   h2_data %>%
-    filter(ancestry != 'EUR') %>%
-    select(`S-LDSC`=estimates.ldsc.h2_z, `RHE-mc`=estimates.final.h2_z) %>%
-    pivot_longer(cols = everything()) %>%
-    mutate(value=case_when(value < lower_bound ~ lower_bound,
-                           value > upper_bound ~ upper_bound,
-                           TRUE ~ value)) %>%
-    ggplot + aes(x = value, group = name, fill = name) +
-    geom_histogram(bins=100, alpha=0.5, position='identity') +
-    geom_vline(xintercept=4, linetype='dashed') +
-    theme(legend.position = c(0.9, 0.9)) +
-    scale_fill_manual(name=NULL, values=c('RHE-mc' = muted('red', l=50),
-                                            'S-LDSC' = muted('blue', l=50))) +
-    xlab('Heritability Z-score') + ylab('Number of\nancestry-trait pairs') -> p
-  # p
-  return(p)
+    filter(qcflags.pass_all) %>%
+    select_at(key_fields) %>%
+    distinct %>%
+    count(trait_type) %>%
+    ggplot + aes(x = trait_type, y = n, fill=trait_type) + 
+    geom_bar(stat='identity') +
+    trait_fill_scale + ylab('Number of traits') +
+    scale_x_discrete(labels=trait_type_names, name=NULL) +
+    guides(fill=F) + theme(axis.text.x = element_text(angle = 35, hjust=1))
 }
-rhemc_v_sldsc = function(legend_size = 0.25) {
-  rhe_sldsc_data = h2_data %>%
-    filter(estimates.sldsc_25bin.h2_liability > 0 | estimates.rhemc_8bin.h2_liability > 0) %>%
-    filter(ancestry == 'EUR' & !is.na(estimates.rhemc_8bin.h2_z))
-  
-  
-  # dat = matrix(c(plot_data[[x_point]], plot_data[[x_se]], plot_data[[y_point]], plot_data[[y_se]]), ncol=4)
-  # york_res = york(dat)
-  # print(paste("York slope =", york_res$b[[1]], "; intercept =", york_res$a[[1]], "; p =", york_res$p.value))
-  res = lm(estimates.rhemc_8bin.h2_liability ~ estimates.sldsc_25bin.h2_liability, rhe_sldsc_data)
-  print(summary(res))
-  rhe_sldsc_data %>%
-    ggplot +
-    aes(x = estimates.sldsc_25bin.h2_liability, y = estimates.rhemc_8bin.h2_liability,
-        xmin = estimates.sldsc_25bin.h2_liability - estimates.sldsc_25bin.h2_liability_se,
-        xmax = estimates.sldsc_25bin.h2_liability + estimates.sldsc_25bin.h2_liability_se,
-        ymin = estimates.rhemc_8bin.h2_liability - estimates.rhemc_8bin.h2_liability_se,
-        ymax = estimates.rhemc_8bin.h2_liability + estimates.rhemc_8bin.h2_liability_se,
-        color = trait_type) +
-    geom_pointrange() + geom_errorbarh() +
-    xlab('S-LDSC heritability') +
-    ylab('RHE-mc heritability') +
-    trait_color_scale +
-    theme(legend.position = c(0.8, 0.8),
-          legend.key.size = unit(legend_size, 'in'),
-          # legend.background=element_rect(fill = alpha("white", 0))
-          ) +
-    geom_abline(slope = res$coefficients[[2]], intercept = res$coefficients[[1]], linetype='dashed') +
-    geom_abline(slope = 1, intercept = 0, linetype='dotted') -> p
-  return(p)
-}
-
-all_pairs = map_dfr(pops, function(x) {
-  map_dfr(pops, function(y) heritability_correlations(x, y, remove_questionnaire = F, return_plot=F) %>%
-    mutate(pop1=x, pop2=y)
-  )
-})
-all_pairs %>%
-  filter(n_phenos > 2 & pop1 < pop2)
-
-phenotypes %>%
-  filter_to_pass('EUR') %>%
-  compute_neff('EUR') %>%
-  ggplot + aes(x = n_eff_EUR, y = 1 / (sldsc_25bin_h2_liability_se_EUR ^ 2)) + geom_point()
-
 figure2 = function(output_format = 'png') {
-  p2a = rhemc_v_sldsc(legend_size=0.1)
-  p2b = heritability_histograms()
-  p2c = generate_heritability_table(8.5)
-  p2d = heritability_correlations(remove_questionnaire = F)
-  output_type(output_format, paste0('figure2.', output_format), height=5, width=7.5)
-  print(ggarrange(p2a, p2b, p2c, p2d, nrow=2, ncol = 2, labels="auto"))
+  p2a = generate_heritability_table(8.5)
+  p2b = heritability_correlations(remove_questionnaire = F)
+  p2c = passing_traits()
+  output_type(output_format, paste0('figure2.', output_format), height=2.5, width=8.5)
+  print(ggarrange(p2a, p2b, p2c, nrow=1, ncol = 3, labels="auto", widths = c(1.5, 1, 1)))
   dev.off()
 }
 figure2()

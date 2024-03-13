@@ -32,7 +32,8 @@ n_phenos_by_pop = function(table_size = 2.5) {
 }
 
 n_phenos_by_pop_combo = function(legend_size=0.15) {
-  multi_pop_names = c('Any', paste('Any', 2:5), 'All 6')
+  # multi_pop_names = c('Any', paste('Any', 2:5), 'All 6')
+  multi_pop_names = c(paste0(1:5, '+'), '6')
   names(multi_pop_names) = as.character(1:6)
   
   by_pop_cumulative = pheno_summary %>%
@@ -44,6 +45,12 @@ n_phenos_by_pop_combo = function(legend_size=0.15) {
     arrange(n_pops) %>%
     mutate(pop=as.factor(n_pops))
   
+  trait_type_order = pheno_summary %>%
+    select_at(key_fields) %>% distinct %>%
+    dplyr::count(trait_type) %>%
+    arrange(desc(n)) %>%
+    pull(trait_type) %>% rev
+  
   by_pop_cumulative_by_trait = pheno_summary %>%
     group_by_at(key_fields) %>%
     dplyr::count(trait_type, name='n_pops') %>% ungroup %>%
@@ -51,7 +58,8 @@ n_phenos_by_pop_combo = function(legend_size=0.15) {
     group_by(trait_type) %>%
     arrange(desc(n_pops)) %>%
     mutate(n=cumsum(n)) %>% ungroup %>%
-    arrange(n_pops)
+    arrange(n_pops) %>%
+    mutate(trait_type=fct_relevel(trait_type, trait_type_order))
   
   p = by_pop_cumulative_by_trait %>%
     ggplot + aes(x = as.character(n_pops), y = n, fill = trait_type) + 
@@ -105,15 +113,26 @@ get_sig_hits_data() %>%
 
 sig_hits_cdf = function(only_clumped=T, include_amr=F) {
   plot_data = get_sig_hits_data()
+  
+  means = plot_data %>%
+    group_by(pop) %>%
+    summarize(mean_clumped_hits=mean(sig_pops_by_pheno_clumped)) %>%
+    left_join(plot_data) %>%
+    mutate(diff=abs(sig_pops_by_pheno_clumped-mean_clumped_hits)) %>%
+    group_by(pop) %>%
+    slice(which.min(diff))
+  
   p = plot_data %>%
     filter(include_amr | (pop != 'AMR')) %>%
     ggplot + aes_string(x = if_else(only_clumped, 'sig_pops_by_pheno_clumped', 'sig_pops_by_pheno_total'),
                         y = if_else(only_clumped, 'sig_hits_clumped_percentile', 'sig_hits_total_percentile')) +
     aes(group = pop, color = pop) +
     geom_line(lwd=1) + ylab('Phenotype percentile') +
-    scale_x_log10(name=paste0('Number of ', if_else(only_clumped, 'independent ', ''), 'significant associations')) + 
+    # geom_point(aes(x = mean_clumped_hits), data=means) +
+    scale_x_log10(name=paste0('Number of ', if_else(only_clumped, 'independent ', ''), 'significant associations'), label=comma) + 
     scale_color_manual(values=ukb_pop_colors, name=NULL) + 
-    theme(legend.position = c(1, 0.01), legend.justification = c(1, 0))
+    theme(legend.position = c(1, 0.01), legend.justification = c(1, 0),
+          plot.margin=margin(r=22))
   
   # plot_data %>%
   #   ggplot + aes(x = sig_pops_by_pheno_total, y = sig_hits_total_percentile, group = pop, color = pop) +
@@ -168,10 +187,10 @@ figure1 = function(output_format = 'png', create_subplots=F) {
   table_size = if_else(create_subplots, 4, 2.75)
   p1a = n_phenos_by_pop(table_size)
   p1b = n_phenos_by_pop_combo()
-  p1c = n_hits_per_pop(include_amr=T) + guides(fill='none')
-  p1d = sig_hits_cdf(include_amr=T) + guides(color='none')
+  # p1c = n_hits_per_pop(include_amr=T) + guides(fill='none')
+  p1c = sig_hits_cdf(include_amr=T) + guides(color='none')
   if (create_subplots) {
-    fig1_plots = list(p1a, p1b, p1c, p1d)
+    fig1_plots = list(p1a, p1b, p1c)
     for (i in seq_along(fig1_plots)) {
       output_type(output_format, paste0('figure1_panel', i, '.', output_format),
                   height=3.5, width=5)
@@ -179,8 +198,8 @@ figure1 = function(output_format = 'png', create_subplots=F) {
       dev.off()
     }
   } else {
-    output_type(output_format, paste0('figure1.', output_format), height=6.25, width=8)
-    print(ggarrange(p1a, p1b, p1c, p1d, nrow = 2, ncol = 2, labels="auto"))
+    output_type(output_format, paste0('figure1.', output_format), height=3.25, width=10)
+    print(ggarrange(p1a, p1b, p1c, nrow = 1, ncol = 3, labels="auto"))
     # print((p1a + p1b) / (p1c + p1d))
     dev.off()
   }
