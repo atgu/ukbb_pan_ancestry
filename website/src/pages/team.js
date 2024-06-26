@@ -25,6 +25,7 @@ function Contributors() {
                 <li>Konrad Karczewski</li>
                 <li>Rahul Gupta</li>
                 <li>Masahiro Kanai</li>
+                <li>Wenhan Lu</li>
                 <li>Kristin Tsuo</li>
                 <li>Ying Wang</li>
                 <li>Nikolas Baya</li>
