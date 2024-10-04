@@ -459,19 +459,19 @@ funnel_plot = function() {
   
   p <- plot_ly(
     type = "funnelarea",
-    values = c(4.5, 3.5, 3, 7.5, 1),
+    values = c(4.5, 3.5, 3, 7.5, 0),
     textinfo='text',
     aspectratio=1/2,
     baseratio=1/2,
-    text = c(paste0("Independent genome-wide significant associations\n", comma(total_hits)),
-             paste0("Novel associations (EFO term), excluding previous UKB\n", comma(novel_hits_term)),
-             paste0("Novel associations (EFO category), excluding previous UKB\n", comma(novel_hits_category)),
-             paste0("Novel associations (EFO category), including previous UKB\n", comma(novel_hits_category_no_exclusion),
-                    "\n\n• Suggestive in EUR: ", comma(suggestive_n),
+    text = c(paste0("Independent genome-wide significant associations:\n", comma(total_hits)),
+             paste0("Novel associations (EFO term), excluding previous UKB:\n", comma(novel_hits_term)),
+             paste0("Novel associations (EFO category), excluding previous UKB:\n", comma(novel_hits_category)),
+             paste0("Novel associations (EFO category)\nincluding previous UKB:\n", comma(novel_hits_category_no_exclusion),
+                    "\n• Suggestive in EUR: ", comma(suggestive_n),
                     "\n• Non-EUR ancestry-enriched: ", comma(enriched_n)), 
              ''),
     marker = list(colors = colors, line = list(color = colors)),
-    textfont = list(family = "Arial", size = 13, color = "black"),
+    textfont = list(family = "Arial", size = 40, color = "black"),
     opacity = 1,
     width = 500, height = 400) %>%
     layout(autosize = F, margin = m)

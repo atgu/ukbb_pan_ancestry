@@ -128,7 +128,7 @@ get_phenos = function(anc_x='EUR', anc_y='CSA', indep_only=TRUE, remove_question
 heritability_correlations = function(anc_x='EUR', anc_y='CSA', type='observed',
                                      indep_only=TRUE, remove_questionnaire=F,
                                      filter_to_pass=TRUE, filter_EUR_z=FALSE,
-                                     return_plot=T, omit_guide=T, omit_type=T) {
+                                     return_plot=T, omit_guide=T, omit_type=T, ymax=NA) {
   field_x = paste0(if_else(anc_x == 'EUR', 'sldsc_25bin_h2_', 'rhemc_25bin_50rv_h2_'), type)
   field_y = paste0(if_else(anc_y == 'EUR', 'sldsc_25bin_h2_', 'rhemc_25bin_50rv_h2_'), type)
   label_x = paste0('Heritability in ', anc_x, '\n(', if_else(anc_x == 'EUR', 'S-LDSC', 'RHE-mc'), if_else(omit_type, "", paste(";", type)), ')')
@@ -168,7 +168,7 @@ heritability_correlations = function(anc_x='EUR', anc_y='CSA', type='observed',
     xlab(label_x) + ylab(label_y) + trait_color_scale +
     geom_abline(slope=1, intercept=0, linetype='dotted') +
     geom_abline(slope=york_res$b[[1]], intercept=york_res$a[[1]], linetype='dashed') +
-    ylim(c(0, NA))
+    coord_cartesian(ylim=c(0, ymax))
   if (return_plot) {
     if (omit_guide) {
       p = p + guides(color=F)
@@ -181,6 +181,9 @@ heritability_correlations = function(anc_x='EUR', anc_y='CSA', type='observed',
 }
 heritability_correlations()
 
+output_type('png', 'eur_afr_heritability.png', height=3.5, width=4.5)
+print(heritability_correlations(filter_to_pass=T, anc_y='AFR'))
+dev.off()
 # all_pairs = map_dfr(pops, function(x) {
 #   map_dfr(pops, function(y) heritability_correlations(x, y, remove_questionnaire = F, return_plot=F) %>%
 #     mutate(pop1=x, pop2=y)

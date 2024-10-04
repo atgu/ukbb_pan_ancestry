@@ -62,8 +62,8 @@ n_phenos_by_pop_combo = function(legend_size=0.15) {
     mutate(trait_type=fct_relevel(trait_type, trait_type_order))
   
   p = by_pop_cumulative_by_trait %>%
-    ggplot + aes(x = as.character(n_pops), y = n, fill = trait_type) + 
-    geom_bar(stat='identity') +
+    ggplot + aes(x = as.character(n_pops), y = n) + 
+    geom_bar(stat='identity', mapping=aes(fill = trait_type)) +
     ylab('Number of phenotypes') +
     scale_fill_manual(values=trait_type_colors, name='Trait type', labels=trait_type_names) +
     scale_x_discrete(labels=multi_pop_names) +
@@ -111,6 +111,12 @@ get_sig_hits_data() %>%
   group_by(pop == 'EUR') %>%
   summarize_if(is.numeric, sum)
 
+get_sig_hits_data() %>%
+  filter(pop != 'EUR') %>%
+  group_by(trait_type, phenocode, pheno_sex, coding, modifier) %>%
+  summarize(number_clumped_hits=sum(sig_pops_by_pheno_clumped)) %>% ungroup %>%
+  summarize(mean=mean(number_clumped_hits), sd=sd(number_clumped_hits))
+
 sig_hits_cdf = function(only_clumped=T, include_amr=F) {
   plot_data = get_sig_hits_data()
   
@@ -132,7 +138,8 @@ sig_hits_cdf = function(only_clumped=T, include_amr=F) {
     scale_x_log10(name=paste0('Number of ', if_else(only_clumped, 'independent ', ''), 'significant associations'), label=comma) + 
     scale_color_manual(values=ukb_pop_colors, name=NULL) + 
     theme(legend.position = c(1, 0.01), legend.justification = c(1, 0),
-          plot.margin=margin(r=22))
+          plot.margin=margin(r=22)) +
+    coord_cartesian(ylim=c(60, 100))
   
   # plot_data %>%
   #   ggplot + aes(x = sig_pops_by_pheno_total, y = sig_hits_total_percentile, group = pop, color = pop) +

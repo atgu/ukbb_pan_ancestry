@@ -8,14 +8,19 @@ h2_by_group = function() {
     filter(qcflags.pass_all) %>%
     mutate(ancestry=fct_relevel(ancestry, pops_by_sample_size)) %>%
     group_by(ancestry, trait_type) %>%
-    summarize(mean_observed_h2=mean(estimates.final.h2_observed, na.rm=T)) %>%
+    summarize(mean_observed_h2=mean(estimates.final.h2_observed, na.rm=T),
+              sd_observed_h2=sd(estimates.final.h2_observed, na.rm=T)) %>%
     mutate(trait_type=fct_reorder(trait_type, -mean_observed_h2)) %>%
-    ggplot + aes(x = ancestry, fill = trait_type, y = mean_observed_h2) + 
-    geom_bar(stat='identity', position='dodge') +
-    trait_fill_scale + xlab(NULL) +
+    ggplot + aes(x = ancestry, fill = trait_type, color = trait_type, y = mean_observed_h2) + 
+    # geom_bar(stat='identity', position='dodge') +
+    geom_pointrange(position=position_dodge(width=0.75),
+                    mapping=aes(ymin=mean_observed_h2-sd_observed_h2,
+                                ymax=mean_observed_h2+sd_observed_h2)) +
+    trait_fill_scale + trait_color_scale + xlab(NULL) +
     scale_y_continuous(labels=percent, name=expression(paste('Mean observed ', h^2))) +
     theme(legend.position=c(0.01, 1), legend.justification=c(0, 1),
           legend.background=element_rect(fill = alpha("white", 0)))
+  p
   return(p)
 }
 h2_z_by_group = function() {
