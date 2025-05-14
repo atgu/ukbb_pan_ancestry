@@ -2,6 +2,7 @@ source('~/gnomad_lof/R/constants.R')
 library(ggthemes)
 library(ggpmisc)
 library(magick)
+library(colorspace)
 # BiocManager::install('ggbio')
 
 theme_set(theme_classic())
@@ -20,6 +21,7 @@ pops_with_gnomad_data = c('AFR', 'AMR', 'EAS', 'EUR')
 ukb_pop_colors = pop_colors[ukb_gnomad_pop_mapping]
 names(ukb_pop_colors) = pops
 ukb_pop_colors['MID'] = '#EEA9B8'
+pops_by_sample_size = c('EUR', 'CSA', 'AFR', 'EAS', 'MID', 'AMR')
 
 ukb_pop_names = c('African', 'Admixed American', 'Central/South Asian', 'East Asian', 'European', 'Middle Eastern')
 names(ukb_pop_names) = pops
@@ -42,6 +44,14 @@ trait_fill_scale = scale_fill_manual(breaks = trait_types, values=trait_type_col
 key_fields = c('trait_type', 'phenocode', 'pheno_sex', 'coding', 'modifier')
 chrom_order = c(1:22, "X")
 
+threshold = 1e-10
+log_threshold = -log10(threshold)
+orig_threshold = 5e-8
+log_orig_threshold = -log10(orig_threshold)
+meta_only_color = muted('green')
+both_color = muted('purple')
+eur_only_color = muted(color_eur)
+
 loglog_breaks = c(0:10, 20, 50, 100, 200, 400)
 ll_to_pvalue = function(yt) {
   return(if_else(yt >= 10, 10 ^ (yt / 10), yt))
@@ -59,8 +69,8 @@ ggplot_pdf = function(img) {
            geom_blank() + theme_nothing())
 }
 
-get_ukb_data_url = function() {
-  return(paste0('https://storage.googleapis.com/ukb-diverse-pops-public-free/sumstats_qc_analysis/'))
+get_ukb_data_url = function(parent_folder = 'sumstats_qc_analysis/') {
+  return(paste0('https://storage.googleapis.com/ukb-diverse-pops-public-free/', parent_folder))
 }
 
 check_size = function(local_fname, url) {
@@ -80,9 +90,9 @@ check_size = function(local_fname, url) {
   }
 }
 
-get_or_download_ukb_file = function(base_fname, subfolder='', local_name='', use_local=F) {
+get_or_download_ukb_file = function(base_fname, subfolder='', local_name='', use_local=F, parent_folder='sumstats_qc_analysis/') {
   fname = paste0(data_dir, ifelse(local_name != '', local_name, base_fname))
-  url = paste0(get_ukb_data_url(), subfolder, base_fname)
+  url = paste0(get_ukb_data_url(parent_folder), subfolder, base_fname)
   if (!file.exists(fname)) {
     download.file(url, fname)
   } else {
@@ -95,8 +105,8 @@ get_or_download_ukb_file = function(base_fname, subfolder='', local_name='', use
   return(fname)
 }
 
-load_ukb_file = function(base_fname, subfolder='', local_name='', force_cols=cols(), use_local=F) {
-  fname = get_or_download_ukb_file(base_fname, subfolder, local_name, use_local=use_local)
+load_ukb_file = function(base_fname, subfolder='', local_name='', force_cols=cols(), use_local=F, parent_folder='sumstats_qc_analysis/') {
+  fname = get_or_download_ukb_file(base_fname, subfolder, local_name, use_local=use_local, parent_folder=parent_folder)
   if (endsWith(fname, '.gz') | endsWith(fname, '.bgz')) {
     fname = gzfile(fname)
   }
@@ -151,4 +161,25 @@ get_color = function(ukb_pop) {
   } else {
     return('gray')
   }
+}
+
+paste_noempty <- function(..., sep='_') {
+  # Acts like paste(), but assumes that each input is the same length.
+  # Less efficient, but excludes any NA values without failure or conversion to string.
+  #
+  # INPUTS:
+  # ...: vectors of equal lengths to be merged across
+  # sep: delimiter (default _)
+  #
+  # OUTPUTS: merged vector of the same length as the input vectors
+  #
+  # Example:
+  # paste_noempty(c('a',NA), c('b','c'), sep='_') -> c('a_b','c')
+  fl = list(...)
+  if(length(unique(sapply(fl, length))) != 1) stop('Input vectors must each be the same length.')
+  pasted_vec <- sapply(1:length(fl[[1]]), function(idx) {
+    vec_for_paste <- sapply(fl, function(x)x[idx])
+    return(paste0(vec_for_paste[!is.na(vec_for_paste)],collapse=sep))
+  })
+  return(pasted_vec)
 }

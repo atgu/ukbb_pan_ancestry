@@ -4,7 +4,7 @@ library(IsoplotR)
 
 theme_set(theme_classic())
 
-phenotypes = read_tsv(gzfile('data/phenotype_manifest.tsv.bgz'))
+phenotypes = load_ukb_file('phenotype_manifest.tsv.bgz', subfolder='phenos/')
 # gs://ukb-diverse-pops-public-free/h2/h2_estimates_all_flat_221123.tsv
 h2_data = load_ukb_file('h2_estimates_all_flat_221123.tsv', parent_folder='h2/') %>%
   mutate(phenotype_id = paste_noempty(trait_type, phenocode, pheno_sex, coding, modifier, sep='-')) %>%

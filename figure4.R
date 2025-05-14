@@ -1,6 +1,22 @@
 source('~/ukbb_pan_ancestry/constants.R')
+library(patchwork)
 library(gganimate)
 library(gifski)
+
+meta_eur_comparison_all = load_ukb_file('meta_eur_comparison.tsv.bgz', subfolder = 'known_novel/', force_cols = cols(coding=col_character()))
+meta_eur_comparison_all %>% filter(N_pops > 1) %>% mutate(
+  # nlog10p(meta) - nlog10p(EUR) = log10(P[EUR]/P[Meta])
+  ratio = Pvalue_meta - Pvalue_EUR,
+  freq_max = pmax(freq_AFR, freq_AMR, freq_CSA, freq_EAS, freq_MID),
+  sig_in=case_when(Pvalue_meta > log_threshold & Pvalue_EUR < log_threshold ~ 'meta_only',
+                   Pvalue_meta < log_threshold & Pvalue_EUR > log_threshold ~ 'EUR_only',
+                   Pvalue_meta > log_threshold & Pvalue_EUR > log_threshold ~ 'both',
+                   TRUE ~ 'neither'),
+  orig_sig_in=case_when(Pvalue_meta > log_orig_threshold & Pvalue_EUR < log_orig_threshold ~ 'meta_only',
+                        Pvalue_meta < log_orig_threshold & Pvalue_EUR > log_orig_threshold ~ 'EUR_only',
+                        TRUE ~ 'both')
+) %>% filter(Pvalue_meta > log_orig_threshold | Pvalue_EUR > log_orig_threshold) -> meta_eur_comparison
+
 
 power_curve = function(return_plots=F, point_size = 1, EUR_fraction_to_sample = 0.01, meta_fraction_to_sample=0.5, clump_only=F,
                        x_shape=F) {
@@ -145,7 +161,7 @@ figure4 = function(output_format = 'png', create_subplots=F, clump_only=F) {
   } else {
     output_type(output_format, paste0('figure4.', if_else(clump_only, 'clump.', ''), output_format), height=3, width=3.75)
     # print(ggarrange(p1a, p1b, p1c, p1d, nrow = 2, ncol = 2))
-    print(((p4a / p4b)) + plot_annotation(tag_levels = 'a'))
+    print((p4a / p4b) + plot_annotation(tag_levels = 'a'))
     dev.off()
   }
 }

@@ -2,25 +2,17 @@ source('~/ukbb_pan_ancestry/constants.R')
 
 reticulate::use_miniconda('r-reticulate')
 
-efo = read_tsv(gzfile('data/known_ukbb_loci.meta_hq_annotated.txt.bgz'),
-               col_types = cols(locus=col_character(),
+efo = load_ukb_file('known_ukbb_loci.meta_hq_annotated.txt.bgz', subfolder = 'known_novel/',
+                    force_cols = cols(locus=col_character(),
                                 lead_locus=col_character(),
                                 locus_otg=col_character()))
 
-efo_no_exclusion = read_tsv(gzfile('data/known_ukbb_loci_no_exclusion.meta_hq_annotated.txt.bgz'),
-                        col_types = cols(locus=col_character(),
+efo_no_exclusion = load_ukb_file('known_ukbb_loci_no_exclusion.meta_hq_annotated.txt.bgz',subfolder = 'known_novel/',
+                                 force_cols = cols(locus=col_character(),
                                          lead_locus=col_character(),
                                          locus_otg=col_character()))
 
-threshold = 1e-10
-log_threshold = -log10(threshold)
-orig_threshold = 5e-8
-log_orig_threshold = -log10(orig_threshold)
-meta_only_color = muted('green')
-both_color = muted('purple')
-eur_only_color = muted(color_eur)
-
-meta_eur_comparison_all = read_tsv(gzfile('data/meta_eur_comparison.tsv.bgz'), col_types = cols(coding=col_character()))
+meta_eur_comparison_all = load_ukb_file('meta_eur_comparison.tsv.bgz', subfolder = 'known_novel/', force_cols = cols(coding=col_character()))
 meta_eur_comparison_all %>% filter(N_pops > 1) %>% mutate(
   # nlog10p(meta) - nlog10p(EUR) = log10(P[EUR]/P[Meta])
   ratio = Pvalue_meta - Pvalue_EUR,
@@ -292,7 +284,7 @@ explorations = function() {
     count(description, description_more)
 }
 
-all_variants = read_tsv(gzfile('data/top_meta_with_top_pop_by_variant_full.txt.bgz'))
+all_variants = load_ukb_file('top_meta_with_top_pop_by_variant_full.txt.bgz', subfolder='sig_hits/')
 
 all_genes = all_variants %>%
   select(gene=nearest_genes) %>%
@@ -487,30 +479,6 @@ pitx = image_read_pdf("figure3d_PITX2_4_112282681_META_650000_continuous-5099-bo
 p3d = ggplot_pdf(pitx)
 
 figure3 = function(output_format = 'png', create_subplots=F) {
-  height = 5
-  width = 6.5
-  scale = 1.1
-  pdf('figure3_panel1.pdf', height=scale * height / 2, width=scale * width / 2)
-  print(p3a)
-  dev.off()
-  save_image(p3b, 'figure3_panel2.pdf') #, height=100*height/2, width=100*width/2)
-  p3a1 = ggplot_pdf(image_read_pdf('figure3_panel1.pdf'))
-  p3b1 = ggplot_pdf(image_read_pdf('figure3_panel2.pdf'))
-  
-  output_type(output_format, paste0('figure3.', output_format), height=height, width=width)
-  print(ggarrange(p3a1, p3b1, p3c, p3d, nrow = 2, ncol = 2, labels='auto'))
-  # output_type(output_format, paste0('figure3.', output_format), height=5.27, width=3.44*2)
-  # right = ggarrange(p3b + plot_annotation(tag_levels = list(c('b', ''))),
-  #                   p3c + plot_annotation(tag_levels = list(c('c', ''))), nrow=2
-  # )
-  # p = ggarrange(p3a + plot_annotation(tag_levels = list(c('a', ''))), right, ncol=2)
-  # print(p)
-  dev.off()
-}
-figure3()
-figure3('pdf')
-
-figure3_v2 = function(output_format = 'png', create_subplots=F) {
   nrows = 4
   height = 5.5 * nrows / 2
   width = 6.5 / 2
@@ -532,8 +500,8 @@ figure3_v2 = function(output_format = 'png', create_subplots=F) {
   # print(p)
   dev.off()
 }
-figure3_v2()
-figure3_v2('pdf')
+figure3()
+figure3('pdf')
 
 
 # novel_hits %>%
@@ -543,7 +511,7 @@ figure3_v2('pdf')
 #   filter(grepl('haploinsufficiency', gene_list)) %>%
 #   View
 
-novel_hits %>% count(trait_efo_category)
+# novel_hits %>% count(trait_efo_category)
 
 # novel_hits %>% 
 #   mutate(freq_max = pmax(AFR_af, AMR_af, CSA_af, EAS_af, MID_af),
@@ -553,7 +521,7 @@ novel_hits %>% count(trait_efo_category)
 #   filter(trait_type %in% c('icd10', 'phecode')) %>%
 #   arrange(desc(freq_max)) %>% View
 
-novel_hits %>% 
-  filter(EUR_af < 0.05 & AFR_af > 0.05) %>%
-  filter(!is.na(trait_efo_category) & trait_efo_category != 'Other measurement') %>%
-  count(trait_type, phenocode, pheno_sex, coding, modifier) %>% count
+# novel_hits %>% 
+#   filter(EUR_af < 0.05 & AFR_af > 0.05) %>%
+#   filter(!is.na(trait_efo_category) & trait_efo_category != 'Other measurement') %>%
+#   count(trait_type, phenocode, pheno_sex, coding, modifier) %>% count
