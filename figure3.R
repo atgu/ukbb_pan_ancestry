@@ -2,6 +2,8 @@ source('~/ukbb_pan_ancestry/constants.R')
 
 reticulate::use_miniconda('r-reticulate')
 
+pheno_summary = load_ukb_file('pheno_summary_full.txt.bgz', 'phenos/')
+
 efo = load_ukb_file('known_ukbb_loci.meta_hq_annotated.txt.bgz', subfolder = 'known_novel/',
                     force_cols = cols(locus=col_character(),
                                 lead_locus=col_character(),

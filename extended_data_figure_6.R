@@ -59,21 +59,21 @@ haploinsufficiency_plot = function(novel=T, sig_threshold=5e-8) {
     return
 }
 
-ed6a = gene_list_gwas_data %>%
-  filter(gene_list %in% gene_list_order) %>%
-  ggplot + aes(x = gene_list, y = prop_in_bin, alpha = hit, fill=gene_list) +
-  geom_bar(stat='identity') + 
-  scale_fill_manual(values=gene_list_colors) +
-  scale_y_continuous(labels=percent, name='Percentage of gene list') +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
-  scale_x_discrete(labels=gene_list_labels, name=NULL) +
-  scale_alpha_discrete(name=paste0(if_else(novel, 'Novel a', 'A'), 'ssociation\nnear gene')) +
-  # theme(legend.position = 'bottom') +
-  # guides(alpha = guide_legend(title.position="top", title.hjust = 0.5)) +
-  guides(fill=F) 
+# ed6a = gene_list_gwas_data %>%
+#   filter(gene_list %in% gene_list_order) %>%
+#   ggplot + aes(x = gene_list, y = prop_in_bin, alpha = hit, fill=gene_list) +
+#   geom_bar(stat='identity') + 
+#   scale_fill_manual(values=gene_list_colors) +
+#   scale_y_continuous(labels=percent, name='Percentage of gene list') +
+#   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+#   scale_x_discrete(labels=gene_list_labels, name=NULL) +
+#   scale_alpha_discrete(name=paste0(if_else(novel, 'Novel a', 'A'), 'ssociation\nnear gene')) +
+#   # theme(legend.position = 'bottom') +
+#   # guides(alpha = guide_legend(title.position="top", title.hjust = 0.5)) +
+#   guides(fill=F) 
 
 ed6a = haploinsufficiency_plot()
-dmd = image_read_pdf("DMD_pan_ukb_X_31854782_META_500000_1Mb_continuous-23100-both_sexes--irnt.pdf")
+dmd = image_read_pdf("ext_figure6b_DMD_X_31854782_META_500000_continuous-23100-both_sexes--irnt.pdf")
 ed6c = ggplot_pdf(dmd)
 
 
