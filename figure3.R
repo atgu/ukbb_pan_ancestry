@@ -481,9 +481,9 @@ funnel_plot = function() {
 
 p3a = meta_eur_freq_fc('max', threshold = 5e-8)
 p3b = funnel_plot()
-camk2d = image_read_pdf("final_tagged_CAMK2D_4_114604622_META_500000_biomarkers-30870-both_sexes--irnt.pdf")
+camk2d = image_read_pdf("figure3c_CAMK2D_4_114604622_META_500000_biomarkers-30870-both_sexes--irnt.pdf")
 p3c = ggplot_pdf(camk2d)
-pitx = image_read_pdf("final_tagged_PITX2_4_112282681_META_650000_continuous-5099-both_sexes--irnt.pdf")
+pitx = image_read_pdf("figure3d_PITX2_4_112282681_META_650000_continuous-5099-both_sexes--irnt.pdf")
 p3d = ggplot_pdf(pitx)
 
 figure3 = function(output_format = 'png', create_subplots=F) {
@@ -493,7 +493,7 @@ figure3 = function(output_format = 'png', create_subplots=F) {
   pdf('figure3_panel1.pdf', height=scale * height / 2, width=scale * width / 2)
   print(p3a)
   dev.off()
-  save_image(p, 'figure3_panel2.pdf') #, height=100*height/2, width=100*width/2)
+  save_image(p3b, 'figure3_panel2.pdf') #, height=100*height/2, width=100*width/2)
   p3a1 = ggplot_pdf(image_read_pdf('figure3_panel1.pdf'))
   p3b1 = ggplot_pdf(image_read_pdf('figure3_panel2.pdf'))
   
@@ -518,7 +518,7 @@ figure3_v2 = function(output_format = 'png', create_subplots=F) {
   pdf('figure3_panel1.pdf', height=scale * height / nrows, width=scale * width)
   print(p3a)
   dev.off()
-  save_image(p, 'figure3_panel2.pdf') #, height=100*height/2, width=100*width/2)
+  save_image(p3b, 'figure3_panel2.pdf') #, height=100*height/2, width=100*width/2)
   p3a1 = ggplot_pdf(image_read_pdf('figure3_panel1.pdf'))
   p3b1 = ggplot_pdf(image_read_pdf('figure3_panel2.pdf'))
   

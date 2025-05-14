@@ -1,6 +1,7 @@
 source('~/gnomad_lof/R/constants.R')
 library(ggthemes)
 library(ggpmisc)
+library(magick)
 # BiocManager::install('ggbio')
 
 theme_set(theme_classic())
@@ -50,6 +51,12 @@ pvalue_to_ll = function(y) {
 }
 gwas_loglog_trans = function() {
   scales::trans_new("gwas_loglog", transform = pvalue_to_ll, inverse = ll_to_pvalue)
+}
+
+ggplot_pdf = function(img) {
+  return(ggplot() +
+           annotation_raster(img, xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf) +
+           geom_blank() + theme_nothing())
 }
 
 get_ukb_data_url = function() {

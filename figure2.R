@@ -1,5 +1,6 @@
 source('~/ukbb_pan_ancestry/constants.R')
 library(googlesheets4)
+library(IsoplotR)
 
 theme_set(theme_classic())
 

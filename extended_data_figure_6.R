@@ -91,7 +91,7 @@ extended_data_figure6 = function(output_format = 'png', create_subplots=F) {
   # dev.off()
   scale = 1.2
   output_type(output_format, paste0('extended_data_figure6.', output_format), height=scale * 5.9 / 2, width=scale * 3.5 * 2)
-  print(ggarrange(ed6a, ed6c, nrow = 1, ncol = 2))
+  print(ggarrange(ed6a, ed6c, nrow = 1, ncol = 2, labels='auto'))
   dev.off()
 }
 extended_data_figure6()

@@ -13,7 +13,7 @@ n_phenos_by_pop = function(table_size = 2.5) {
     group_by(pheno_data.pop) %>%
     summarize(n_samples=max(pheno_data.n_cases + pheno_data.n_controls, na.rm=T)) %>% ungroup %>%
     arrange(desc(n_samples)) %>%
-    transmute(`Genetic ancestry`=ukb_pop_names[pheno_data.pop], `Num. individuals`=n_samples)
+    transmute(`Genetic\nsimilarity to`=pheno_data.pop, `Number of\nindividuals`=n_samples)
 
   p = by_pop %>%
     ggplot + aes(x = pop, y = n, fill = pop) + 
@@ -68,7 +68,7 @@ n_phenos_by_pop_combo = function(legend_size=0.15) {
     scale_fill_manual(values=trait_type_colors, name='Trait type', labels=trait_type_names) +
     scale_x_discrete(labels=multi_pop_names) +
     scale_y_continuous(labels=comma) + 
-    xlab('Number of genetic ancestries') +
+    xlab('Number of genetically similar groups') +
     theme(# axis.text.x = element_text(angle = 35, hjust=1),
           legend.key.size = unit(legend_size, 'in')) + 
     geom_text(aes(label=comma(n)), vjust=0, nudge_y = 80, size=2.5,
