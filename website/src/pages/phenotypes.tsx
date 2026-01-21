@@ -4,8 +4,8 @@ import useDocusaurusContext from '@docusaurus/useDocusaurusContext'
 import {  PhenotypesPageContentWrapper } from "../components/PhenotypesPageContentWrapper";
 import {  docusaurusLayoutWrapperClassName } from "../components/PhenotypesPageContent";
 
+import "regenerator-runtime/runtime.js";
 import "core-js/stable";
-import "regenerator-runtime/runtime";
 
 const Phenotypes = () => {
   const context = useDocusaurusContext()
